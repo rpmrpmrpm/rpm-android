@@ -83,7 +83,7 @@ class TrackSources(
     }
 
     /** The address to open [ref] at, from [source]. Blocking; called on a loader thread. */
-    fun address(source: TrackSource, ref: TrackRef): String {
+    fun address(source: TrackSource, ref: TrackRef): StreamLink {
         return when (source) {
             is TrackSource.Computer -> {
                 // Chosen earlier. If the computer has gone since, the open fails and the service starts the
@@ -92,12 +92,14 @@ class TrackSources(
                 val token = runBlocking { computers.token(computer) }
                 // A ticket for this one track, not the token: the player does not pin the computer's key, so
                 // this URL is what someone on the network could read (PeerWire.mediaTicket).
-                computer.base + PeerWire.TRACK_ROUTE + escapeSegment(ref.rpmId) +
-                    "?s=" + Uri.encode(PeerWire.mediaHandle(token)) +
-                    "&t=" + Uri.encode(PeerWire.mediaTicket(token, PeerWire.TRACK_ROUTE, ref.rpmId))
+                StreamLink(
+                    computer.base + PeerWire.TRACK_ROUTE + escapeSegment(ref.rpmId) +
+                        "?s=" + Uri.encode(PeerWire.mediaHandle(token)) +
+                        "&t=" + Uri.encode(PeerWire.mediaTicket(token, PeerWire.TRACK_ROUTE, ref.rpmId)),
+                )
             }
             TrackSource.Cloud -> streamLinks.resolveBlocking(ref, kilobits = rates.getOrPut(ref.mediaId) { rate.kilobits })
-            is TrackSource.Local -> Uri.fromFile(source.file).toString()
+            is TrackSource.Local -> StreamLink(Uri.fromFile(source.file).toString())
         }
     }
 
@@ -186,9 +188,15 @@ class SourcedDataSource(
             sources.failed(chosen, failure)
             throw failure
         }
-        reading = if (chosen is TrackSource.Local) files else upstream
+        // A live encode is read through drops and taken up where it broke off (LiveEncode). Media3 opens one only
+        // from its start; anything else goes to the network as it is.
+        reading = when {
+            chosen is TrackSource.Local -> files
+            address.live && dataSpec.position == 0L -> LiveEncodeSource(upstream, address.url)
+            else -> upstream
+        }
         return try {
-            reading.open(dataSpec.withUri(Uri.parse(address)))
+            reading.open(dataSpec.withUri(Uri.parse(address.url)))
         } catch (e: IOException) {
             sources.failed(chosen, e)
             throw e

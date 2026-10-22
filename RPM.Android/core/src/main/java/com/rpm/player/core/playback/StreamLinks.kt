@@ -34,6 +34,12 @@ object CloudTrackUri {
 }
 
 /**
+ * Where to open a track, and whether what answers there is a live encode: the cloud making the rate while it sends,
+ * which has no length and is read through [LiveEncodeSource]. Only a cloud address is ever live.
+ */
+data class StreamLink(val url: String, val live: Boolean = false)
+
+/**
  * Signed stream URLs, kept per track (with its shelf) and rate, each with its own expiry.
  *
  * Asked at every open: at the start of a track, at a seek and at a retry. An entry with less than
@@ -41,20 +47,21 @@ object CloudTrackUri {
  */
 class StreamLinks(private val cloud: CloudClient, private val clock: () -> Long) {
 
-    private data class Entry(val url: String, val expiresAtMillis: Long)
+    private data class Entry(val link: StreamLink, val expiresAtMillis: Long)
 
     private val entries = ConcurrentHashMap<String, Entry>()
 
     /** Blocking: called on an ExoPlayer loader thread, which may block. [kilobits] has no default,
      * because the rate is the caller's choice and the cache is keyed by it. */
-    fun resolveBlocking(ref: TrackRef, kilobits: Int): String {
+    fun resolveBlocking(ref: TrackRef, kilobits: Int): StreamLink {
         val cacheKey = "${ref.mediaId}@$kilobits"
-        entries[cacheKey]?.takeIf { usable(it.expiresAtMillis, clock()) }?.let { return it.url }
+        entries[cacheKey]?.takeIf { usable(it.expiresAtMillis, clock()) }?.let { return it.link }
 
         val ticket = runBlocking { cloud.stream(ref.shelf, ref.rpmId, kilobits) }
         val lifetime = (ticket.expiresInSeconds ?: DEFAULT_LIFETIME_S) * 1000L
-        entries[cacheKey] = Entry(ticket.url, clock() + lifetime)
-        return ticket.url
+        val link = StreamLink(ticket.url, live = ticket.live == true)
+        entries[cacheKey] = Entry(link, clock() + lifetime)
+        return link
     }
 
     companion object {
