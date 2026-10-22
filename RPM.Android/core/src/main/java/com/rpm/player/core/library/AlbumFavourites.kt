@@ -15,8 +15,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlin.ConsistentCopyVisibility
-import kotlin.ExperimentalStdlibApi
 import kotlinx.coroutines.withContext
 
 /**
@@ -41,7 +39,6 @@ class AlbumFavourites(
 
     /** What is held for one account: the rows read, by key, and the marks written here. Replaced whole, on the
      * main thread. */
-    @OptIn(ExperimentalStdlibApi::class)
     @ConsistentCopyVisibility
     data class Marks internal constructor(
         val user: String?,
@@ -57,8 +54,8 @@ class AlbumFavourites(
             return if (mine != null && (row == null || row.updatedAt < mine.stamp)) mine.on else row?.favorite == true
         }
 
-        internal fun withRead(rows: List<CloudAlbumMark>) = Marks(user, rows.associateBy { it.albumKey }, written)
-        internal fun withWritten(key: String, mark: Written?) = Marks(user, read, if (mark == null) written - key else written + (key to mark))
+        internal fun withRead(rows: List<CloudAlbumMark>) = copy(read = rows.associateBy { it.albumKey })
+        internal fun withWritten(key: String, mark: Written?) = copy(written = if (mark == null) written - key else written + (key to mark))
         internal fun writtenAt(key: String) = written[key]
     }
 
