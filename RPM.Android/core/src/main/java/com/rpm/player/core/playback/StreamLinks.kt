@@ -3,6 +3,7 @@ package com.rpm.player.core.playback
 import android.net.Uri
 import com.rpm.player.core.cloud.CloudClient
 import com.rpm.player.core.cloud.Shelf
+import com.rpm.player.core.cloud.StreamTicket
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
 
@@ -45,22 +46,38 @@ data class StreamLink(val url: String, val live: Boolean = false)
  * Asked at every open: at the start of a track, at a seek and at a retry. An entry with less than
  * [MIN_LEFT_MS] left is not used.
  */
-class StreamLinks(private val cloud: CloudClient, private val clock: () -> Long) {
+class StreamLinks(
+    /** Signs [TrackRef] at a rate: `cloud/stream`. Blocking. */
+    private val sign: (TrackRef, Int) -> StreamTicket,
+    private val clock: () -> Long,
+) {
+    constructor(cloud: CloudClient, clock: () -> Long) : this({ ref, kilobits -> runBlocking { cloud.stream(ref.shelf, ref.rpmId, kilobits) } }, clock)
 
-    private data class Entry(val link: StreamLink, val expiresAtMillis: Long)
+    /** A signed address, until when its signature holds, and until when it is used before the cloud is asked again. */
+    private data class Entry(val link: StreamLink, val expiresAtMillis: Long, val keptUntilMillis: Long)
 
     private val entries = ConcurrentHashMap<String, Entry>()
 
-    /** Blocking: called on an ExoPlayer loader thread, which may block. [kilobits] has no default,
-     * because the rate is the caller's choice and the cache is keyed by it. */
+    /**
+     * Blocking: called on an ExoPlayer loader thread, which may block. [kilobits] has no default,
+     * because the rate is the caller's choice and the cache is keyed by it.
+     *
+     * As the iPhone's `StreamUrlCache`, an address is kept for one of two lengths of time. A stored object at the rate
+     * asked for is kept for [STORED_LIFE_MS]. A live encode, or a lower rate standing in for one the store has not
+     * made, is kept for [FALLBACK_LIFE_MS] only: long enough for the opens of one play, and short enough that a replay
+     * asks again and gets the stored object once the store has kept it, which opens much faster than another encode.
+     */
     fun resolveBlocking(ref: TrackRef, kilobits: Int): StreamLink {
         val cacheKey = "${ref.mediaId}@$kilobits"
-        entries[cacheKey]?.takeIf { usable(it.expiresAtMillis, clock()) }?.let { return it.link }
+        val now = clock()
+        entries[cacheKey]?.takeIf { now < it.keptUntilMillis && usable(it.expiresAtMillis, now) }?.let { return it.link }
 
-        val ticket = runBlocking { cloud.stream(ref.shelf, ref.rpmId, kilobits) }
+        val ticket = sign(ref, kilobits)
         val lifetime = (ticket.expiresInSeconds ?: DEFAULT_LIFETIME_S) * 1000L
         val link = StreamLink(ticket.url, live = ticket.live == true)
-        entries[cacheKey] = Entry(link, clock() + lifetime)
+        // A ticket that does not say its rate is taken to be at the rate asked for.
+        val stored = !link.live && (ticket.kilobits ?: kilobits) >= kilobits
+        entries[cacheKey] = Entry(link, now + lifetime, now + if (stored) STORED_LIFE_MS else FALLBACK_LIFE_MS)
         return link
     }
 
@@ -70,6 +87,12 @@ class StreamLinks(private val cloud: CloudClient, private val clock: () -> Long)
 
         /** What the API signs for when it does not say: six hours. */
         const val DEFAULT_LIFETIME_S = 6 * 3600L
+
+        /** How long a stored object at the rate asked for is used before the cloud is asked again: the iPhone's. */
+        const val STORED_LIFE_MS = 4 * 3600_000L
+
+        /** How long a live encode or a lower-rate stand-in is used: the iPhone's `fallbackLife`. */
+        const val FALLBACK_LIFE_MS = 2 * 60_000L
 
         fun usable(expiresAtMillis: Long, now: Long): Boolean = expiresAtMillis - now > MIN_LEFT_MS
     }
