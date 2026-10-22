@@ -5,6 +5,18 @@ The rpm music player for Android phones and Android TV.
 Part of [rpm](https://github.com/rpmrpmrpm/rpm). Ideas and questions go to the
 [discussions](https://github.com/rpmrpmrpm/rpm/discussions) there.
 
+<p align="center">
+  <img src="docs/screenshots/tv-home.jpg" alt="rpm on Android TV: the home screen">
+</p>
+<p align="center">
+  <img src="docs/screenshots/tv-your-mix.jpg" width="49%" alt="Home scrolled down, with Your mix chosen">
+  <img src="docs/screenshots/tv-radio.jpg" width="49%" alt="Home with a radio station playing">
+</p>
+
+The Android TV app: Home, Home scrolled down to Your mix, and a radio station playing. More on
+[rpmrpmrpm.com](https://rpmrpmrpm.com/tv). The record covers and photographs in the screenshots
+belong to their owners; the code licence does not cover them.
+
 ## What is here
 
 The project is in `RPM.Android/`.
