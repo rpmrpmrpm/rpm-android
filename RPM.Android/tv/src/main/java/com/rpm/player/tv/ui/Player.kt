@@ -212,18 +212,24 @@ fun PlayerScreen(
         val track = nowPlaying?.mediaId?.let(com.rpm.player.core.playback.TrackRef::parse) ?: return@LaunchedEffect
         // Read with karaoke off too: the offset moves the plain lines as well, and a listener who is not a supporter
         // is given the offset alone.
+        // The server places the lines first and works out the offset after them, so the reads go on until both are in.
+        var offsetKnown = false
         suspend fun take() {
             val answer = withContext(Dispatchers.IO) { measuredLyrics.read(track) }
             offset = com.rpm.player.core.lyrics.MeasuredLyrics.offsetFor(answer, sheet)
+            offsetKnown = answer.offset != null
             if (karaoke) measured = answer.lines
         }
+        fun done() = offsetKnown && com.rpm.player.core.lyrics.MeasuredLyrics.covers(measured, sheet)
         take()
+        // Lines already measured are kept as they are: one measured before offsets were worked out has none, and the
+        // server does not measure it again, so the reads below wait for an offset only after a measurement is asked for.
         if (!karaoke || com.rpm.player.core.lyrics.MeasuredLyrics.covers(measured, sheet)) return@LaunchedEffect
         if (!withContext(Dispatchers.IO) { measuredLyrics.ask(track, sheet) }) return@LaunchedEffect
         repeat(MEASURE_READS) { read ->
             delay(if (read == 0) MEASURE_WAIT_MS else MEASURE_EVERY_MS)
             take()
-            if (com.rpm.player.core.lyrics.MeasuredLyrics.covers(measured, sheet)) return@LaunchedEffect
+            if (done()) return@LaunchedEffect
         }
     }
     LaunchedEffect(nowPlaying?.mediaId) {
