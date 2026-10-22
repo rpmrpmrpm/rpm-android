@@ -172,6 +172,10 @@ class SourcedDataSource(
     /** The source the last open went to, which every read and the close go to as well. */
     private var reading: DataSource = upstream
 
+    /** The live encode this item was opened at, and the track it is for. Media3 makes one data source per item, and
+     * every later open of it (a seek, a resume, a start over) goes to the same encode ([LiveEncodeSource]). */
+    private var live: Pair<TrackRef, LiveEncodeSource>? = null
+
     override fun open(dataSpec: DataSpec): Long {
         val ref = CloudTrackUri.ref(dataSpec.uri)
         if (ref == null) {
@@ -181,6 +185,10 @@ class SourcedDataSource(
         }
         val chosen = sources.choice(ref)
         source = chosen
+        live?.takeIf { it.first == ref && chosen == TrackSource.Cloud }?.let { (_, encode) ->
+            reading = encode
+            return encode.open(dataSpec)
+        }
         val address = try {
             sources.address(chosen, ref)
         } catch (e: Exception) {
@@ -188,11 +196,10 @@ class SourcedDataSource(
             sources.failed(chosen, failure)
             throw failure
         }
-        // A live encode is read through drops and taken up where it broke off (LiveEncode). Media3 opens one only
-        // from its start; anything else goes to the network as it is.
+        // A live encode is read through drops, taken up where it broke off, and seeked by second (LiveEncodeSource).
         reading = when {
             chosen is TrackSource.Local -> files
-            address.live && dataSpec.position == 0L -> LiveEncodeSource(upstream, address.url)
+            address.live -> LiveEncodeSource(upstream, address.url).also { live = ref to it }
             else -> upstream
         }
         return try {

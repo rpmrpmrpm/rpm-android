@@ -155,6 +155,52 @@ class LiveEncodeTest {
         assertArrayEquals(frames(0, 2 * (LiveEncode.RETRIES + 2)), readAll(LiveEncode(line) {}))
     }
 
+    /** A seek opens the encode from the second asked for, and the song is read on from there. */
+    @Test fun aSeekStartsAtItsSecond() {
+        val line = Line(Connection(frames(0, 10)))
+        val encode = LiveEncode(line) {}
+        encode.open(12.5)
+        val buffer = ByteArray(4096)
+        while (encode.read(buffer, 0, buffer.size) != C.RESULT_END_OF_INPUT) Unit
+        assertEquals(listOf(12.5), line.asked)
+        assertEquals(12.5 + seconds(10), encode.handedOnSeconds()!!, 1e-9)
+    }
+
+    /** A drop after a seek is taken up from the seek's second plus what was read since. */
+    @Test fun aDropAfterASeekCarriesOnFromTheSeekPlusWhatWasRead() {
+        val line = Line(
+            Connection(frames(0, 4), drop = true),
+            Connection(frames(4, 2)),
+        )
+        val encode = LiveEncode(line) {}
+        encode.open(30.0)
+        val buffer = ByteArray(4096)
+        while (encode.read(buffer, 0, buffer.size) != C.RESULT_END_OF_INPUT) Unit
+        assertEquals(listOf(30.0, 30.0 + seconds(4)), line.asked)
+    }
+
+    /** The stated length is the whole record's, so the seek's second counts towards it: a clean close at 30.2 s of a
+     * 40 s record is not the end, and one within a second of the end is. */
+    @Test fun theEndRuleCountsFromTheSeek() {
+        val short = Line(Connection(frames(0, 10), duration = "40.0"), Connection(frames(10, 2), duration = "40.0"))
+        LiveEncode(short) {}.apply { open(30.0) }.also { encode ->
+            val buffer = ByteArray(4096)
+            try {
+                while (encode.read(buffer, 0, buffer.size) != C.RESULT_END_OF_INPUT) Unit
+            } catch (_: IOException) {
+                // The second connection closes short of the end as well, and the retries run out on "no more".
+            }
+        }
+        assertEquals(30.0 + seconds(10), short.asked[1], 1e-9)
+
+        val atTheEnd = Line(Connection(frames(0, 10), duration = "30.5"))
+        val encode = LiveEncode(atTheEnd) {}
+        encode.open(30.0)
+        val buffer = ByteArray(4096)
+        while (encode.read(buffer, 0, buffer.size) != C.RESULT_END_OF_INPUT) Unit
+        assertEquals(listOf(30.0), atTheEnd.asked)
+    }
+
     @Test fun theLengthIsReadInAnyLanguage() {
         val before = Locale.getDefault()
         try {

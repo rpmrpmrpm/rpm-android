@@ -141,7 +141,8 @@ class PlaybackService : MediaSessionService() {
 
         val player = ExoPlayer.Builder(this, renderers)
             .setMediaSourceFactory(
-                DefaultMediaSourceFactory(opened).setLoadErrorHandlingPolicy(
+                // A live encode whose length the server states can be seeked in (LiveExtractors).
+                DefaultMediaSourceFactory(opened, LiveExtractors()).setLoadErrorHandlingPolicy(
                     // A track that is not on the phone waits for the network instead of failing (OfflineRetries). On the
                     // TV, which has no reading, it is never offline.
                     OfflineRetries(LiveStreamRetries(), offline = { services.line?.value?.isOnline == false }, services.copies),

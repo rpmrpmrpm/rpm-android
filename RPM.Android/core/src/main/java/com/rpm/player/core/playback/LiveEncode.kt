@@ -1,6 +1,7 @@
 package com.rpm.player.core.playback
 
 import android.net.Uri
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
@@ -46,7 +47,10 @@ class LiveEncode(private val line: LiveLine, private val pause: (Long) -> Unit =
     private var length = 0
     private var ready = 0
 
-    /** Samples handed on or ready to be, and their rate, read from the frames themselves. */
+    /** The second of the song this read began at: 0, or where a seek asked for. */
+    private var start = 0.0
+
+    /** Samples handed on or ready to be since [start], and their rate, read from the frames themselves. */
     private var samples = 0L
     private var rate = 0
 
@@ -57,7 +61,21 @@ class LiveEncode(private val line: LiveLine, private val pause: (Long) -> Unit =
     private var ended = false
     private val scratch = ByteArray(BUFFER)
 
-    fun open() = connect(0.0)
+    /** Opens the encode from [fromSecond] of the song: 0, or a seek's second. Everything read before is let go. */
+    fun open(fromSecond: Double = 0.0) {
+        start = fromSecond
+        length = 0
+        ready = 0
+        samples = 0
+        retries = 0
+        ended = false
+        duration = null
+        connect(fromSecond)
+    }
+
+    /** How far into the song what has been handed on reaches, or null while part of a frame is still to be handed
+     * on: the read stopped there has no second to be taken up from. */
+    fun handedOnSeconds(): Double? = if (ready == 0) seconds() else null
 
     fun read(buffer: ByteArray, offset: Int, wanted: Int): Int {
         if (wanted == 0) return 0
@@ -93,7 +111,7 @@ class LiveEncode(private val line: LiveLine, private val pause: (Long) -> Unit =
 
     fun close() = line.close()
 
-    private fun seconds(): Double = if (rate == 0) 0.0 else samples.toDouble() / rate
+    private fun seconds(): Double = if (rate == 0) start else start + samples.toDouble() / rate
 
     private fun connect(from: Double) {
         val headers = line.open(from)
@@ -215,22 +233,34 @@ class LiveEncode(private val line: LiveLine, private val pause: (Long) -> Unit =
 }
 
 /**
- * Media3's side of [LiveEncode]: opens a live encode's address through [upstream], and again `?from=` a second when
- * the encode is taken up after a drop. A live encode is always read from its start: it has no length, so Media3
- * never resumes one at a byte.
+ * Media3's side of [LiveEncode]: opens a live encode's address through [upstream], from the second the position it is
+ * opened at stands for ([LivePlaces]): the start, a seek, or where the last read left off. Upstream is always opened
+ * at byte 0, the second in the address (`?from=`), so no range is ever asked of an encode that has no bytes yet.
+ *
+ * One of these answers every open of one item's encode ([SourcedDataSource] keeps it), so a seek or a resume reaches
+ * the same encode, and not a stored object signed in the meantime, which is another file (MP4, not ADTS).
  */
 @OptIn(UnstableApi::class)
-class LiveEncodeSource(private val upstream: DataSource, private val url: String) : DataSource {
+class LiveEncodeSource(private val upstream: DataSource, val url: String) : DataSource {
 
+    private val places = LivePlaces()
     private var uri: Uri? = null
     private var headers: Map<String, List<String>> = emptyMap()
     private var spec: DataSpec? = null
+
+    /** Where this open began, and how many bytes it has handed on since. */
+    private var openedAt = 0L
+    private var handed = 0L
 
     private val encode = LiveEncode(
         object : LiveLine {
             override fun open(fromSecond: Double): Map<String, List<String>> {
                 val address = if (fromSecond > 0) LiveEncode.addressFrom(url, fromSecond) else url
-                val asked = checkNotNull(spec).withUri(Uri.parse(address))
+                val asked = checkNotNull(spec).buildUpon()
+                    .setUri(Uri.parse(address))
+                    .setPosition(0)
+                    .setLength(C.LENGTH_UNSET.toLong())
+                    .build()
                 upstream.open(asked)
                 uri = upstream.uri
                 headers = upstream.responseHeaders
@@ -244,21 +274,35 @@ class LiveEncodeSource(private val upstream: DataSource, private val url: String
     )
 
     override fun open(dataSpec: DataSpec): Long {
+        val from = places.secondAt(dataSpec.position)
         spec = dataSpec
-        encode.open()
+        openedAt = dataSpec.position
+        handed = 0
+        Log.i(TAG, "live encode from $from s")
+        encode.open(from)
         return C.LENGTH_UNSET.toLong()
     }
 
-    override fun read(buffer: ByteArray, offset: Int, length: Int): Int = encode.read(buffer, offset, length)
+    override fun read(buffer: ByteArray, offset: Int, length: Int): Int =
+        encode.read(buffer, offset, length).also { if (it > 0) handed += it }
 
     override fun addTransferListener(transferListener: TransferListener) = upstream.addTransferListener(transferListener)
 
     override fun getUri(): Uri? = uri
 
-    override fun getResponseHeaders(): Map<String, List<String>> = headers
+    /** The response's headers, marked as a live encode's, so the extractors know it for one ([LiveExtractors]). */
+    override fun getResponseHeaders(): Map<String, List<String>> = headers + (LIVE_HEADER to listOf("1"))
 
     override fun close() {
+        places.leftAt(openedAt + handed, encode.handedOnSeconds())
         uri = null
         encode.close()
+    }
+
+    companion object {
+        /** Put on a live encode's response headers here, never sent by the server. */
+        const val LIVE_HEADER = "X-RPM-Live-Encode"
+
+        private const val TAG = "rpm.playback"
     }
 }
