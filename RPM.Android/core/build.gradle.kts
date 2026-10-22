@@ -54,7 +54,7 @@ if (!iconFontsInSources) {
     val proFonts = rootDir.resolve("../../rpm-fonts-pro")
     val fontSource = if (proFonts.resolve("fa-solid-900.ttf").exists()) proFonts else file("iconfonts-free")
 
-    val copyIconFonts by tasks.registering(IconFonts::class) {
+    val copyIconFonts = tasks.register<IconFonts>("copyIconFonts") {
         from.set(fontSource)
     }
 

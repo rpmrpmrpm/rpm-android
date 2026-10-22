@@ -499,7 +499,7 @@ private fun BannerCardView(
     // in those of the card's cover or the station's logo. It moves only on the card in front, while home is showing.
     val roomed = list != null || station != null || (looked && photo == null)
     val colours = rememberRoomColours(if (roomed && framed == null) station?.let { StationLogo.of(it, logoStamp) } ?: cover else null, images)
-    val seed = album?.key?.toString() ?: station?.uuid ?: title
+    val seed = album?.key ?: station?.uuid ?: title
     val subtitle = album?.artist
 
     Box(

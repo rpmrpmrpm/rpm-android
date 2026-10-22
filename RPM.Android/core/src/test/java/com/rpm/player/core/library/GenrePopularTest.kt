@@ -13,7 +13,7 @@ class GenrePopularTest {
         CloudAlbum(key, key, artist, (1..songs).map { CloudTrack(rpmId = "$key-$it", title = "$key song $it", tags = CloudTrackTags(trackNumber = it)) })
 
     private fun plays(vararg albums: CloudAlbum) =
-        albums.associate { a -> a.key to a.tracks.associate { t -> TrackPlace(1, t.tags!!.trackNumber) to (1000L - t.tags!!.trackNumber) } }
+        albums.associate { a -> a.key to a.tracks.associate { t -> TrackPlace(1, t.tags!!.trackNumber) to (1000L - t.tags.trackNumber) } }
 
     @Test
     fun noActHasMoreThanItsShare() {

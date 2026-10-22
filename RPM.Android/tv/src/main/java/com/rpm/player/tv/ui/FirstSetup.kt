@@ -551,7 +551,7 @@ private fun RegionPicker(region: Region, guessedCountry: String?, first: FocusRe
     var country by remember { mutableStateOf(region.country ?: guessedCountry) }
     val countries = remember(shown) {
         val collator = Collator.getInstance(shown)
-        Locale.getISOCountries().map { code -> code to Locale("", code).getDisplayCountry(shown) }
+        Locale.getISOCountries().map { code -> code to Locale.Builder().setRegion(code).build().getDisplayCountry(shown) }
             .filter { it.second.isNotBlank() }
             .sortedWith { a, b -> collator.compare(a.second, b.second) }
     }

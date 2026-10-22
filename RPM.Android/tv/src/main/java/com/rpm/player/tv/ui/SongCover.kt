@@ -36,7 +36,7 @@ fun rememberSongCover(station: StationPlaying?): String? {
     val song = station?.said as? Icy.Said.Song
     val artist = song?.artist?.trim()?.takeIf { it.length >= SHORTEST }
     val title = song?.title?.trim()?.takeIf { it.length >= SHORTEST }
-    val asked = if (artist != null && title != null && station?.reconnecting != true) artist to title else null
+    val asked = if (artist != null && title != null && station.reconnecting != true) artist to title else null
     var cover by remember { mutableStateOf(asked?.let { covers.peek(it.first, it.second) }) }
     LaunchedEffect(asked) {
         cover = asked?.let { (a, t) -> covers.peek(a, t) ?: covers.of(a, t) }

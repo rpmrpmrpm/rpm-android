@@ -12,6 +12,7 @@ import coil3.fetch.SourceFetchResult
 import coil3.request.Options
 import coil3.request.bitmapConfig
 import coil3.size.Precision
+import coil3.size.Size
 import coil3.size.isOriginal
 import coil3.size.pxOrElse
 import kotlinx.coroutines.runInterruptible
@@ -75,7 +76,7 @@ class SharpDecoder(private val source: ImageSource, private val options: Options
         val w = size.width.pxOrElse { -1 }
         val h = size.height.pxOrElse { -1 }
         return when {
-            w > 0 && h > 0 -> DecodeUtils.computeSizeMultiplier(srcW, srcH, w, h, options.scale)
+            w > 0 && h > 0 -> DecodeUtils.computeSizeMultiplier(srcW, srcH, w, h, options.scale, Size.ORIGINAL)
             w > 0 -> w.toDouble() / srcW
             h > 0 -> h.toDouble() / srcH
             else -> 1.0

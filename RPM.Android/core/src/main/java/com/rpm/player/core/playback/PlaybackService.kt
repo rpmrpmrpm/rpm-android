@@ -415,7 +415,7 @@ class PlaybackService : MediaSessionService() {
             if (controller.packageName == packageName) return super.onConnect(session, controller)
             Log.i(TAG, "${controller.packageName} connects, trusted ${controller.isTrusted}")
             if (controller.isTrusted) return super.onConnect(session, controller)
-            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
                 .setAvailablePlayerCommands(MediaSession.ConnectionResult.DEFAULT_UNTRUSTED_PLAYER_COMMANDS.buildUpon().addAll(TRANSPORT).build())
                 .build()
         }

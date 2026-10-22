@@ -58,7 +58,7 @@ fun Modifier.rowPress(onClick: () -> Unit): Modifier = composed {
                         light()
                     }
                     tryAwaitRelease()
-                    lighting?.cancel()
+                    lighting.cancel()
                     if (lit.value > 0f) {
                         scope.launch {
                             delay(HOLD_MS)
