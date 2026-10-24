@@ -1469,6 +1469,9 @@
     <!-- Value of the Room animation row in the Android TV settings: blobs rising and sinking like a lava lamp. A name; leave it untranslated. -->
     <string name="Tv_RoomStyleLava">Lava</string>
 
+    <!-- Notice along the foot of Pegasus after the first Back in its side menu over home; a second Back within 2 s leaves Pegasus. -->
+    <string name="Viz_ExitDoublePress">再次按返回键以退出 Pegasus。</string>
+
     <!-- Value of the Room animation row in the Android TV settings: ribbons of cyan light drifting in deep blue (the ground of the RPaMp player skin, set moving). A name; leave it untranslated. -->
     <string name="Tv_RoomStyleAlchemy">Alchemy</string>
 
