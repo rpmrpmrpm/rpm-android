@@ -158,7 +158,7 @@ class PlayerSettings(context: Context) {
 
     /** Which animation the room draws behind the player and the screens ([RoomStyle]); the original by
      * default. Read by the room on its next frame, so a change shows while the settings are open. */
-    var roomStyle by mutableStateOf(prefs.getString(KEY_ROOM_STYLE, null)?.let { name -> RoomStyle.entries.firstOrNull { it.name == name } } ?: RoomStyle.Original)
+    var roomStyle by mutableStateOf(prefs.getString(KEY_ROOM_STYLE, null)?.let { name -> RoomStyle.named(name) } ?: RoomStyle.Original)
         private set
 
     fun nextRoomStyle() {

@@ -25,13 +25,19 @@ enum class RoomStyle {
      * over one huge blurred ball in the third colour that swells with the middle. */
     Lava,
 
-    /** The RPaMp skin's ground (background-rpamp.jpg, drawn by make_rpamp_ground.py), set moving: broad
-     * soft ribbons of light flowing across a dark ground, in the sleeve's colours. */
-    RPaMp,
+    /** Alchemy: the RPaMp skin's ground (background-rpamp.jpg, drawn by make_rpamp_ground.py), set moving:
+     * broad soft ribbons of light flowing across a dark ground, in the sleeve's colours. */
+    Alchemy;
+
+    companion object {
+        /** The style saved under [name]; Alchemy was saved as "RPaMp" before it was renamed. */
+        fun named(name: String): RoomStyle? =
+            if (name == "RPaMp") Alchemy else entries.firstOrNull { it.name == name }
+    }
 }
 
 /**
- * Where the figures of [RoomStyle.Yang], [RoomStyle.Lava] and [RoomStyle.RPaMp] are this frame, and how
+ * Where the figures of [RoomStyle.Yang], [RoomStyle.Lava] and [RoomStyle.Alchemy] are this frame, and how
  * large and bright: worked out once per frame on the CPU, as [RoomOrbits] does for the original, so the
  * shaders spend nothing per pixel on numbers that are the same for every pixel. Written as vec4s, ready
  * for `glUniform4fv`. Allocation-free per frame.

@@ -279,7 +279,7 @@ class RoomRenderer(
         RoomStyle.Original -> RoomPass(program(RoomShaders.VERTEX, RoomShaders.ROOM_FRAGMENT), listOf("uLobes1", "uLobes2", "uLobes3"))
         RoomStyle.Yang -> RoomPass(program(RoomShaders.VERTEX, RoomShaders.YANG_FRAGMENT), listOf("uBig", "uSmall", "uCentre"))
         RoomStyle.Lava -> RoomPass(program(RoomShaders.VERTEX, RoomShaders.LAVA_FRAGMENT), listOf("uBlobs", "uPools", "uBack"))
-        RoomStyle.RPaMp -> RoomPass(program(RoomShaders.VERTEX, RoomShaders.RPAMP_FRAGMENT), listOf("uRibbonA", "uRibbonB", "uRibbonC"))
+        RoomStyle.Alchemy -> RoomPass(program(RoomShaders.VERTEX, RoomShaders.RPAMP_FRAGMENT), listOf("uRibbonA", "uRibbonB", "uRibbonC"))
     }.also { passes[style.ordinal] = it }
 
     /** [style]'s figures at [clock] and these levels, worked out and handed to [pass]'s program. */
@@ -304,7 +304,7 @@ class RoomRenderer(
                 GLES30.glUniform4fv(a[1], 1, figures.pools, 0)
                 GLES30.glUniform4fv(a[2], 1, figures.back, 0)
             }
-            RoomStyle.RPaMp -> {
+            RoomStyle.Alchemy -> {
                 figures.ribbons(bass, mid, air)
                 GLES30.glUniform4fv(a[0], RoomFigures.RIBBONS, figures.ribbonA, 0)
                 GLES30.glUniform4fv(a[1], RoomFigures.RIBBONS, figures.ribbonB, 0)

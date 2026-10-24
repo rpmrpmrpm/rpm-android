@@ -536,7 +536,7 @@ private fun settingLines(page: SettingsPage, settings: PlayerSettings, account: 
                         RoomStyle.Original -> R.string.Tv_RoomStyleOriginal
                         RoomStyle.Yang -> R.string.Tv_RoomStyleYang
                         RoomStyle.Lava -> R.string.Tv_RoomStyleLava
-                        RoomStyle.RPaMp -> R.string.Tv_RoomStyleRPaMp
+                        RoomStyle.Alchemy -> R.string.Tv_RoomStyleAlchemy
                     },
                 ),
                 settings::nextRoomStyle,
