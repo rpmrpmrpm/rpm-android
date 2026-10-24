@@ -171,7 +171,7 @@ fun HomeScreen(
     // The stations heard most join the banner and quick selection, as the desktop's radio card and
     // station picks do; they change as listening is counted, so they are added here, not in the shelf.
     val bannerCards = remember(home.banner, radio.stations) { HomeShelf.withStation(home.banner, radio.stations.firstOrNull()) }
-    val quick = remember(home.quick, radio.stations) { HomeShelf.withStations(home.quick, radio.stations) }
+    val quick = remember(home.quick, radio.stations) { HomeShelf.withStations(home.quick, radio.stations).take(QUICK_SHOWN) }
     val banner = remember { FocusRequester() }
 
     if (collection.albums.isEmpty()) {
@@ -255,6 +255,11 @@ fun HomeScreen(
 
 /** How many screens of home's rows are kept composed ahead of and behind what is on screen: all of them. */
 private const val HOME_KEPT = 3f
+
+/** Quick selection's columns, all on the screen, and the entries it shows: four columns of four, as the desktop
+ * shows them and as many as the iPhone holds. */
+private const val QUICK_ACROSS = 4
+private const val QUICK_SHOWN = QUICK_ACROSS * HomeShelf.QUICK_DOWN
 
 /** How far the page may be scrolled and still count as at the top for the mini player. */
 private val NUDGE = 120.px
@@ -798,11 +803,10 @@ private fun tinted(ink: Color, k: Float): Color = Color(
 
 /**
  * Quick selection (HomeView.xaml, QuickPicks): the heading with "Play all tracks" at the right, then
- * [HomeShelf.QUICK_COLUMNS] columns of [HomeShelf.QUICK_DOWN], filled down each column, three columns
- * across the screen and the rest past the right edge; the columns scroll together from left to right. A
- * column is `(content + 8 - 2 * 10) / 3` wide; an entry is a 64·s square and two lines, 64·s + 12 high.
- * The desktop shows sixteen in four fixed columns; here three show on the page and
- * the rest scroll sideways.
+ * [QUICK_SHOWN] entries in columns of [HomeShelf.QUICK_DOWN], filled down each column, four columns across the
+ * screen and nothing past it, as the desktop shows them and as the iPhone's four groups of four hold them. A column
+ * is `(content + 8 - 3 * 10) / 4` wide; an entry is a 64·s square and two lines, 64·s + 12 high. What is in it,
+ * and in what order, is the iPhone's: the song radios, then song, album, playlist and station in turn.
  */
 @Composable
 private fun QuickSelection(
@@ -834,7 +838,7 @@ private fun QuickSelection(
         }
     }
     BoxWithConstraints(Modifier.fillMaxWidth().outdent(8.px)) {
-        val panel = (maxWidth - 20.px) / 3
+        val panel = (maxWidth - 30.px) / QUICK_ACROSS
         val columns = (picks.size + HomeShelf.QUICK_DOWN - 1) / HomeShelf.QUICK_DOWN
         QuickStrip(columns, tops.strip) { column ->
             // The column holding the focus is drawn over its neighbours, so the grown entry is not cut by them.
@@ -899,9 +903,10 @@ internal fun QuickStrip(columns: Int, state: LazyListState, column: @Composable 
 }
 
 /** One quick entry: the picture (64·s, corner 6, `#33000000`), the title ([CARD_TITLE_TEXT] SemiBold)
- * and what it is ([CARD_LINE_TEXT]), the album wall's sizes: the artist for a song, "Album • artist",
- * "Playlist • …". The desktop has 48, 12.5 and 11. A song's held OK opens the track's menu, which gives the focus
- * back to the entry when it closes. */
+ * and what it is ([CARD_LINE_TEXT]), the album wall's sizes: the artist for a song, "Album • artist" (just
+ * "Album" when the record names none), "Playlist • n songs", as on the iPhone. The desktop has 48, 12.5 and 11.
+ * Where there is no picture the square shows a dim symbol of the kind, as the iPhone's does. A song's held OK opens
+ * the track's menu, which gives the focus back to the entry when it closes. */
 @Composable
 private fun QuickEntry(
     pick: QuickPick,
@@ -937,12 +942,14 @@ private fun QuickEntry(
         is QuickPick.OfAlbum -> {
             picture = collection.cover(pick.album)
             title = albumTitle(pick.album)
-            line = stringResource(R.string.Home_QuickKindJoin, stringResource(R.string.Home_QuickAlbum), albumArtist(pick.album))
+            line = pick.album.artist.takeIf { it.isNotBlank() }
+                ?.let { stringResource(R.string.Home_QuickKindJoin, stringResource(R.string.Home_QuickAlbum), it) }
+                ?: stringResource(R.string.Home_QuickAlbum)
         }
         is QuickPick.OfList -> {
             picture = collection.cover(pick.list)
             title = listName(pick.list.name)
-            line = stringResource(R.string.Home_QuickKindJoin, stringResource(R.string.Home_QuickPlaylist), listCaption(pick.list))
+            line = stringResource(R.string.Home_QuickKindJoin, stringResource(R.string.Home_QuickPlaylist), stringResource(R.string.Home_Songs, pick.list.tracks.size.toString()))
         }
         is QuickPick.OfStation -> {
             picture = StationLogo.of(pick.station, radio.logoStamp)
@@ -973,7 +980,16 @@ private fun QuickEntry(
         modifier = modifier.then(held).fillMaxWidth().padding(horizontal = 8.px, vertical = 6.px),
     ) { focused ->
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(64.s).clip(RoundedCornerShape(6.px)).background(Color(0x33000000))) {
+            Box(Modifier.size(64.s).clip(RoundedCornerShape(6.px)).background(Color(0x33000000)), contentAlignment = Alignment.Center) {
+                // The kind's symbol, under the picture, so a missing or late picture leaves a sign of what it is.
+                val symbol = when (pick) {
+                    is QuickPick.Song -> Fa.MUSIC
+                    is QuickPick.Radio -> Fa.TV_MUSIC
+                    is QuickPick.OfAlbum -> Fa.RECORD
+                    is QuickPick.OfList -> Fa.PLAYLISTS
+                    is QuickPick.OfStation -> Fa.RADIO
+                }
+                Glyph(symbol, 20.ts, Color(0x3AFFFFFF))
                 if (pick is QuickPick.OfList) {
                     ListPicture(pick.list, collection, images, drift = false, keepFrame = false, modifier = Modifier.matchParentSize())
                 } else if (picture is StationLogo) {

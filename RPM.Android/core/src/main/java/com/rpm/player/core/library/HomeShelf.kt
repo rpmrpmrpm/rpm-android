@@ -111,7 +111,8 @@ object HomeShelf {
         val taste = Taste.fromTaste(plays, traits, listenedKeys + suggested.map { it.key }, ROW_LENGTH, draw)
 
         val quick = when (c.shelf) {
-            Shelf.Own -> quick(c, played, madeForYou)
+            // The lists as the iPhone deals them: the first generated lists, in the order the collection holds them.
+            Shelf.Own -> quick(c, played, c.lists.filter { it.generated }.take(QUICK_LISTS))
             is Shelf.Borrowed -> recommendedQuick(c, madeForYou, shown = (suggested + added.take(ROW_LENGTH)).mapTo(HashSet()) { it.key }, draw)
         }
 
@@ -176,6 +177,9 @@ object HomeShelf {
         val radios = radioSeeds(most).map { QuickPick.Radio(it, c.albumOf[it.rpmId]) }
         return (radios + deal(songs, played.map { QuickPick.OfAlbum(it) }, lists.map { QuickPick.OfList(it) })).take(QUICK_PICKS)
     }
+
+    /** How many generated lists Quick selection deals from on the person's own shelf (`HomeSongs` on iPhone). */
+    private const val QUICK_LISTS = 8
 
     /** How many song radios Quick selection offers at most. The desktop's `QuickPicks.MostRadios`. */
     const val MOST_RADIOS = 2
