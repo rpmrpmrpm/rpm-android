@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -63,12 +64,15 @@ import com.rpm.player.core.library.Collection
 import com.rpm.player.core.library.RecordFacts
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.sign
 import kotlin.math.sin
+import androidx.compose.animation.core.Easing
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -80,7 +84,10 @@ import kotlinx.coroutines.withContext
  *
  * It never ends: Right after the last record is the first. Left and Right move it one record, over [TICK_MS], so the
  * next record comes round to the front and the one that was there goes back into the arc; a press while it moves
- * adds one more step to where it is going. The covers are stacked by how near the front they are, so the front one
+ * adds one more step to where it is going. A held key turns it at an even [HOLD_RATE] records a second, reached
+ * from the first tick's speed, and letting go glides it to rest on the next record at the speed it had: a tick per
+ * key repeat started each step again from standing, so the arc lagged further and further behind the presses and
+ * then raced through the lag in one tick when the key came up. The covers are stacked by how near the front they are, so the front one
  * is over every other. OK opens the record in front, Up opens the letter wheel and Down the record's menu. Which record is in front is kept for as long as the wall is
  * ([state]), so Back from a record comes back to it.
  */
@@ -105,10 +112,51 @@ fun AlbumCarousel(
     val at = remember(state) { Animatable(state.front.toFloat()) }
     // Where it is going: the presses so far, which a press during a move adds to.
     var going by remember(state) { mutableIntStateOf(state.front) }
+    // The turn while a key is held, frame by frame, and its speed in records a second.
+    var holding by remember { mutableStateOf<Job?>(null) }
+    var holdSpeed by remember { mutableFloatStateOf(0f) }
+    fun stopHolding() {
+        holding?.cancel()
+        holding = null
+    }
     fun step(by: Int) {
+        stopHolding()
         going += by
         state.front = going
         scope.launch { at.animateTo(going.toFloat(), tween(TICK_MS, easing = FastOutSlowInEasing)) }
+    }
+    // The key's repeats: one turn at an even speed, which the repeats only keep going.
+    fun hold(by: Int) {
+        if (holding?.isActive == true) return
+        holding = scope.launch {
+            holdSpeed = abs(at.velocity)
+            var last = withFrameNanos { it }
+            while (true) {
+                val now = withFrameNanos { it }
+                val seconds = (now - last) / 1e9f
+                last = now
+                holdSpeed = (holdSpeed + HOLD_RATE / HOLD_RAMP_S * seconds).coerceAtMost(HOLD_RATE)
+                at.snapTo(at.value + by * holdSpeed * seconds)
+                // The record coming to the front, so its covers are asked for ahead as on a press.
+                val next = if (by > 0) ceil(at.value).toInt() else floor(at.value).toInt()
+                if (next != going) {
+                    going = next
+                    state.front = next
+                }
+            }
+        }
+    }
+    // Let go: on to the next record past a short run-out, slowing evenly from the speed it was turning at.
+    fun release(by: Int) {
+        if (holding == null) return
+        stopHolding()
+        val speed = holdSpeed.coerceAtLeast(1f)
+        val from = at.value
+        going = if (by > 0) ceil(from + speed * RUN_OUT_S).toInt() else floor(from - speed * RUN_OUT_S).toInt()
+        state.front = going
+        // An ease that slows evenly starts at twice its mean speed, so it takes twice the distance over the speed.
+        val ms = (2000f * abs(going - from) / speed).roundToInt().coerceAtLeast(1)
+        scope.launch { at.animateTo(going.toFloat(), tween(ms, easing = EvenSlowing)) }
     }
     fun albumAt(slot: Int): CloudAlbum = albums[((slot % count) + count) % count]
 
@@ -127,6 +175,7 @@ fun AlbumCarousel(
     var wheelGoing by remember(letters) { mutableIntStateOf(0) }
 
     fun openLetters() {
+        stopHolding()
         val front = albumAt(going)
         val at = letters.indexOfFirst { it.letter == initialOf(front, order) }.coerceAtLeast(0)
         wheelGoing = at
@@ -190,8 +239,15 @@ fun AlbumCarousel(
                     return@onPreviewKeyEvent true
                 }
                 when (key.keyCode) {
-                    KeyEvent.KEYCODE_DPAD_LEFT -> { if (key.action == KeyEvent.ACTION_DOWN) step(-1); true }
-                    KeyEvent.KEYCODE_DPAD_RIGHT -> { if (key.action == KeyEvent.ACTION_DOWN) step(1); true }
+                    KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        val by = if (key.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) -1 else 1
+                        when {
+                            key.action == KeyEvent.ACTION_DOWN && key.repeatCount == 0 -> step(by)
+                            key.action == KeyEvent.ACTION_DOWN -> hold(by)
+                            key.action == KeyEvent.ACTION_UP -> release(by)
+                        }
+                        true
+                    }
                     KeyEvent.KEYCODE_DPAD_UP -> if (letters.isEmpty()) false else { if (key.action == KeyEvent.ACTION_DOWN && key.repeatCount == 0) openLetters(); true }
                     // Down opens the record's menu, as a held OK does on a row: there is nothing under the covers to go to.
                     KeyEvent.KEYCODE_DPAD_DOWN -> { if (key.action == KeyEvent.ACTION_DOWN && key.repeatCount == 0) onMenu(albumAt(going)); true }
@@ -493,6 +549,16 @@ class CarouselState {
 
 /** How long one step of the carousel takes: a slow tick. */
 private const val TICK_MS = 520
+
+/** How fast a held key turns the carousel, in records a second, and how long it takes to reach that from standing. */
+private const val HOLD_RATE = 7f
+private const val HOLD_RAMP_S = 0.35f
+
+/** How far past where it stands a let-go turn runs on, in seconds at the speed it had, before the record it rests on. */
+private const val RUN_OUT_S = 0.12f
+
+/** Slows evenly to a stop: the curve's slope starts at 2 and falls in a straight line to 0. */
+private val EvenSlowing = Easing { t -> 1f - (1f - t) * (1f - t) }
 
 /** How many characters of a name are folded to find its letter: a letter and the marks that may follow it. */
 private const val INITIAL_CHARS = 4
