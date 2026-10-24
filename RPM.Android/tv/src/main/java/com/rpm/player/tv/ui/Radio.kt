@@ -220,9 +220,12 @@ fun RadioScreen(
         onDispose { front.inFront = true }
     }
     // The tuner stands in the collection's place, and the mini player goes with the collection.
-    DisposableEffect(mini, tunerUp) {
-        if (tunerUp) mini.cover()
-        onDispose { if (tunerUp) mini.uncover() }
+    // Read once per opening: the dispose must uncover what this effect covered. Asking the state again there read it
+    // already false, so the tuner's cover was never taken off, and the radio's home had no mini player after it.
+    val tunerCovers = tunerUp
+    DisposableEffect(mini, tunerCovers) {
+        if (tunerCovers) mini.cover()
+        onDispose { if (tunerCovers) mini.uncover() }
     }
     val locale = Locale.getDefault()
     val list = androidx.compose.foundation.lazy.rememberLazyListState()

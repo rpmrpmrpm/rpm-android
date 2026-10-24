@@ -63,6 +63,8 @@ class DialFace(
     val status: String,
     val badge: StationLogo?,
     val reconnecting: Boolean,
+    /** The cover of the song the station is playing, drawn over the badge once it is in, as on the mini player. */
+    val cover: String? = null,
 )
 
 /**
@@ -208,6 +210,7 @@ fun RadioDial(face: DialFace, images: ImageLoader, modifier: Modifier) {
                     },
                     modifier = Modifier.fillMaxSize(),
                 )
+                SongCoverOver(face.cover, images, Modifier.fillMaxSize())
             }
         }
     }

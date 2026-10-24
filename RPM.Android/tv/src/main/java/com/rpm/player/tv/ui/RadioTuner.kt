@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -40,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -61,6 +63,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -70,6 +73,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.min
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.ImageLoader
 import com.rpm.player.core.R
@@ -88,6 +93,7 @@ import com.rpm.player.core.radio.TunerList
 import com.rpm.player.core.radio.countryName
 import java.util.Locale
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * The tuner (PegasusChrome.RadioTuner.cs): the dial across the top, and under it the station list with
@@ -99,6 +105,9 @@ import kotlinx.coroutines.delay
  * here, or the first listed. Down from the dial goes to the first station; Right out of the list goes to
  * the player's key. OK on a station tunes it, or stops it when it is the one playing; the heart keeps it.
  * Back closes the tuner. With [genresFirst] (the wheel's Music) the genre menu opens over the filter key.
+ * Down from the tools goes to the first station, the list scrolled back to its top when it has to be. The search
+ * field is a key until OK is pressed on it; only then does the keyboard come up. While the favourites key is on, the
+ * country key is dimmed and takes no focus: the saved stations are listed whatever their country.
  *
  * [playing] is the station playing now, or reconnecting; a station stopped or failed is not playing.
  * The page draws no shade of its own: it stands where the collection stood, on the same shade.
@@ -139,6 +148,8 @@ fun RadioTuner(
     val savedKey = remember { FocusRequester() }
     val context = LocalContext.current
     val labels = tunerLabels()
+    val rows = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         tuner.ensureLoaded()
@@ -185,6 +196,18 @@ fun RadioTuner(
         if (at != tunedIndex) tune(station, announce = true)
     }
 
+    // Down from the dial or the tools: the first station. A focus requester on a row the list has scrolled out of
+    // composition finds nothing to focus, and Down did nothing; so the list goes back to its top first.
+    fun toList() {
+        if (stations.isEmpty()) return
+        if (rows.firstVisibleItemIndex == 0 && runCatching { firstRow.requestFocus() }.getOrDefault(false)) return
+        scope.launch {
+            rows.scrollToItem(0)
+            withFrameNanos { }
+            runCatching { firstRow.requestFocus() }
+        }
+    }
+
     fun genreMenu(all: Boolean): List<MenuLine> =
         listOf(MenuTick(labels.allGenres, settings.sieve.genre == null) { tuner.update { it.copy(sieve = it.sieve.copy(genre = null)) } }) +
             RadioGenres.all.filter { all || it !in RadioGenres.notMusic }.map { genre ->
@@ -217,12 +240,13 @@ fun RadioTuner(
                     .height(dialHeight)
                     .deskFocus(DIAL_U * 10f)
                     .focusRequester(dial)
-                    .focusProperties {
-                        down = if (stations.isNotEmpty()) firstRow else FocusRequester.Default
-                        up = FocusRequester.Cancel
-                    }
+                    .focusProperties { up = FocusRequester.Cancel }
                     .onPreviewKeyEvent { event ->
                         when (event.key) {
+                            Key.DirectionDown -> {
+                                if (event.type == KeyEventType.KeyDown) toList()
+                                true
+                            }
                             Key.DirectionLeft, Key.DirectionRight -> {
                                 if (event.type == KeyEventType.KeyDown) step(if (event.key == Key.DirectionRight) 1 else -1)
                                 if (event.type == KeyEventType.KeyUp) commit()
@@ -248,6 +272,7 @@ fun RadioTuner(
                         status = statusOf(playing),
                         badge = playing?.logo,
                         reconnecting = playing?.reconnecting == true,
+                        cover = rememberSongCover(playing),
                     ),
                     images = images,
                     modifier = Modifier.fillMaxSize(),
@@ -260,6 +285,7 @@ fun RadioTuner(
                         text = settings.text,
                         onText = { typed -> tuner.update { it.copy(text = typed) } },
                         countryLabel = settings.country?.let { code -> countryName(code, Locale.getDefault()) ?: code } ?: labels.allCountries,
+                        countryOn = !settings.favoritesOnly,
                         onCountry = {
                             menu.open(
                                 "",
@@ -299,14 +325,15 @@ fun RadioTuner(
                         },
                         saved = settings.favoritesOnly,
                         onSaved = { tuner.update { it.copy(favoritesOnly = !it.favoritesOnly) } },
-                        keys = ToolKeys(countryKey, sortKey, filterKey, savedKey, dial, firstRow.takeIf { stations.isNotEmpty() } ?: FocusRequester.Default),
+                        keys = ToolKeys(countryKey, sortKey, filterKey, savedKey, dial),
+                        onDown = ::toList,
                         r = r,
                     )
                     Box(Modifier.fillMaxSize()) {
                         val air = with(LocalDensity.current) { 24.px.toPx() }
                         CompositionLocalProvider(LocalBringIntoViewSpec provides remember(air) { CentreTunerRows }) {
                             LazyColumn(
-                                state = rememberLazyListState(),
+                                state = rows,
                                 verticalArrangement = Arrangement.spacedBy(4.s),
                                 contentPadding = PaddingValues(bottom = 20.px),
                                 modifier = Modifier.fillMaxSize(),
@@ -420,18 +447,23 @@ private class ToolKeys(
     val filter: FocusRequester,
     val saved: FocusRequester,
     val dial: FocusRequester,
-    val firstRow: FocusRequester,
 )
 
 /**
  * The tools over the list, `30·r` high, 8·s apart: the search field, the country, the order, the filters
  * and the saved stations; a cyan dot on the order and the filter keys while one is in force.
+ *
+ * The search field is a key drawn as the field until OK: only then is it a text field, with the keyboard up.
+ * Focused as a field, it put the keyboard up as soon as the remote passed over it, and the keyboard took Down.
+ * When the keyboard goes (its search key, or Back, which the keyboard takes itself) the focus is back on the key.
+ * Down from any of the tools calls [onDown]. With [countryOn] false the country key is dimmed and passed over.
  */
 @Composable
 private fun Tools(
     text: String,
     onText: (String) -> Unit,
     countryLabel: String,
+    countryOn: Boolean,
     onCountry: () -> Unit,
     ordered: Boolean,
     onSort: () -> Unit,
@@ -440,39 +472,120 @@ private fun Tools(
     saved: Boolean,
     onSaved: () -> Unit,
     keys: ToolKeys,
+    onDown: () -> Unit,
     r: Float,
 ) {
     val height = (30f * r).s
-    val nav = Modifier.focusProperties {
-        up = keys.dial
-        down = keys.firstRow
+    val nav = Modifier.focusProperties { up = keys.dial }
+    val searchKey = remember { FocusRequester() }
+    val field = remember { FocusRequester() }
+    var editing by remember { mutableStateOf(false) }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val view = LocalKeyboardView.current
+    val scope = rememberCoroutineScope()
+
+    // Back to the key, asked again a frame later: a request made as the keyboard closes is spent waking the
+    // view's focus, which the keyboard held (as the album wall's focusTwice).
+    fun stopEditing() {
+        if (!editing) return
+        editing = false
+        runCatching { searchKey.requestFocus() }
+        scope.launch {
+            withFrameNanos { }
+            runCatching { searchKey.requestFocus() }
+        }
     }
-    Row(Modifier.fillMaxWidth().height(height).padding(bottom = 0.px), horizontalArrangement = Arrangement.spacedBy(8.s), verticalAlignment = Alignment.CenterVertically) {
+
+    // The keyboard going away, read off the window's insets: the keyboard takes the remote's Back itself.
+    LaunchedEffect(editing) {
+        if (!editing) return@LaunchedEffect
+        var seen = false
+        while (true) {
+            val up = ViewCompat.getRootWindowInsets(view)?.isVisible(WindowInsetsCompat.Type.ime()) == true
+            if (seen && !up) stopEditing()
+            seen = up
+            delay(KEYBOARD_POLL_MS)
+        }
+    }
+
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(height)
+            .onPreviewKeyEvent { event ->
+                if (event.key != Key.DirectionDown) return@onPreviewKeyEvent false
+                if (event.type == KeyEventType.KeyDown) {
+                    if (editing) {
+                        keyboard?.hide()
+                        editing = false
+                    }
+                    onDown()
+                }
+                true
+            },
+        horizontalArrangement = Arrangement.spacedBy(8.s),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         var focused by remember { mutableStateOf(false) }
         val shape = RoundedCornerShape(6.s)
-        BasicTextField(
-            value = text,
-            onValueChange = onText,
-            singleLine = true,
-            textStyle = ui((13f * r).ts).copy(color = Ink.Card),
-            cursorBrush = SolidColor(Color.White),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            modifier = nav.weight(1f).fillMaxHeight().deskFocus(6.s).onFocusChanged { focused = it.isFocused },
-            decorationBox = { inner ->
-                Row(
-                    Modifier.fillMaxSize().background(Color(0x1FFFFFFF), shape).border(1.px, Color(0x26FFFFFF), shape).padding(horizontal = 10.s),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Glyph(Fa.SEARCH, (12f * r).ts, Ink.Dim)
-                    Spacer(Modifier.width(8.s))
-                    Box(Modifier.weight(1f)) {
-                        if (text.isEmpty()) Text(stringResource(R.string.Radio_SearchPlaceholder), style = ui((13f * r).ts), color = if (focused) Color(0xA6FFFFFF) else Color(0x8CFFFFFF), maxLines = 1)
-                        inner()
-                    }
+        val fieldModifier = nav.weight(1f).fillMaxHeight()
+        val look: @Composable (@Composable () -> Unit) -> Unit = { inner ->
+            Row(
+                Modifier.fillMaxSize().background(Color(0x1FFFFFFF), shape).border(1.px, Color(0x26FFFFFF), shape).padding(horizontal = 10.s),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Glyph(Fa.SEARCH, (12f * r).ts, Ink.Dim)
+                Spacer(Modifier.width(8.s))
+                Box(Modifier.weight(1f)) {
+                    if (text.isEmpty()) Text(stringResource(R.string.Radio_SearchPlaceholder), style = ui((13f * r).ts), color = if (focused) Color(0xA6FFFFFF) else Color(0x8CFFFFFF), maxLines = 1)
+                    inner()
                 }
-            },
-        )
-        ToolKey(onCountry, nav.focusRequester(keys.country).width((132f * r).s).fillMaxHeight(), dot = false, r = r) {
+            }
+        }
+        if (editing) {
+            // Ended only after the field has held the focus: its first focus report says unfocused.
+            var held by remember { mutableStateOf(false) }
+            BasicTextField(
+                value = text,
+                onValueChange = onText,
+                singleLine = true,
+                textStyle = ui((13f * r).ts).copy(color = Ink.Card),
+                cursorBrush = SolidColor(Color.White),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = {
+                    keyboard?.hide()
+                    stopEditing()
+                }),
+                modifier = fieldModifier
+                    .focusRequester(field)
+                    .deskFocus(6.s)
+                    .onFocusChanged {
+                        focused = it.isFocused
+                        if (it.isFocused) held = true else if (held) editing = false
+                    },
+                decorationBox = { inner -> look(inner) },
+            )
+            LaunchedEffect(Unit) {
+                runCatching { field.requestFocus() }
+                withFrameNanos { }
+                keyboard?.show()
+            }
+        } else {
+            DeskButton(
+                onClick = { editing = true },
+                corner = 6.s,
+                contentAlignment = Alignment.CenterStart,
+                modifier = fieldModifier.focusRequester(searchKey).onFocusChanged { focused = it.isFocused },
+            ) {
+                look { Text(text, style = ui((13f * r).ts), color = Ink.Card, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            }
+        }
+        ToolKey(
+            onCountry,
+            nav.focusRequester(keys.country).focusProperties { canFocus = countryOn }.graphicsLayer { alpha = if (countryOn) 1f else 0.35f }.width((132f * r).s).fillMaxHeight(),
+            dot = false,
+            r = r,
+        ) {
             Row(Modifier.padding(horizontal = 10.s), verticalAlignment = Alignment.CenterVertically) {
                 Text(countryLabel, style = ui((12f * r).ts), color = Ink.Words, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 Glyph(Fa.CHEVRON_DOWN, (8f * r).ts, Ink.Words.copy(alpha = 0.7f))
@@ -488,6 +601,8 @@ private fun Tools(
 }
 
 private const val FILTER = ''
+
+private const val KEYBOARD_POLL_MS = 150L
 
 /** A key of the tools row (PegasusMenuButton: `#14FFFFFF`, a 1 px `#B3FFFFFF` edge, corner 6·s). */
 @Composable
