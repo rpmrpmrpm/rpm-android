@@ -535,13 +535,14 @@ fun RpmApp(
                                         casting = services.casting,
                                         // The heart, for a track of the person's own collection while it is the one
                                         // open: its mark is in that collection, and it is set the way a track's menu
-                                        // sets it (OwnEdits.mark), with the same notice.
+                                        // sets it (OwnEdits.mark), with the same notice. None for a track the open
+                                        // collection does not hold (it was left on another shelf, or is gone).
                                         favourite = (libraryState as? LibraryState.Ready)
                                             ?.takeIf { shelfOnScreen == Shelf.Own }
                                             ?.let { ready ->
                                                 TrackRef.parse(nowPlaying?.mediaId.orEmpty())
                                                     ?.takeIf { it.shelf == Shelf.Own }
-                                                    ?.let { ref -> ready.collection.tracksById[ref.rpmId]?.tags?.favorite == true }
+                                                    ?.let { ref -> ready.collection.tracksById[ref.rpmId]?.let { it.tags?.favorite == true } }
                                             },
                                         onFavourite = { favorite ->
                                             val ref = TrackRef.parse(nowPlaying?.mediaId.orEmpty())
