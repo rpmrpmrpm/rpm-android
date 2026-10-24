@@ -58,9 +58,11 @@ class ClassicalMarks(
         return AlbumArtKey.spellings(RecordPicture.COVER, albumArtist, artist, album).any { it in keys }
     }
 
-    /** Whether [album], on [shelf], is marked classical, under every spelling its tracks give its cover key. The
-     * record page asks this to list a classical record as works. */
+    /** Whether [album], on [shelf], is marked classical, under every spelling its tracks give its cover key, or is
+     * filed as classical music by its genre ([AlbumLines.classicalByGenre]). The record page asks this to list a
+     * classical record as works; levelling asks the other overload, which is the mark alone. */
     fun isClassical(shelf: Shelf, album: CloudAlbum): Boolean {
+        if (AlbumLines.classicalByGenre(album.tracks)) return true
         val keys = held.byShelf[shelf] ?: return false
         if (keys.isEmpty()) return false
         return AlbumArtKey.spellings(RecordPicture.COVER, album.tracks).any { it in keys }

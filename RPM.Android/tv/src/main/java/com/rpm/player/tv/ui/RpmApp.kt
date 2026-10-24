@@ -958,7 +958,10 @@ private fun Screens(
                         // A page whose album or list the collection no longer holds (a new load replaced it) shows
                         // nothing; Back leaves it.
                         is Route.Record -> collection.album(route.albumKey)?.let {
-                            TrackPage(PageOf.OfAlbum(it), collection, services.images, services.dossiers, services.albumFavourites, services.albumRatings, trackActions)
+                            TrackPage(
+                                PageOf.OfAlbum(it), collection, services.images, services.dossiers, services.albumFavourites, services.albumRatings, trackActions,
+                                classical = services.classicalMarks.isClassical(collection.shelf, it),
+                            )
                         }
                         is Route.OfList -> collection.list(route.listId)?.let {
                             TrackPage(PageOf.OfList(it), collection, services.images, services.dossiers, services.albumFavourites, services.albumRatings, trackActions)

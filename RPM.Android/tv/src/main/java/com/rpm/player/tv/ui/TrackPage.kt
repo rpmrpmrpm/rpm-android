@@ -76,8 +76,11 @@ import androidx.compose.ui.unit.min
 import coil3.ImageLoader
 import com.rpm.player.core.R
 import com.rpm.player.core.cloud.CloudTrack
+import com.rpm.player.core.library.AlbumLine
+import com.rpm.player.core.library.AlbumLines
 import com.rpm.player.core.library.CloudAlbum
 import com.rpm.player.core.library.Collection
+import com.rpm.player.core.library.SongLevel
 import com.rpm.player.core.library.TrackList
 import com.rpm.player.core.room.VinylHue
 
@@ -123,9 +126,14 @@ class TrackActions(
  * its menu (Play, Play next, Add to Now playing). Left from any track returns to the Play key. An album's
  * page opens with the focus on its first track, a list's on its Play key. There is no back key on the page: the
  * remote's Back leaves it.
+ *
+ * A record its owner marked [classical] is listed as works, as on the desktop, the iPhone and the phone ([AlbumLines]):
+ * a work of more than one track has a heading (its name, the composer, its length) over its movements, which are set
+ * in and named by the movement alone; a piece that is a work on its own is set in the weight of a heading, with its
+ * composer under it. The heading is no stop for the remote. The mark decides, never the tags.
  */
 @Composable
-fun TrackPage(page: PageOf, collection: Collection, images: ImageLoader, dossiers: Dossiers, favourites: AlbumFavourites, ratings: AlbumRatings, actions: TrackActions) {
+fun TrackPage(page: PageOf, collection: Collection, images: ImageLoader, dossiers: Dossiers, favourites: AlbumFavourites, ratings: AlbumRatings, actions: TrackActions, classical: Boolean = false) {
     val queue: List<Queued> = remember(page, collection) {
         when (page) {
             is PageOf.OfAlbum -> queueOf(collection.shelf, page.album, collection.cover(page.album), collection.disc(page.album))
@@ -151,6 +159,27 @@ fun TrackPage(page: PageOf, collection: Collection, images: ImageLoader, dossier
     val rated by ratings.changed.collectAsState()
     val album = (page as? PageOf.OfAlbum)?.album
     val stars = remember(album, rated) { album?.let(ratings::of) ?: 0 }
+    // The record's lines, by the index of the track each stands on: its song line, and the heading of a work that
+    // opens there. The list keeps one item per track, so the focus and the rows' requesters are as on any record.
+    val classicalLines = remember(album, classical) {
+        val songs = HashMap<Int, AlbumLine.Song>()
+        val works = HashMap<Int, AlbumLine.Work>()
+        if (album != null && classical) {
+            var work: AlbumLine.Work? = null
+            for (line in AlbumLines.of(album.tracks, classical = true)) {
+                when (line) {
+                    is AlbumLine.Work -> work = line
+                    is AlbumLine.Song -> {
+                        songs[line.index] = line
+                        work?.let { works[line.index] = it }
+                        work = null
+                    }
+                    is AlbumLine.Disc -> Unit
+                }
+            }
+        }
+        songs to works
+    }
     // One requester per track, so the move into the list can name a row.
     val rows = remember(queue) { List(queue.size) { FocusRequester() } }
     // The track that last had the focus, where Right from the keys goes back to. Track 1 until one has.
@@ -316,11 +345,16 @@ fun TrackPage(page: PageOf, collection: Collection, images: ImageLoader, dossier
                     if (discs > 1 && (i == 0 || disc(queue[i - 1].track) != disc(q.track))) {
                         DiscHeading(disc(q.track))
                     }
+                    classicalLines.second[i]?.let { WorkHeading(it) }
+                    val line = classicalLines.first[i]
                     val self = rows[i]
                     TrackRow(
                         number = if (page is PageOf.OfAlbum) q.track.tags?.trackNumber?.takeIf { it > 0 } ?: (i + 1) else i + 1,
                         q = q,
                         inList = page is PageOf.OfList,
+                        title = line?.title ?: q.track.title.orEmpty(),
+                        subtitle = line?.subtitle,
+                        level = line?.level ?: SongLevel.Plain,
                         onClick = { actions.play(queue, i) },
                         onMenu = {
                             menu.open(
@@ -628,16 +662,52 @@ private fun DiscHeading(disc: Int) {
 }
 
 /**
+ * The line that opens a work on a classical record: its name ([PAGE_TEXT] SemiBold, up to two lines), the composer
+ * under it when every movement names the same one (16·s at 0.5), and the whole work's length on the right, lined up
+ * with the tracks' titles and lengths. Nothing plays from it, and the remote passes over it.
+ */
+@Composable
+private fun WorkHeading(work: AlbumLine.Work) {
+    Row(
+        Modifier.fillMaxWidth().padding(start = 12.s + 38.s + 12.s, top = 14.s, end = 12.s, bottom = 2.s),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.s)) {
+            Text(work.title, style = ui(PAGE_TEXT, FontWeight.SemiBold), color = Ink.Words, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            work.composer?.let { Text(it, style = ui(16.ts), color = Color.White.copy(alpha = 0.5f), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        }
+        if (work.seconds > 0) {
+            Spacer(Modifier.width(12.s))
+            Text(clockOf((work.seconds * 1000).toLong()), style = ui(PAGE_TEXT), color = Color.White.copy(alpha = 0.5f))
+        }
+    }
+}
+
+/**
  * One track (Library.cs, RecordTrack): the number (at 0.45, right-aligned in 38·s), the title with the E
  * after it, and the length (at 0.5), all [PAGE_TEXT], 12·s apart, in a row padded 12·s by 10·s with
  * corner 6·s. On a list page the number is the position and a second line says the artist and the album
- * (16·s at 0.5). The desktop has 13, 15 and 12.5.
+ * (16·s at 0.5). The desktop has 13, 15 and 12.5. On a classical record a movement is set in by
+ * [MOVEMENT_INDENT] and says the movement alone; a piece is SemiBold, with its composer under it ([subtitle]).
  */
 /** How far a track's title stands in from its row's left edge: the row's padding, the number's column and the gap. */
 private val TRACK_TITLE_INDENT = 12.s + 38.s + 12.s
 
+/** How far a movement stands in under its work's heading. */
+private val MOVEMENT_INDENT = 28.s
+
 @Composable
-private fun TrackRow(number: Int, q: Queued, inList: Boolean, onClick: () -> Unit, onMenu: () -> Unit, modifier: Modifier) {
+private fun TrackRow(
+    number: Int,
+    q: Queued,
+    inList: Boolean,
+    title: String,
+    subtitle: String?,
+    level: SongLevel,
+    onClick: () -> Unit,
+    onMenu: () -> Unit,
+    modifier: Modifier,
+) {
     DeskButton(
         onClick = onClick,
         corner = 6.s,
@@ -645,15 +715,26 @@ private fun TrackRow(number: Int, q: Queued, inList: Boolean, onClick: () -> Uni
         modifier = modifier.fillMaxWidth().heldOkMenu(onMenu).padding(horizontal = 12.s, vertical = 10.s),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            if (level == SongLevel.Movement) Spacer(Modifier.width(MOVEMENT_INDENT))
             Text(number.toString(), style = ui(PAGE_TEXT), color = Color.White.copy(alpha = 0.45f), textAlign = TextAlign.End, modifier = Modifier.width(38.s))
             Spacer(Modifier.width(12.s))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.s)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(q.track.title.orEmpty(), style = ui(PAGE_TEXT), color = Ink.Words, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    Text(
+                        title,
+                        style = ui(PAGE_TEXT, if (level == SongLevel.Piece) FontWeight.SemiBold else FontWeight.Normal),
+                        color = Ink.Words,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
                     if (q.track.tags?.advisory == EXPLICIT) {
                         Spacer(Modifier.width(6.s))
                         ExplicitBadge(17.s)
                     }
+                }
+                if (subtitle != null) {
+                    Text(subtitle, style = ui(16.ts), color = Color.White.copy(alpha = 0.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 if (inList) {
                     // Artist and album as two texts, so no language is forced into one word order.

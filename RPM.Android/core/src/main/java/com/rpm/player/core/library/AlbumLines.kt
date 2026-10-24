@@ -1,4 +1,4 @@
-package com.rpm.player.phone.library
+package com.rpm.player.core.library
 
 import com.rpm.player.core.cloud.CloudTrack
 
@@ -43,9 +43,11 @@ sealed interface AlbumLine {
 
 /**
  * A record's lines in reading order, as on iPhone (`AlbumLines.build`): disc by disc, with a heading in front of each
- * disc of a set. A record its owner marked [classical] is listed as works with their movements under them, and the
- * pieces that are a work on their own at the level of the headings. **The mark decides, never the tags**: MusicBrainz
- * names a work for most pop songs too.
+ * disc of a set. A [classical] record is listed as works with their movements under them, and the pieces that are a
+ * work on their own at the level of the headings. **The work tags alone never decide**: MusicBrainz names a work for
+ * pop songs too (8 pop records of 1,691 in one collection had runs of a work, Back to Black and Off the Wall among
+ * them). What decides is the owner's mark, or a genre that files the record as classical music ([classicalByGenre]):
+ * in the same collection one record was marked, and 44 filed under Classical or Opera had works on them.
  */
 object AlbumLines {
     fun of(tracks: List<CloudTrack>, classical: Boolean): List<AlbumLine> {
@@ -99,14 +101,33 @@ object AlbumLines {
 
     /**
      * What a movement's own line says under a work that has said the rest: the movement's tag where the file has one,
-     * and otherwise what the title has left once the work in front of it is taken off. Null when neither says.
+     * and otherwise what the title has left once the work in front of it is taken off. A tag that repeats the work in
+     * front of the movement is cut the same way: MusicBrainz Picard writes "Der Rosenkavalier, op. 59: Akt I.
+     * Einleitung" under the work "Der Rosenkavalier, op. 59: Akt I" (403 of 948 such tags in one collection), which
+     * left every movement saying the whole title again. Null when neither says.
      */
     fun movement(track: CloudTrack, work: String): String? {
-        track.tags?.movementName?.takeIf { it.isNotBlank() }?.let { return it }
+        track.tags?.movementName?.takeIf { it.isNotBlank() }?.let { return afterWork(it, work) ?: it }
         val title = track.title ?: return null
-        if (!title.startsWith(work, ignoreCase = true)) return null
-        val rest = title.substring(work.length).dropWhile { it in " :-–—" }
+        return afterWork(title, work)
+    }
+
+    /** What [text] has left once [work] in front of it and the marks that part them are taken off; null when it
+     * does not start with the work or nothing is left. */
+    private fun afterWork(text: String, work: String): String? {
+        if (!text.startsWith(work, ignoreCase = true)) return null
+        val rest = text.substring(work.length).dropWhile { it in " .,:;-–—" }
         return rest.ifEmpty { null }
+    }
+
+    /** The genres that file a record as classical music, by the shelf [Genres.match] puts the tag on. */
+    private val CLASSICAL_SHELVES = setOf("Classical", "Opera")
+
+    /** Whether most of [tracks] are filed under classical music or opera by their genre. */
+    fun classicalByGenre(tracks: List<CloudTrack>): Boolean {
+        if (tracks.isEmpty()) return false
+        val filed = tracks.count { Genres.match(it.tags?.genre) in CLASSICAL_SHELVES }
+        return filed * 2 > tracks.size
     }
 
     private fun composer(track: CloudTrack): String? = track.tags?.composer?.takeIf { it.isNotBlank() }
