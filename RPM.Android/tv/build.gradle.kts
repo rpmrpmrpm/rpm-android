@@ -7,20 +7,44 @@ android {
     namespace = "com.rpm.player.tv"
     // Compose 1.12 (BOM 2026.09.00) cannot be compiled against an SDK older than 37.
     compileSdk = 37
+    // The NDK that strips the FFmpeg library. Keep it equal to ndkVersion in ffmpeg/build.gradle.kts:
+    // with an NDK that is not installed, the library ships with its symbols.
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
         applicationId = "com.rpm.player.tv"
         // Android 9. Fire OS 7, which most Fire TV sticks run, is API 28, and Google's TV
         // checklist asks for 31 or lower.
         minSdk = 28
-        // Google Play requires 34 or higher for TV apps.
-        targetSdk = 35
-        versionCode = 1
+        // Google Play refuses a bundle for this app that targets lower than 36. The Back key is handled
+        // only through BackHandler, which works with the predictive back that API 36 turns on.
+        targetSdk = 36
+        versionCode = 2
         versionName = "0.1.0"
+    }
+
+    // Bundles for Google Play are signed with the upload key. scripts/bundle-play.sh sets these variables.
+    // Without them the release build is unsigned, which is enough to build from source.
+    // The same block is in phone/build.gradle.kts.
+    val uploadKeystore = providers.environmentVariable("RPM_UPLOAD_KEYSTORE").orNull
+    signingConfigs {
+        if (uploadKeystore != null) {
+            create("upload") {
+                storeFile = file(uploadKeystore)
+                storePassword = providers.environmentVariable("RPM_UPLOAD_PASSWORD").get()
+                keyAlias = providers.environmentVariable("RPM_UPLOAD_KEY_ALIAS").get()
+                // A PKCS12 keystore has one password for the store and the key.
+                keyPassword = storePassword
+            }
+        }
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("upload")
+            // The bundle carries the native symbol table, so Google Play can show native crashes with
+            // function names. Devices get the stripped library.
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
             isMinifyEnabled = false
         }
         // The release build signed with the debug key, for test boxes. It installs over the debug build

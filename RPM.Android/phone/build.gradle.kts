@@ -8,6 +8,9 @@ plugins {
 android {
     namespace = "com.rpm.player.phone"
     compileSdk = 37
+    // The NDK that strips the FFmpeg library. Keep it equal to ndkVersion in ffmpeg/build.gradle.kts:
+    // with an NDK that is not installed, the library ships with its symbols.
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
         // Same bundle id as the iPhone app: the same app on the other kind of phone.
@@ -20,8 +23,28 @@ android {
         versionName = "0.1.0"
     }
 
+    // Bundles for Google Play are signed with the upload key. scripts/bundle-play.sh sets these variables.
+    // Without them the release build is unsigned, which is enough to build from source.
+    // The same block is in tv/build.gradle.kts.
+    val uploadKeystore = providers.environmentVariable("RPM_UPLOAD_KEYSTORE").orNull
+    signingConfigs {
+        if (uploadKeystore != null) {
+            create("upload") {
+                storeFile = file(uploadKeystore)
+                storePassword = providers.environmentVariable("RPM_UPLOAD_PASSWORD").get()
+                keyAlias = providers.environmentVariable("RPM_UPLOAD_KEY_ALIAS").get()
+                // A PKCS12 keystore has one password for the store and the key.
+                keyPassword = storePassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("upload")
+            // The bundle carries the native symbol table, so Google Play can show native crashes with
+            // function names. Devices get the stripped library.
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
             // R8 shrinks and optimises the code. Compose leans on it: a build without it carries the
             // composition tracing and the unoptimised lambdas, and scrolls at half the frame rate on the Titan.
             isMinifyEnabled = true
