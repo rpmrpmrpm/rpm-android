@@ -304,18 +304,26 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
     fun Plan(quota: CloudQuota) {
         Card(Glyph.heart, stringResource(R.string.Rpm_Profile_Plan)) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                // A supporter gets the gold badge, which holds the word "Supporter". The free plan is named in cyan.
-                if (quota.unlimited) {
+                // A supporter gets the gold badge, which holds the word "Supporter". The free plan and a closed beta
+                // tester are named in cyan: a tester has the supporter features but does not pay, so has no badge.
+                if (quota.wearsMark) {
                     SupporterMark(Modifier.padding(vertical = 2.dp))
                 } else {
-                    BasicText(stringResource(R.string.Rpm_Profile_PlanFree), style = display(17f).copy(color = Ink.cyan))
+                    BasicText(
+                        stringResource(if (quota.tester) R.string.Rpm_Profile_PlanTester else R.string.Rpm_Profile_PlanFree),
+                        style = display(17f).copy(color = Ink.cyan),
+                    )
                 }
                 BasicText(
-                    stringResource(if (quota.unlimited) R.string.Rpm_Profile_PlanSupporterDetail else R.string.Rpm_Profile_PlanFreeDetail),
+                    stringResource(
+                        planString(quota, R.string.Rpm_Profile_PlanSupporterDetail, R.string.Rpm_Profile_PlanTesterDetail, R.string.Rpm_Profile_PlanFreeDetail),
+                    ),
                     style = display(12f).copy(color = Ink.white(0x88)),
                 )
                 BasicText(
-                    stringResource(if (quota.unlimited) R.string.Rpm_Profile_PlanSupporterThanks else R.string.Rpm_Profile_PlanFreeAppeal),
+                    stringResource(
+                        planString(quota, R.string.Rpm_Profile_PlanSupporterThanks, R.string.Rpm_Profile_PlanTesterThanks, R.string.Rpm_Profile_PlanFreeAppeal),
+                    ),
                     Modifier.padding(top = 6.dp),
                     style = display(12f).copy(color = Ink.white(0xB3)),
                 )
@@ -688,3 +696,10 @@ private fun Modifier.dissolvesUnder(top: Dp, depth: Dp, scrolled: () -> Float): 
             blendMode = BlendMode.DstIn,
         )
     }
+
+/** The string for this account's standing: a closed beta tester, a paying supporter, or free. */
+internal fun planString(quota: CloudQuota, supporter: Int, tester: Int, free: Int): Int = when {
+    quota.tester -> tester
+    quota.supporter -> supporter
+    else -> free
+}

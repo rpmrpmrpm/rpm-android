@@ -2057,6 +2057,15 @@
 
     <!-- Settings, Profile page: second paragraph under 'Supporter', thanking the account for supporting rpm. -->
     <string name="Rpm_Profile_PlanSupporterThanks">Danke, dass du rpm unterstützt. Du hilfst, rpm am Laufen zu halten, und finanzierst die Weiterentwicklung. Deine Großzügigkeit bewegt uns.</string>
+
+    <!-- Settings, Profile page: the standing of an account marked as a closed beta tester. -->
+    <string name="Rpm_Profile_PlanTester">Tester der geschlossenen Beta</string>
+
+    <!-- Settings, Profile page: what a closed beta tester gets. -->
+    <string name="Rpm_Profile_PlanTesterDetail">Unterstützer-Funktionen und 100 GB Cloud-Speicher.</string>
+
+    <!-- Settings, Profile page: second paragraph under 'Closed beta tester', thanking the account for testing. -->
+    <string name="Rpm_Profile_PlanTesterThanks">Danke, dass du rpm testest. Deine Meldungen helfen uns, Fehler vor der öffentlichen Beta zu beheben.</string>
     <string name="Rpm_Profile_Playback">Wiedergabe</string>
 
     <!-- Settings, Profile page: what the quality choices do. -->
@@ -3229,6 +3238,9 @@
 
     <!-- Cloud settings: a supporter whose support has an end date. -->
     <string name="Cloud_SupporterYesUntil">Du bist Unterstützer bis zum %1$s. Dein Cloud-Speicher ist unbegrenzt.</string>
+
+    <!-- Cloud settings: the standing of an account marked as a closed beta tester. -->
+    <string name="Cloud_SupporterTester">Du testest die geschlossene Beta. Du hast die Unterstützer-Funktionen und 100 GB Cloud-Speicher.</string>
 
     <!-- Cloud settings: the server did not answer, which is not the same as 'not a supporter'. -->
     <string name="Cloud_SupporterUnknown">Dein Unterstützer-Status konnte nicht abgerufen werden.</string>

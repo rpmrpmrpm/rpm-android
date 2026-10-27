@@ -235,16 +235,31 @@ data class PublicProfile(
     val supporter: Boolean = false,
 )
 
-/** `cloud/quota`: what the account's storage holds and allows, and whether it is unlimited, which is the case for a
- * supporter. The TV reads only [unlimited]; the phone's profile shows the rest. A field the server does not send
- * reads as 0, and then the quota is the free account's. */
+/** `cloud/quota`: what the account's storage holds and allows, and the account's standing. A field the server does
+ * not send reads as 0, and then the quota is the free account's.
+ *
+ * [unlimited] is about storage only: no ceiling, which only a paying supporter has. Read the supporter features from
+ * [supporter], never from [unlimited]: a closed beta tester has the features and a ceiling. */
 @Serializable
 data class CloudQuota(
     val usedBytes: Long = 0,
     val quotaBytes: Long = 0,
     val fileCount: Int = 0,
     val unlimited: Boolean = false,
-)
+    /** What the server sent as `supporter`. Null from a server that does not send it; read [supporter]. */
+    @SerialName("supporter") private val supporterSent: Boolean? = null,
+    /** A closed beta tester who does not pay: the supporter features, a ceiling and no supporter's mark. */
+    val tester: Boolean = false,
+) {
+    /** Whether the account has the supporter features (higher bitrates, karaoke, the gold ground and the rest). Paying
+     * supporters and closed beta testers have them. A server that does not send the field has no testers, so it
+     * falls back to [unlimited]. */
+    val supporter: Boolean get() = supporterSent ?: unlimited
+
+    /** Whether the supporter's mark is shown for this account. The mark says "Supporter", so a tester, who does not
+     * pay, does not wear it. */
+    val wearsMark: Boolean get() = supporter && !tester
+}
 
 /** One record that its owner marked, as `cloud/album-marks` returns it, identified by the key its cover is filed under. */
 @Serializable

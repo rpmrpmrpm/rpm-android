@@ -41,8 +41,9 @@ data class Face(val name: String?, val picture: String?, val supporter: Boolean)
 }
 
 /**
- * The signed-in account's own face: its profile (`profile`, which makes one on the first ask) and whether it is
- * a supporter (`cloud/quota`, unlimited storage), read when the session starts. Null until both are read, and
+ * The signed-in account's own face: its profile (`profile`, which makes one on the first ask) and whether it wears
+ * the supporter's mark ([CloudQuota.wearsMark]: a paying supporter, not a closed beta tester), read when the session
+ * starts. Null until both are read, and
  * when signed out. A read that fails leaves it null; the next session asks again. An answer is published only
  * if the account that asked is still the one signed in.
  */
@@ -54,7 +55,8 @@ class OwnFace(private val cloud: CloudClient, private val auth: AuthClient, priv
 
     /**
      * The account's whole `cloud/quota` answer, read with the face: the phone's profile shows the storage it uses, and
-     * the rates it offers follow [CloudQuota.unlimited]. Null until read, after a failed read, and when signed out.
+     * the supporter features (rates, karaoke, the gold ground) follow [CloudQuota.supporter]. Null until read, after a
+     * failed read, and when signed out.
      * Null is "not known", never "free".
      */
     val quota: StateFlow<CloudQuota?> = held.asStateFlow()
@@ -81,7 +83,7 @@ class OwnFace(private val cloud: CloudClient, private val auth: AuthClient, priv
                 val profile = async { cloud.ownProfile() }
                 val quota = async { cloud.quota() }
                 val read = quota.await()
-                Face.of(profile.await(), read.unlimited) to read
+                Face.of(profile.await(), read.wearsMark) to read
             }
         } catch (e: CancellationException) {
             throw e

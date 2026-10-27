@@ -207,6 +207,9 @@ fun RpmApp(
         val shelfOnScreen = libraryState.shelf
         val shared by services.shared.list.collectAsStateWithLifecycle()
         val ownFace by services.ownFace.face.collectAsStateWithLifecycle()
+        // The supporter features (karaoke) follow the quota's standing, which a closed beta tester shares with a
+        // paying supporter. ownFace.supporter is the supporter's mark only, which a tester does not wear.
+        val ownQuota by services.ownFace.quota.collectAsStateWithLifecycle()
         val notice by services.library.notice.collectAsStateWithLifecycle()
         val withdrawn = stringResource(R.string.Rpm_Error_ShareUnavailable)
         val notServed = stringResource(R.string.Rpm_Share_NotServed)
@@ -529,7 +532,7 @@ fun RpmApp(
                                         backdrop = backdrop,
                                         defaultView = settings.defaultView,
                                         onNextView = settings::nextDefaultView,
-                                        karaoke = settings.karaoke && ownFace?.supporter == true,
+                                        karaoke = settings.karaoke && ownQuota?.supporter == true,
                                         lyricsWanted = settings.lyricsOn,
                                         onLyricsKey = settings::switchLyrics,
                                         casting = services.casting,
@@ -619,7 +622,8 @@ fun RpmApp(
                             account = SettingsAccount(
                                 name = ownFace?.name ?: signedIn.displayName.ifBlank { signedIn.email },
                                 email = signedIn.email,
-                                supporter = ownFace?.supporter,
+                                supporter = ownQuota?.supporter,
+                                tester = ownQuota?.tester == true,
                                 // The music stops with the session: the next person's TV is not playing this one's.
                                 signOut = {
                                     settingsOpen = false

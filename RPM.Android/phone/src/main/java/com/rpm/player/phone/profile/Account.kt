@@ -64,7 +64,7 @@ class Account(
     /** What the account may choose between: the whole ladder for a supporter, one rung for a free account, and the
      * whole ladder while the plan is not known. */
     fun offer(quota: CloudQuota?): AudioLadder.RateOffer =
-        quota?.let { AudioLadder.RateOffer.of(isSupporter = it.unlimited) } ?: AudioLadder.RateOffer.UNREAD
+        quota?.let { AudioLadder.RateOffer.of(isSupporter = it.supporter) } ?: AudioLadder.RateOffer.UNREAD
 
     /** Starts the watches. Called once, as the app starts. */
     fun begin() {
@@ -113,8 +113,8 @@ class Account(
         services.scope.launch {
             quota.collect { read ->
                 read ?: return@collect
-                if (fresh && services.library.state.value !is LibraryState.Ready) settings.adoptSupporter(read.unlimited)
-                else settings.rememberSupporter(read.unlimited)
+                if (fresh && services.library.state.value !is LibraryState.Ready) settings.adoptSupporter(read.supporter)
+                else settings.rememberSupporter(read.supporter)
                 fresh = false
             }
         }

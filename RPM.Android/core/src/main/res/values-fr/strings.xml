@@ -2057,6 +2057,15 @@
 
     <!-- Settings, Profile page: second paragraph under 'Supporter', thanking the account for supporting rpm. -->
     <string name="Rpm_Profile_PlanSupporterThanks">Merci de soutenir rpm. Vous aidez rpm à continuer et financez son développement. Votre générosité nous touche.</string>
+
+    <!-- Settings, Profile page: the standing of an account marked as a closed beta tester. -->
+    <string name="Rpm_Profile_PlanTester">Testeur de la bêta fermée</string>
+
+    <!-- Settings, Profile page: what a closed beta tester gets. -->
+    <string name="Rpm_Profile_PlanTesterDetail">Fonctions des soutiens et 100 Go de stockage cloud.</string>
+
+    <!-- Settings, Profile page: second paragraph under 'Closed beta tester', thanking the account for testing. -->
+    <string name="Rpm_Profile_PlanTesterThanks">Merci de tester rpm. Vos signalements nous aident à corriger les problèmes avant la bêta publique.</string>
     <string name="Rpm_Profile_Playback">Lecture</string>
 
     <!-- Settings, Profile page: what the quality choices do. -->
@@ -3229,6 +3238,9 @@
 
     <!-- Cloud settings: a supporter whose support has an end date. -->
     <string name="Cloud_SupporterYesUntil">Vous êtes un soutien jusqu\'au %1$s. Votre stockage cloud est illimité.</string>
+
+    <!-- Cloud settings: the standing of an account marked as a closed beta tester. -->
+    <string name="Cloud_SupporterTester">Vous testez la bêta fermée. Vous avez les fonctions des soutiens et 100 Go de stockage cloud.</string>
 
     <!-- Cloud settings: the server did not answer, which is not the same as 'not a supporter'. -->
     <string name="Cloud_SupporterUnknown">Votre statut de soutien n\'a pas pu être récupéré.</string>

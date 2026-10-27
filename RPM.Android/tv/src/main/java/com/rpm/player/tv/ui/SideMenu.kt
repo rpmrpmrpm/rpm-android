@@ -402,8 +402,9 @@ enum class SettingsPage(val title: Int, val glyph: Char) {
     Visualisation(R.string.Tv_SettingsVisualisation, Fa.WAVEFORM),
 }
 
-/** Who is signed in, for the Profile section, and the way to sign out. [supporter] is null while not yet known. */
-class SettingsAccount(val name: String, val email: String, val supporter: Boolean?, val signOut: () -> Unit)
+/** Who is signed in, for the Profile section, and the way to sign out. [supporter] is whether the account has the
+ * supporter features (paying supporters and closed beta testers), null while not yet known; [tester] says which. */
+class SettingsAccount(val name: String, val email: String, val supporter: Boolean?, val tester: Boolean, val signOut: () -> Unit)
 
 /** One row of a section: its name, its value as shown, and what OK does. */
 private class SettingLine(val label: String, val value: String, val onClick: () -> Unit)
@@ -446,10 +447,11 @@ private fun settingLines(page: SettingsPage, settings: PlayerSettings, account: 
                 SettingLine(stringResource(R.string.Rpm_Profile_Account), account.email) {},
                 SettingLine(
                     stringResource(R.string.Rpm_Profile_Plan),
-                    when (account.supporter) {
-                        true -> stringResource(R.string.Rpm_Profile_PlanSupporter)
-                        false -> stringResource(R.string.Rpm_Profile_PlanFree)
-                        null -> ""
+                    when {
+                        account.supporter == null -> ""
+                        account.tester -> stringResource(R.string.Rpm_Profile_PlanTester)
+                        account.supporter -> stringResource(R.string.Rpm_Profile_PlanSupporter)
+                        else -> stringResource(R.string.Rpm_Profile_PlanFree)
                     },
                 ) {},
                 // Two presses, so a stray OK does not sign the television out.
