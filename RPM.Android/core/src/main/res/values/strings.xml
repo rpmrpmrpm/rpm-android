@@ -3041,6 +3041,12 @@
     <!-- Amber album-marker tooltip when the record carries more than one other value for the field. -->
     <string name="Edit_AlbumDisagreesMany">Other tracks have different values</string>
 
+    <!-- Checkbox under the release type in the album editor and the import tag panel, shown when the type is Live or Mixtape. {0} is the note added to the tags, "(Live)" or "(Mixed)", which is not translated. -->
+    <string name="Edit_MarkTitles">Add %1$s to the track titles</string>
+
+    <!-- Tooltip on the Add (Live) / Add (Mixed) checkbox. {0} is "(Live)" or "(Mixed)". -->
+    <string name="Edit_MarkTitlesTip">Adds %1$s to the end of every title that does not already have it.</string>
+
     <!-- Title of the album editor window. -->
     <string name="AlbumEdit_Title">Edit album</string>
 
