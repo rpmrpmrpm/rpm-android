@@ -25,7 +25,8 @@ class SongRadioTest {
         record: String = id,
         plays: Int = 0,
         offered: Boolean = true,
-    ) = RadioSong(id, record, artist, "$artist\n$id", year, genre, styles, moods, offered, plays)
+        live: Boolean = false,
+    ) = RadioSong(id, record, artist, "$artist\n$id", year, genre, styles, moods, offered, plays, live)
 
     private fun pick(crate: RadioCrate, seed: String, count: Int, history: List<String> = emptyList(), origin: String = seed, random: Int = 7) =
         SongRadio.pick(crate, seed, origin, emptySet(), history, count, Random(random))
@@ -46,6 +47,79 @@ class SongRadioTest {
         val lofi = song("lofi", genre = "Electronic / Dance", styles = setOf("Lo-fi Beats"))
         assertEquals(SongRadio.KIN_STYLE, SongRadio.genreApart(song("d", genre = "Electronic / Dance", styles = setOf("Downtempo")), lofi), 1e-9)
         assertEquals(SongRadio.OTHER_STYLE, SongRadio.genreApart(song("e", genre = "Electronic / Dance", styles = setOf("Electro")), lofi), 1e-9)
+    }
+
+    // ── styles that clash ──
+
+    /** The mixtape after a dance-pop record: a ballad from the same year is closer in era than dance-pop from
+     * another decade, and it is still not played. */
+    @Test fun aSongWhoseStyleClashesWithTheOnePlayingIsNotPicked() {
+        val seed = song("seed", 2003, genre = "Pop", styles = setOf("Dance-Pop"))
+        val ballad = song("ballad", 2003, genre = "Pop", styles = setOf("Ballad"))
+        val dancing = (0 until SongRadio.CLASH_SPARE + 10).map {
+            song("dance$it", 1990, genre = "Pop", styles = setOf(if (it % 2 == 0) "Dance-Pop" else "Europop"))
+        }
+        val crate = RadioCrate(listOf(seed, ballad) + dancing)
+
+        assertTrue(SongRadio.apart(ballad, seed) < SongRadio.apart(dancing[0], seed))
+        for (r in 0 until 20) assertFalse("ballad" in pick(crate, "seed", 5, random = r))
+    }
+
+    @Test fun aSongWithNoStyleIsNotLeftOutAsAClash() {
+        val seed = song("seed", genre = "Pop", styles = setOf("Dance-Pop"))
+        val unfiled = song("unfiled", genre = "Pop")
+        assertEquals(listOf(unfiled), SongRadio.withoutClashes(listOf(unfiled), seed, 0))
+    }
+
+    @Test fun clashesStayWhenTooFewSongsWouldBeLeft() {
+        val crate = RadioCrate(listOf(
+            song("seed", genre = "Pop", styles = setOf("Dance-Pop")),
+            song("ballad", genre = "Pop", styles = setOf("Ballad")),
+            song("dance", genre = "Pop", styles = setOf("Dance-Pop")),
+        ))
+        assertEquals(2, pick(crate, "seed", 2).size)
+    }
+
+    @Test fun stylesAreKinWhereTheyArePlayedTogether() {
+        fun apart(a: String, b: String) = SongRadio.styleApart(setOf(a), setOf(b))
+        assertEquals(SongRadio.KIN_STYLE, apart("Dance-Pop", "Europop")!!, 1e-9)
+        assertEquals(SongRadio.OTHER_STYLE, apart("Dance-Pop", "Ballad")!!, 1e-9)
+        assertEquals(SongRadio.KIN_STYLE, apart("Folk Rock", "Hard Rock")!!, 1e-9)
+        assertEquals(SongRadio.KIN_STYLE, apart("Celtic Folk", "Acoustic Rock")!!, 1e-9)
+        assertEquals(SongRadio.OTHER_STYLE, apart("Celtic Folk", "Hard Rock")!!, 1e-9)
+        assertEquals(SongRadio.KIN_STYLE, apart("Contemporary R&B", "Neo-Soul")!!, 1e-9)
+        assertEquals(SongRadio.KIN_STYLE, apart("Contemporary R&B", "Conscious Hip Hop")!!, 1e-9)
+        assertEquals(SongRadio.OTHER_STYLE, apart("Contemporary R&B", "Pop Rap")!!, 1e-9)
+    }
+
+    // ── live recordings ──
+
+    @Test fun aLiveRecordingIsToldByItsRecordItsTitleOrItsAlbum() {
+        assertTrue(SongRadio.isLive("Sail Away (Live)", null, null))
+        assertTrue(SongRadio.isLive("Babylon [Live at the Point]", null, null))
+        assertTrue(SongRadio.isLive("Layla - Unplugged", null, null))
+        assertTrue(SongRadio.isLive("Babylon", "Live", null))
+        assertTrue(SongRadio.isLive("Babylon", "Live at the BBC", null))
+        assertTrue(SongRadio.isLive("Babylon", "MTV Unplugged", null))
+        assertTrue(SongRadio.isLive("Babylon", "White Ladder", "Live"))
+        assertFalse(SongRadio.isLive("Groovejet (If This Ain't Love) (Live Mix)", "Read My Lips", "Album"))
+        assertFalse(SongRadio.isLive("Live Forever", "Definitely Maybe", null))
+        assertFalse(SongRadio.isLive("Babylon", "Long Live the King", null))
+        assertFalse(SongRadio.isLive("Babylon", "White Ladder", null))
+    }
+
+    @Test fun aRadioFromAStudioSongPutsLiveRecordingsBehindStudioOnes() {
+        val seed = song("seed", 2000, genre = "Pop")
+        val live = song("live", 2000, genre = "Pop", live = true)
+        val studio = song("studio", 2004, genre = "Pop")
+        assertTrue(SongRadio.score(live, seed, seed) > SongRadio.score(studio, seed, seed))
+    }
+
+    @Test fun aRadioFromALiveSongDoesNotHoldLiveRecordingsBack() {
+        val seed = song("seed", 2000, genre = "Pop", live = true)
+        val live = song("live", 2000, genre = "Pop", live = true)
+        val studio = song("studio", 2004, genre = "Pop")
+        assertTrue(SongRadio.score(live, seed, seed) < SongRadio.score(studio, seed, seed))
     }
 
     @Test fun aRelatedShelfIsCloserThanAnUnrelatedOne() {
