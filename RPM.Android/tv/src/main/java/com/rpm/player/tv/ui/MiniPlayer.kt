@@ -78,7 +78,7 @@ class MiniPlayerState {
     val atTop: Boolean get() = page?.value ?: true
 
     fun follow(atTop: State<Boolean>) {
-        if (page !== atTop) android.util.Log.d(MINI_LOG, "follows page ${System.identityHashCode(atTop)}, from ${caller()}")
+        if (page !== atTop) com.rpm.player.core.diag.Diag.d(MINI_LOG, "follows page ${System.identityHashCode(atTop)}, from ${caller()}")
         page = atTop
     }
 
@@ -90,12 +90,12 @@ class MiniPlayerState {
 
     fun cover() {
         covers += 1
-        android.util.Log.d(MINI_LOG, "covered ($covers), from ${caller()}")
+        com.rpm.player.core.diag.Diag.d(MINI_LOG, "covered ($covers), from ${caller()}")
     }
 
     fun uncover() {
         covers = (covers - 1).coerceAtLeast(0)
-        android.util.Log.d(MINI_LOG, "uncovered ($covers left), from ${caller()}")
+        com.rpm.player.core.diag.Diag.d(MINI_LOG, "uncovered ($covers left), from ${caller()}")
     }
 
     /** Where a call came from, three frames deep, for the log: which screen followed, covered or uncovered. It is
@@ -145,7 +145,7 @@ fun MiniPlayer(
     // Logs every change of what decides whether it shows, for `adb logcat -s rpm.mini` when it is missing where it
     // should be.
     androidx.compose.runtime.LaunchedEffect(wanted, state.covered, state.atTop, focused, nowPlaying != null) {
-        android.util.Log.d(MINI_LOG, "shows $wanted: covered ${state.covered}, page at top ${state.atTop}, focused $focused, something in the player ${nowPlaying != null}")
+        com.rpm.player.core.diag.Diag.d(MINI_LOG, "shows $wanted: covered ${state.covered}, page at top ${state.atTop}, focused $focused, something in the player ${nowPlaying != null}")
     }
     val shown by animateFloatAsState(if (wanted) 1f else 0f, tween(SLIDE_MS, easing = CubicOut), label = "mini")
     // The card's blur ([LiveGlass]), drawn only while the mini player is shown at all.

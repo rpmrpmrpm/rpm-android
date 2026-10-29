@@ -2,7 +2,7 @@ package com.rpm.player.phone.art
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import coil3.ImageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
@@ -177,7 +177,7 @@ class Portraits(private val context: Context, private val images: ImageLoader, p
         val height = maxOf(1, (photograph.height * scale).roundToInt())
         val work = withContext(Dispatchers.Default) { Bitmap.createScaledBitmap(photograph, width, height, true) }
         val found = detector.process(InputImage.fromBitmap(work, 0)).awaitOrNull() ?: run {
-            Log.i(TAG, "faces not read in a ${photograph.width}x${photograph.height} picture")
+            Diag.i(TAG, "faces not read in a ${photograph.width}x${photograph.height} picture")
             return null
         }
         val boxes = found.map { face ->

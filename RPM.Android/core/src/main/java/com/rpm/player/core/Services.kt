@@ -71,6 +71,8 @@ import java.io.File
  * the settings reaches the record that is playing. */
 class Services(
     context: Context,
+    /** Which app reports: "android" for the phone, "androidtv" for the TV. Feedback and crash reports carry it. */
+    head: String,
     val levelling: Levelling,
     tunerOpensOn: com.rpm.player.core.radio.TunerOpensOn,
     /** The tracks downloaded to this device, which play from their files. The phone's downloads; none on the TV. */
@@ -105,6 +107,9 @@ class Services(
 
     /** rpm's shared album wall: the reviews and ratings on a record page. */
     val community = com.rpm.player.core.cloud.CommunityClient(http, auth)
+
+    /** Send feedback and the crash reports: the scope, the outbox and the consent prompt. */
+    val diagnostics = com.rpm.player.core.diag.Diagnostics.make(context, head, http, auth, scope)
     val streamLinks = StreamLinks(cloud, clock)
 
     /** The audio being heard, filled by the playback service's sink and read by the room. */

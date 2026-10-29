@@ -4,6 +4,7 @@ import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.os.SystemClock
 import android.util.Log
+import com.rpm.player.core.diag.Diag
 import android.view.Choreographer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -199,7 +200,7 @@ private class StageClock(private val look: StageRenderer, private val tap: Audio
             drawing += done - drew
             counted++
             if (now - countedFrom >= 2) {
-                Log.i(
+                Diag.i(
                     TAG,
                     "%s %dx%d: %.1f frames a second, %.2f ms listening, %.2f ms drawing".format(
                         look.javaClass.simpleName, width, height, counted / (now - countedFrom),
@@ -261,7 +262,7 @@ internal fun program(vertex: String, fragment: String): Int {
         GLES30.glCompileShader(shader)
         val ok = IntArray(1)
         GLES30.glGetShaderiv(shader, GLES30.GL_COMPILE_STATUS, ok, 0)
-        if (ok[0] == 0) Log.e("rpm.stage", "shader: " + GLES30.glGetShaderInfoLog(shader))
+        if (ok[0] == 0) Diag.e("rpm.stage", "shader: " + GLES30.glGetShaderInfoLog(shader))
         return shader
     }
     val made = GLES30.glCreateProgram()
@@ -270,7 +271,7 @@ internal fun program(vertex: String, fragment: String): Int {
     GLES30.glLinkProgram(made)
     val ok = IntArray(1)
     GLES30.glGetProgramiv(made, GLES30.GL_LINK_STATUS, ok, 0)
-    if (ok[0] == 0) Log.e("rpm.stage", "program: " + GLES30.glGetProgramInfoLog(made))
+    if (ok[0] == 0) Diag.e("rpm.stage", "program: " + GLES30.glGetProgramInfoLog(made))
     return made
 }
 

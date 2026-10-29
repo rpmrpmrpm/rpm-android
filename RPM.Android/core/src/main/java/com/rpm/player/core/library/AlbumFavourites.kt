@@ -1,6 +1,6 @@
 package com.rpm.player.core.library
 
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.auth.AuthClient
 import com.rpm.player.core.cloud.CloudAlbumMark
 import com.rpm.player.core.cloud.CloudClient
@@ -80,12 +80,12 @@ class AlbumFavourites(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "favourite records not read: $e")
+            Diag.w(TAG, "favourite records not read: $e")
             return
         }
         if (held.value.user != user) return
         held.value = held.value.withRead(rows)
-        Log.i(TAG, "${rows.count { it.favorite }} favourite records")
+        Diag.i(TAG, "${rows.count { it.favorite }} favourite records")
     }
 
     /** Marks [album] a favourite ([on]) or clears the mark. True when the store took every write. Main thread. */
@@ -102,7 +102,7 @@ class AlbumFavourites(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.w(TAG, "favourite record not written: $e")
+                Diag.w(TAG, "favourite record not written: $e")
                 null
             }
             // Only this write's own entry is changed, and only for the account it was made for.

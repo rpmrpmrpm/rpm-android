@@ -312,7 +312,7 @@ private object SetupLoop {
             prepareAsync()
         }.also { player = it }
     } catch (e: Exception) {
-        android.util.Log.w("rpm.setup", "set-up music not played: $e")
+        com.rpm.player.core.diag.Diag.w("rpm.setup", "set-up music not played: $e")
         null
     }
 

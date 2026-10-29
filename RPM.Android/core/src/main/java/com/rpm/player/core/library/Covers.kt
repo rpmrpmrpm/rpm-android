@@ -7,7 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import android.os.SystemClock
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import coil3.disk.DiskCache
 import coil3.ImageLoader
 import coil3.decode.DataSource
@@ -157,7 +157,7 @@ internal object StoredPictures {
             val signed = SystemClock.elapsedRealtime()
             val bytes = cloud.signedBytes(url)
             // What a picture not kept on the TV costs, for `adb logcat -s rpm.covers`: the API's answer, then the picture.
-            Log.d(TAG, "$kind ${bytes.size / 1024} KB: address in ${signed - asked} ms, picture in ${SystemClock.elapsedRealtime() - signed} ms")
+            Diag.d(TAG, "$kind ${bytes.size / 1024} KB: address in ${signed - asked} ms, picture in ${SystemClock.elapsedRealtime() - signed} ms")
             return bytes
         }
         throw IOException("no stored $kind under $keys")

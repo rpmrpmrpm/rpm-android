@@ -1,6 +1,6 @@
 package com.rpm.player.core.downloads
 
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.cloud.ApiException
 import com.rpm.player.core.library.CloudAlbum
 import com.rpm.player.core.net.await
@@ -206,7 +206,7 @@ class AlbumDownloads(
         scope.launch {
             val before = withContext(io) { book.owner }
             if (before != null && before != userId) {
-                Log.i(TAG, "another account signed in: the downloads go")
+                Diag.i(TAG, "another account signed in: the downloads go")
                 forgetEverything()
             }
             withContext(io) { book.claim(userId) }
@@ -283,7 +283,7 @@ class AlbumDownloads(
                         RenditionWait.Said.Overdue -> {
                             goes[rpmId] = (goes[rpmId] ?: 0) + 1
                             if ((goes[rpmId] ?: 0) >= MOST_GOES) making.forget(listOf(rpmId))
-                            Log.w(TAG, "$rpmId was not made at $asked kbps in time for a download")
+                            Diag.w(TAG, "$rpmId was not made at $asked kbps in time for a download")
                         }
                     }
                     continue
@@ -297,7 +297,7 @@ class AlbumDownloads(
             } catch (e: ApiException) {
                 inFlight -= rpmId
                 goes[rpmId] = (goes[rpmId] ?: 0) + 1
-                Log.w(TAG, "could not sign $rpmId for a download: $e")
+                Diag.w(TAG, "could not sign $rpmId for a download: $e")
             } catch (e: IOException) {
                 // The network, not the track: not a go. The pass stops, and the next is due after a while.
                 inFlight -= rpmId
@@ -315,7 +315,7 @@ class AlbumDownloads(
 
     /** Starts the transfer of a signed track. Its end is reported to [finished] on this thread. */
     private fun start(rpmId: String, signed: Signed) {
-        Log.i(TAG, "downloading $rpmId at ${signed.kilobits} kbps")
+        Diag.i(TAG, "downloading $rpmId at ${signed.kilobits} kbps")
         transfers[rpmId] = scope.launch {
             val into = book.partial(rpmId)
             try {
@@ -325,7 +325,7 @@ class AlbumDownloads(
                 // A 403 is an expired signature and a 404 a track gone from the store. Either way the body is not the
                 // record, and it is not kept.
                 val kept = status in 200..299 && withContext(io) { book.keep(rpmId, into, signed.kilobits) }
-                if (status !in 200..299) Log.w(TAG, "$rpmId answered $status")
+                if (status !in 200..299) Diag.w(TAG, "$rpmId answered $status")
                 finished(rpmId, kept, counts = true)
             } catch (e: CancellationException) {
                 // A cancel is somebody removing the album, not the track failing.
@@ -371,7 +371,7 @@ class AlbumDownloads(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: ApiException) {
-                Log.w(TAG, "could not ask for ${send.size} tracks at $kilobits kbps: $e")
+                Diag.w(TAG, "could not ask for ${send.size} tracks at $kilobits kbps: $e")
             } catch (e: IOException) {
                 networkTrouble(e)
                 return
@@ -381,7 +381,7 @@ class AlbumDownloads(
 
     /** A request found the network dead. The gate closes for a moment, and the work is tried again after a while. */
     private fun networkTrouble(e: IOException) {
-        Log.w(TAG, "the network failed a download request: $e")
+        Diag.w(TAG, "the network failed a download request: $e")
         troubleAt = clock()
         doubt()
     }
@@ -423,7 +423,7 @@ class AlbumDownloads(
         inFlight -= rpmId
         partial.remove(rpmId)
         if (!kept && counts && book.isWanted(rpmId)) goes[rpmId] = (goes[rpmId] ?: 0) + 1
-        if (kept) Log.i(TAG, "$rpmId is on the phone")
+        if (kept) Diag.i(TAG, "$rpmId is on the phone")
         redraw()
         pump()
     }

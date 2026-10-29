@@ -7,7 +7,7 @@ import com.rpm.player.core.cloud.CloudMoodLists
 import com.rpm.player.core.cloud.CloudPlaylist
 import com.rpm.player.core.cloud.Shelf
 import android.os.SystemClock
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.home.HomeCatalogs
 import com.rpm.player.core.home.HeldCatalog
 import com.rpm.player.core.home.HomeMerge
@@ -250,7 +250,7 @@ class LibraryRepository(
         val quiet = before != null
         if (!quiet) publishFor(user, shelf, LibraryState.Loading(shelf, 0)) else reading.value = true
         val started = SystemClock.elapsedRealtime()
-        fun took(what: String) = Log.d(TAG, "$what at ${SystemClock.elapsedRealtime() - started} ms${if (quiet) ", refresh" else ""}")
+        fun took(what: String) = Diag.d(TAG, "$what at ${SystemClock.elapsedRealtime() - started} ms${if (quiet) ", refresh" else ""}")
         val held = MutableStateFlow<Held?>(null)
         // One shuffle per load, as the desktop draws its banner's Most played card afresh each launch; the
         // same seed for every build of this load, so the cloud's copy replacing the cache's does not
@@ -345,7 +345,7 @@ class LibraryRepository(
     /** A borrowed shelf refused: its cache is forgotten, and if it is still the one asked for, the
      * person is returned to their own collection and told why. */
     private suspend fun putDown(user: String, notice: ShelfNotice) {
-        Log.i(TAG, "shared collection put down: $notice")
+        Diag.i(TAG, "shared collection put down: $notice")
         cache.delete(user, notice.shelf)
         if (asked.value == Asked(user, notice.shelf)) {
             notices.value = notice

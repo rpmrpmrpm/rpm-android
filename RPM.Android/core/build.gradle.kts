@@ -29,6 +29,16 @@ android {
         buildConfigField("String", "RPM_APP_KEY", "\"$appKey\"")
     }
 
+    // Whether feedback and crash reports carry the log, the screenshot and the account (ReportScope in
+    // core/diag). A debug build always does. A release bundle does only when rpm.beta is "true", which
+    // scripts/bundle-play.sh sets for --beta; without it a release is anonymous, the safe side.
+    val releaseBeta = providers.gradleProperty("rpm.beta").getOrElse("false")
+    require(releaseBeta == "true" || releaseBeta == "false") { "rpm.beta must be true or false." }
+    buildTypes {
+        debug { buildConfigField("boolean", "RPM_BETA", "true") }
+        release { buildConfigField("boolean", "RPM_BETA", releaseBeta) }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

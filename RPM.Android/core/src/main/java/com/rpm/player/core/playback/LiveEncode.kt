@@ -1,7 +1,7 @@
 package com.rpm.player.core.playback
 
 import android.net.Uri
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
@@ -278,7 +278,7 @@ class LiveEncodeSource(private val upstream: DataSource, val url: String) : Data
         spec = dataSpec
         openedAt = dataSpec.position
         handed = 0
-        Log.i(TAG, "live encode from $from s")
+        Diag.i(TAG, "live encode from $from s")
         encode.open(from)
         return C.LENGTH_UNSET.toLong()
     }

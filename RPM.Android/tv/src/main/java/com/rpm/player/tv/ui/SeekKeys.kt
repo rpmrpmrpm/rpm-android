@@ -1,6 +1,6 @@
 package com.rpm.player.tv.ui
 
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,14 +38,14 @@ class SeekKeys(private val controller: Player?) {
     fun step(way: Int, repeat: Boolean, eventTimeMs: Long): Boolean {
         val since = eventTimeMs - steppedAt
         steppedAt = eventTimeMs
-        val player = controller ?: return false.also { Log.d(TAG, "no controller") }
+        val player = controller ?: return false.also { Diag.d(TAG, "no controller") }
         val item = SeekItem.of(player)
         // A preview from another item is dropped, not carried onto this one.
         val held = preview?.takeIf { it.item == item }
         if (held == null) preview = null
         val duration = player.duration
         if (item == null || !player.isCurrentMediaItemSeekable || duration == C.TIME_UNSET || duration <= 0) {
-            Log.d(TAG, "refused: item=${item?.mediaId} seekable=${player.isCurrentMediaItemSeekable} duration=$duration state=${player.playbackState}")
+            Diag.d(TAG, "refused: item=${item?.mediaId} seekable=${player.isCurrentMediaItemSeekable} duration=$duration state=${player.playbackState}")
             return false
         }
         val from = held?.toMs ?: player.currentPosition
@@ -63,7 +63,7 @@ class SeekKeys(private val controller: Player?) {
         val held = preview ?: return
         preview = null
         val player = controller ?: return
-        if (SeekItem.of(player) == held.item) player.seekTo(held.toMs) else Log.d(TAG, "dropped: the item changed")
+        if (SeekItem.of(player) == held.item) player.seekTo(held.toMs) else Diag.d(TAG, "dropped: the item changed")
     }
 
     private companion object {

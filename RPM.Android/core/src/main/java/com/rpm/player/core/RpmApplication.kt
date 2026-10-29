@@ -17,7 +17,13 @@ abstract class RpmApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // The log ring and the crash handler come first, so the rest of the start is in the log and a crash in it is
+        // recorded. The ring moves the last run's copy aside before anything writes this run's.
+        com.rpm.player.core.diag.Diag.start(com.rpm.player.core.diag.Diagnostics.folder(this))
+        val version = packageManager.getPackageInfo(packageName, 0).let { "${it.versionName} (${it.longVersionCode})" }
+        com.rpm.player.core.diag.CrashCatcher.install(com.rpm.player.core.diag.Diagnostics.outbox(this), version)
         services = makeServices()
+        services.diagnostics.start()
     }
 
     /** Makes the app-wide objects. Called once, from [onCreate], on the main thread. */

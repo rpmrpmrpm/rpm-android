@@ -153,7 +153,7 @@ fun StackedScreen(onTop: Boolean, memory: FocusMemory, content: @Composable () -
             hidden = false
             val gaveBack = memory.giveBack()
             val group = !gaveBack && runCatching { focus.requestFocus() }.getOrDefault(false)
-            android.util.Log.d("rpm.focus", "screen back on top: item ${if (gaveBack) "given back" else "not given back"}, group ${if (gaveBack) "not asked" else if (group) "took it" else "refused"}")
+            com.rpm.player.core.diag.Diag.d("rpm.focus", "screen back on top: item ${if (gaveBack) "given back" else "not given back"}, group ${if (gaveBack) "not asked" else if (group) "took it" else "refused"}")
         }
         if (fades) shown.animateTo(1f, tween(SCREEN_FADE_MS)) else shown.snapTo(1f)
     }

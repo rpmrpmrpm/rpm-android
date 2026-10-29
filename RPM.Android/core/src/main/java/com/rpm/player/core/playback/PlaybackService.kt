@@ -12,7 +12,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import android.view.KeyEvent
 import androidx.annotation.OptIn
 import androidx.core.content.IntentCompat
@@ -80,7 +80,7 @@ class PlaybackService : MediaSessionService() {
     private fun bankPlay(play: TrackCounter.Counted) {
         ListeningHistory.note(play.ref, play.at)
         val userId = services.auth.session.value?.userId ?: return
-        android.util.Log.i(TrackPlaysSync.TAG, "play counted: ${play.ref.mediaId}")
+        com.rpm.player.core.diag.Diag.i(TrackPlaysSync.TAG, "play counted: ${play.ref.mediaId}")
         services.trackPlays.note(userId, play.ref.rpmId, play.at)
         services.trackPlaysSync.soon()
     }
@@ -317,7 +317,7 @@ class PlaybackService : MediaSessionService() {
             stopForeground(STOP_FOREGROUND_REMOVE)
         } catch (e: IllegalStateException) {
             // Android 12 and later refuse a foreground start from the background; there is nothing to settle then.
-            Log.w(TAG, "foreground not settled: $e")
+            Diag.w(TAG, "foreground not settled: $e")
         }
         stopSelf()
     }
@@ -414,7 +414,7 @@ class PlaybackService : MediaSessionService() {
          */
         override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
             if (controller.packageName == packageName) return super.onConnect(session, controller)
-            Log.i(TAG, "${controller.packageName} connects, trusted ${controller.isTrusted}")
+            Diag.i(TAG, "${controller.packageName} connects, trusted ${controller.isTrusted}")
             if (controller.isTrusted) return super.onConnect(session, controller)
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
                 .setAvailablePlayerCommands(MediaSession.ConnectionResult.DEFAULT_UNTRUSTED_PLAYER_COMMANDS.buildUpon().addAll(TRANSPORT).build())
@@ -425,7 +425,7 @@ class PlaybackService : MediaSessionService() {
          * can be followed (`adb logcat -s rpm.playback`). The app's own controller is left out: it asks often. */
         @Deprecated("Deprecated in MediaSession.Callback")
         override fun onPlayerCommandRequest(session: MediaSession, controller: MediaSession.ControllerInfo, playerCommand: Int): Int {
-            if (controller.packageName != packageName) Log.i(TAG, "${controller.packageName} asks command $playerCommand")
+            if (controller.packageName != packageName) Diag.i(TAG, "${controller.packageName} asks command $playerCommand")
             @Suppress("DEPRECATION")
             return super.onPlayerCommandRequest(session, controller, playerCommand)
         }

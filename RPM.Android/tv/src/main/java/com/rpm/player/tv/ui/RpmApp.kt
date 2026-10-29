@@ -10,7 +10,7 @@ import com.rpm.player.core.playback.startRadio
 import com.rpm.player.core.playback.tune
 import com.rpm.player.core.playback.playNext
 import com.rpm.player.core.playback.addToQueue
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.library.LibraryState
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.graphics.graphicsLayer
@@ -194,10 +194,10 @@ fun RpmApp(
             // Waited for, but not for ever: a picture that will not come is not worth a blank screen. The
             // wait is on a join, which a timeout ends at once. A timeout around the fetch itself would wait for
             // fetches stuck on the network to give up, and hold the screen up long after its time.
-            Log.d(OPENING_LOG, "library ready at ${sinceStart()} ms")
+            Diag.d(OPENING_LOG, "library ready at ${sinceStart()} ms")
             val fetching = launch { fetchHomePictures(ready, services.images, appContext) }
             val inTime = withTimeoutOrNull(OPENING_PICTURES_MS) { fetching.join() } != null
-            Log.d(OPENING_LOG, "pictures ${if (inTime) "in" else "not all in"} at ${sinceStart()} ms")
+            Diag.d(OPENING_LOG, "pictures ${if (inTime) "in" else "not all in"} at ${sinceStart()} ms")
             picturesIn = true
         }
         // A library that failed hands over too, to its message and its Retry key.
@@ -704,7 +704,7 @@ fun RpmApp(
                     ready = handOver,
                     reading = (libraryState as? LibraryState.Loading)?.rows ?: 0,
                     onSwept = {
-                        Log.d(OPENING_LOG, "handed over at ${sinceStart()} ms, library ${libraryState::class.simpleName}")
+                        Diag.d(OPENING_LOG, "handed over at ${sinceStart()} ms, library ${libraryState::class.simpleName}")
                         fading = true
                         // Home fading in, as on the desktop when its window is shown. Not over a failure.
                         if (libraryState is LibraryState.Ready) openingSound.play()

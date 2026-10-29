@@ -79,7 +79,7 @@ class TrackSources(
 
     /** The source chosen for [ref], choosing now if none is held. */
     fun choice(ref: TrackRef): TrackSource = chosen.getOrPut(ref.mediaId) {
-        choose(ref).also { android.util.Log.d(TAG, "${ref.mediaId} from $it") }
+        choose(ref).also { com.rpm.player.core.diag.Diag.d(TAG, "${ref.mediaId} from $it") }
     }
 
     /** The address to open [ref] at, from [source]. Blocking; called on a loader thread. */

@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.util.Log
+import com.rpm.player.core.diag.Diag
 import android.view.Choreographer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -279,7 +280,7 @@ class RoomPainter(private val tap: AudioTap) {
             card = Pass(program(RoomShaders.VERTEX, figures + CARD_MAIN))
             return true
         } catch (e: RuntimeException) {
-            Log.w(TAG, "rooms cannot be painted on this device", e)
+            Diag.w(TAG, "rooms cannot be painted on this device", e)
             broken = true
             return false
         }
@@ -336,7 +337,7 @@ class RoomPainter(private val tap: AudioTap) {
             count++
             spent += nanos
             if (now - since < 5_000_000_000L) return
-            Log.d(TAG, "paints/s=%.1f each=%.2fms rooms=%d".format(count / ((now - since) / 1e9), spent / 1e6 / count, rooms))
+            Diag.d(TAG, "paints/s=%.1f each=%.2fms rooms=%d".format(count / ((now - since) / 1e9), spent / 1e6 / count, rooms))
             count = 0
             spent = 0
             since = now

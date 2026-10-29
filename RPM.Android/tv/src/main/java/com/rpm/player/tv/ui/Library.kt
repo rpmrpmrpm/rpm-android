@@ -228,18 +228,18 @@ fun AlbumsScreen(
         }
         val began = android.os.SystemClock.uptimeMillis()
         fun since() = android.os.SystemClock.uptimeMillis() - began
-        val work = async(Dispatchers.Default) { wallOf(collection, "", order, favourites).also { android.util.Log.d(SORT_LOG, "$order sorted in ${since()} ms") } }
+        val work = async(Dispatchers.Default) { wallOf(collection, "", order, favourites).also { com.rpm.player.core.diag.Diag.d(SORT_LOG, "$order sorted in ${since()} ms") } }
         val quick = withTimeoutOrNull(SORT_QUIET_MS) { work.await() }
         if (quick == null && !sorting) {
             backdrop.capture()
-            android.util.Log.d(SORT_LOG, "blur taken at ${since()} ms")
+            com.rpm.player.core.diag.Diag.d(SORT_LOG, "blur taken at ${since()} ms")
             sorting = true
         }
         shown = quick ?: work.await()
         shownFor = order to favourites
         // The new wall is laid out under the blur before the blur fades.
         withFrameNanos { }
-        android.util.Log.d(SORT_LOG, "first frame of the new wall at ${since()} ms")
+        com.rpm.player.core.diag.Diag.d(SORT_LOG, "first frame of the new wall at ${since()} ms")
         withFrameNanos { }
         sorting = false
     }

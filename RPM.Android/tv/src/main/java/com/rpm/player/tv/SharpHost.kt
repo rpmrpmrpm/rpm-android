@@ -4,7 +4,7 @@ import android.app.Presentation
 import android.content.Context
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import android.view.Display
 import com.rpm.player.tv.ui.ScreenResolution
 import android.view.KeyEvent
@@ -136,7 +136,7 @@ class SharpHost private constructor(
             standIn.follow()
             true
         })
-        Log.i(TAG, "screens at ${width}x$height, $densityDpi dpi")
+        Diag.i(TAG, "screens at ${width}x$height, $densityDpi dpi")
     }
 
     private fun ownedByActivity(view: View) {

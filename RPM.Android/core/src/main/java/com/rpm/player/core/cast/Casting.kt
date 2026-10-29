@@ -2,7 +2,7 @@ package com.rpm.player.core.cast
 
 import android.content.Context
 import android.os.SystemClock
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import com.rpm.player.core.R
@@ -202,7 +202,7 @@ class Casting(
             }
             app = launched
             ours = launched.appId == CastApps.RPM
-            Log.i(TAG, "${device.name}: ${if (ours) "RPM's receiver" else "the stock receiver"} on ${launched.transportId}")
+            Diag.i(TAG, "${device.name}: ${if (ours) "RPM's receiver" else "the stock receiver"} on ${launched.transportId}")
 
             host = opened.ownAddress?.hostAddress?.substringBefore('%').orEmpty()
             if (host.isEmpty()) return end(Ending.NotStarted(R.string.Cast_ConnectFailed))
@@ -250,7 +250,7 @@ class Casting(
                 if (CastPayload.typeOf(answer.payload) == "LAUNCH_ERROR") {
                     // Google answers every launch on a speaker in a group or pair with NOT_ALLOWED.
                     if (answer.payload.contains("NOT_ALLOWED")) refusedAsMember = true
-                    Log.i(TAG, "${device.name}: $appId refused: ${answer.payload}")
+                    Diag.i(TAG, "${device.name}: $appId refused: ${answer.payload}")
                     return null
                 }
                 ReceiverStatus.of(answer.payload)?.app(appId)
@@ -327,7 +327,7 @@ class Casting(
                 null -> end(Ending.FellOver(R.string.Cast_StreamRefused))
                 LoadAnswer.Superseded -> Unit
                 is LoadAnswer.Refused -> {
-                    Log.i(TAG, "${device.name}: LOAD refused: ${said.reason}")
+                    Diag.i(TAG, "${device.name}: LOAD refused: ${said.reason}")
                     end(Ending.FellOver(R.string.Cast_StreamRefused))
                 }
                 is LoadAnswer.Taken -> {
@@ -413,7 +413,7 @@ class Casting(
                 RoomStream.Word.Pause -> p.pause()
                 RoomStream.Word.Resume -> p.play()
                 is RoomStream.Word.Stopped -> {
-                    Log.i(TAG, "${device.name}: stopped at the speaker (${word.because})")
+                    Diag.i(TAG, "${device.name}: stopped at the speaker (${word.because})")
                     end(Ending.Stopped)
                 }
             }
@@ -428,7 +428,7 @@ class Casting(
                     RoomWord.Next -> player?.let { if (it.hasNextMediaItem()) it.seekToNextMediaItem() }
                     RoomWord.Previous -> player?.seekToPrevious()
                     RoomWord.ArtFailed -> artAsked()
-                    is RoomWord.Said -> Log.i(TAG, "${device.name} says ${word.type}: ${word.payload.take(300)}")
+                    is RoomWord.Said -> Diag.i(TAG, "${device.name} says ${word.type}: ${word.payload.take(300)}")
                     null -> Unit
                 }
                 else -> Unit
@@ -554,7 +554,7 @@ class Casting(
                 is Ending.NotStarted -> say(context.getString(ending.message, device.name))
                 else -> Unit
             }
-            Log.i(TAG, "${device.name}: sitting ended: $ending")
+            Diag.i(TAG, "${device.name}: sitting ended: $ending")
         }
     }
 

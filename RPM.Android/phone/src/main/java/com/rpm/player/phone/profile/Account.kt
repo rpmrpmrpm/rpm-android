@@ -3,7 +3,7 @@ package com.rpm.player.phone.profile
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.setValue
@@ -85,7 +85,7 @@ class Account(
                 offer(quota).settles(onWifi, onCellular, reach)
             }.distinctUntilChanged().collect { kilobits ->
                 services.streamRate.kilobits = kilobits
-                Log.d(TAG, "streams ask for ${if (kilobits == AudioLadder.ORIGINAL) "the original" else "$kilobits kbps"}")
+                Diag.d(TAG, "streams ask for ${if (kilobits == AudioLadder.ORIGINAL) "the original" else "$kilobits kbps"}")
             }
         }
         // The network came back with the plan still unread: ask again, as the iPhone does.

@@ -1,7 +1,7 @@
 package com.rpm.player.core.cast
 
 import android.annotation.SuppressLint
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -64,7 +64,7 @@ class CastLink private constructor(private val socket: SSLSocket, val deviceName
             }
             true
         } catch (e: IOException) {
-            Log.i(TAG, "$deviceName: write failed: $e")
+            Diag.i(TAG, "$deviceName: write failed: $e")
             close()
             false
         }
@@ -142,9 +142,9 @@ class CastLink private constructor(private val socket: SSLSocket, val deviceName
                 _events.trySend(message)
             }
         } catch (e: SocketTimeoutException) {
-            Log.i(TAG, "$deviceName: nothing heard for ${SILENT_MS / 1000} s")
+            Diag.i(TAG, "$deviceName: nothing heard for ${SILENT_MS / 1000} s")
         } catch (e: IOException) {
-            if (!shut.get()) Log.i(TAG, "$deviceName: read ended: $e")
+            if (!shut.get()) Diag.i(TAG, "$deviceName: read ended: $e")
         } finally {
             close()
             // Everything still waiting is waiting on a socket that has ended.
@@ -170,7 +170,7 @@ class CastLink private constructor(private val socket: SSLSocket, val deviceName
                 socket.tcpNoDelay = true
                 socket.startHandshake()
             } catch (e: IOException) {
-                Log.i(TAG, "${device.name}: could not open: $e")
+                Diag.i(TAG, "${device.name}: could not open: $e")
                 runCatching { socket.close() }
                 return null
             }

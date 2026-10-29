@@ -5,7 +5,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import android.view.FrameMetrics
 import android.view.Window
 import androidx.compose.runtime.compositionLocalOf
@@ -140,7 +140,7 @@ class MotionLadder(private val context: Context) {
         private set
 
     init {
-        Log.i(TAG, "start at $start (saved ${saved()}, ${Build.MODEL})")
+        Diag.i(TAG, "start at $start (saved ${saved()}, ${Build.MODEL})")
     }
 
     private val listener = Window.OnFrameMetricsAvailableListener { _, metrics, _ ->
@@ -165,7 +165,7 @@ class MotionLadder(private val context: Context) {
         pinned = true
         start = motion
         level = motion
-        Log.i(TAG, "pinned at $motion")
+        Diag.i(TAG, "pinned at $motion")
     }
 
     /** Starts judging [window]'s frames. Call from `onResume`. */
@@ -194,7 +194,7 @@ class MotionLadder(private val context: Context) {
         if (wanted.ordinal <= level.ordinal) return
         level = wanted
         prefs.edit().putString(KEY_LEVEL, wanted.name).putLong(KEY_VERSION, version).putInt(KEY_RULE, RULE).apply()
-        Log.i(TAG, "stepped down to $wanted ($slow of ${MotionJudge.WINDOW} frames slow)")
+        Diag.i(TAG, "stepped down to $wanted ($slow of ${MotionJudge.WINDOW} frames slow)")
     }
 
     private fun saved(): Motion? {

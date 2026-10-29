@@ -12,7 +12,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.rpm.player.core.R
@@ -96,7 +96,7 @@ class DownloadService : Service() {
 
     /** Android 15's six hours of `dataSync` in a day are spent. The service must stop now. */
     override fun onTimeout(startId: Int, fgsType: Int) {
-        Log.w(AlbumDownloads.TAG, "the system's time for downloads in the background is spent; they go on when the app comes forward")
+        Diag.w(AlbumDownloads.TAG, "the system's time for downloads in the background is spent; they go on when the app comes forward")
         stop()
     }
 
@@ -168,7 +168,7 @@ class DownloadService : Service() {
                 ContextCompat.startForegroundService(context, Intent(context, DownloadService::class.java))
             } catch (e: IllegalStateException) {
                 // ForegroundServiceStartNotAllowedException, from the background on Android 12 and later.
-                Log.w(AlbumDownloads.TAG, "downloads wait for the app to come forward: $e")
+                Diag.w(AlbumDownloads.TAG, "downloads wait for the app to come forward: $e")
             }
         }
     }

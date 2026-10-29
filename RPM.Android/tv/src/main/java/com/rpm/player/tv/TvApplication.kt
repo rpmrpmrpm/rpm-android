@@ -14,7 +14,7 @@ class TvApplication : RpmApplication() {
 
     override fun makeServices(): Services {
         settings = PlayerSettings(this)
-        return Services(this, settings.levelling, com.rpm.player.core.radio.TunerOpensOn.ListenersCountry)
+        return Services(this, "androidtv", settings.levelling, com.rpm.player.core.radio.TunerOpensOn.ListenersCountry)
     }
 
     /** The launcher's now playing card opens the app's launcher entry itself; [MainActivity] knows that launch by who

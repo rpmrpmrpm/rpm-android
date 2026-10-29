@@ -412,7 +412,7 @@ fun PlayerScreen(
                 when {
                     action != null -> {
                         if ((action == PlayerAction.BACK || action == PlayerAction.FORWARD) && controller?.isCurrentMediaItemSeekable != true) {
-                            android.util.Log.d("rpm.seek", "hidden ${action.name}: seekable=${controller?.isCurrentMediaItemSeekable} duration=${controller?.duration}")
+                            com.rpm.player.core.diag.Diag.d("rpm.seek", "hidden ${action.name}: seekable=${controller?.isCurrentMediaItemSeekable} duration=${controller?.duration}")
                         }
                         controller?.perform(action)
                         true

@@ -3,7 +3,7 @@ package com.rpm.player.core.cast
 import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -85,14 +85,14 @@ class CastDiscovery(context: Context, private val scope: CoroutineScope) {
             override fun onDiscoveryStarted(serviceType: String) {}
             override fun onDiscoveryStopped(serviceType: String) {}
             override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
-                Log.w(TAG, "browse did not start: $errorCode")
+                Diag.w(TAG, "browse did not start: $errorCode")
             }
 
             override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {}
         }
         browsing = listener
         runCatching { nsd.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, listener) }
-            .onFailure { Log.w(TAG, "browse did not start: $it") }
+            .onFailure { Diag.w(TAG, "browse did not start: $it") }
         resolving = scope.launch(Dispatchers.IO) {
             for (info in queue) {
                 val device = resolve(info) ?: continue

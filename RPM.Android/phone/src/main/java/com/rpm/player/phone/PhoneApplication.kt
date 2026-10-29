@@ -83,7 +83,7 @@ class PhoneApplication : RpmApplication() {
     override fun makeServices(): Services {
         settings = PhoneSettings(this)
         downloadBook = Downloads.book(this)
-        return Services(this, settings.levelling, com.rpm.player.core.radio.TunerOpensOn.EveryCountry, copies = downloadBook)
+        return Services(this, "android", settings.levelling, com.rpm.player.core.radio.TunerOpensOn.EveryCountry, copies = downloadBook)
     }
 
     /** A pause key only pauses: headphones and cars send it to mean pause, never to start the music. */

@@ -1,6 +1,6 @@
 package com.rpm.player.core.playback
 
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.auth.AuthClient
 import com.rpm.player.core.cloud.CloudClient
 import com.rpm.player.core.cloud.TrackPlaysEntry
@@ -71,7 +71,7 @@ class TrackPlaysSync(
                 if (device == null || due.isEmpty()) return@withLock
                 cloud.putTrackPlays(TrackPlaysReport(device, due.map { TrackPlaysEntry(it.rpmId, it.plays, it.lastPlayedAt) }))
                 log.forSync { noteSent(due) }
-                Log.i(TAG, "sent ${due.size} play totals")
+                Diag.i(TAG, "sent ${due.size} play totals")
                 if (due.size < MAX_ROWS) return@withLock
             }
         } catch (e: CancellationException) {

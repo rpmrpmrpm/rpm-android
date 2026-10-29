@@ -2,7 +2,7 @@ package com.rpm.player.phone.shell
 
 import android.os.Process
 import android.os.SystemClock
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,7 +36,7 @@ internal fun LaunchReadout() {
     LaunchedEffect(Unit) {
         val seconds = (SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()) / 1000.0
         firstFrame = seconds
-        Log.i(TAG, "first frame at %.3fs".format(Locale.ROOT, seconds))
+        Diag.i(TAG, "first frame at %.3fs".format(Locale.ROOT, seconds))
         delay(SHOWN_MS)
         showing = false
     }

@@ -1,6 +1,6 @@
 package com.rpm.player.core.playback
 
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -69,7 +69,7 @@ class LevelSink(
         channels = format.channelCount
         sampleRate = format.sampleRate
         stream = loudnessOf(config.timeline, config.mediaPeriodId?.periodUid)
-        Log.d(TAG, "stream ${config.mediaPeriodId?.periodUid}: $stream, gain ${Normalization.gainDb(settings.mode, settings.includeClassical, stream)} dB")
+        Diag.d(TAG, "stream ${config.mediaPeriodId?.periodUid}: $stream, gain ${Normalization.gainDb(settings.mode, settings.includeClassical, stream)} dB")
         super.configure(config)
     }
 

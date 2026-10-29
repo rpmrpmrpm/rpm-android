@@ -1,6 +1,6 @@
 package com.rpm.player.core.radio
 
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.auth.AuthClient
 import com.rpm.player.core.cloud.CloudClient
 import com.rpm.player.core.cloud.Shelf
@@ -92,7 +92,7 @@ class SharedStations(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "saved stations of ${owner.key} not read: $e")
+            Diag.w(TAG, "saved stations of ${owner.key} not read: $e")
             if (auth.session.value?.userId != user) return
             val was = held.value.takeIf { it.user == user } ?: Read(user, emptyMap())
             // A failure does not replace a list an earlier read found.
@@ -103,7 +103,7 @@ class SharedStations(
         val stations = rows.filter { it.saved }.sortedBy { it.changedAt }.mapNotNull { it.station }
         val was = held.value.takeIf { it.user == user } ?: Read(user, emptyMap())
         held.value = was.copy(byOwner = was.byOwner + (owner.ownerId to stations), failed = was.failed - owner.ownerId)
-        Log.i(TAG, "${stations.size} saved stations of ${owner.key}")
+        Diag.i(TAG, "${stations.size} saved stations of ${owner.key}")
     }
 
     private companion object {

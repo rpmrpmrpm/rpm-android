@@ -2,7 +2,7 @@ package com.rpm.player.core.room
 
 import android.opengl.GLES30
 import android.opengl.GLSurfaceView
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.playback.AudioTap
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -461,7 +461,7 @@ private class FrameStats {
         val sorted = intervals.copyOf(count).also { it.sort() }
         val p95 = sorted[(count * 95 / 100).coerceAtMost(count - 1)] / 1e6
         val fps = count / ((now - windowStart) / 1e9)
-        Log.d(
+        Diag.d(
             "rpm.room",
             "scale=%.2f %dx%d fps=%.1f p95=%.1fms issue=%.2fms bass=%.2f mid=%.2f air=%.2f".format(
                 scale, w, h, fps, p95, issueTotal / 1e6 / count,

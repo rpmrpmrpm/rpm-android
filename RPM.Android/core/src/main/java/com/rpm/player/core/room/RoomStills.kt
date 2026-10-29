@@ -7,7 +7,7 @@ import android.opengl.EGLExt
 import android.opengl.GLES30
 import android.os.Handler
 import android.os.HandlerThread
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -91,7 +91,7 @@ class RoomStills(private val tap: AudioTap) {
             // RGBA bytes are how an ARGB_8888 bitmap lies in memory.
             return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply { copyPixelsFromBuffer(pixels) }
         } catch (e: RuntimeException) {
-            Log.w(TAG, "still room not drawn", e)
+            Diag.w(TAG, "still room not drawn", e)
             return null
         } finally {
             EGL14.eglMakeCurrent(display, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT)

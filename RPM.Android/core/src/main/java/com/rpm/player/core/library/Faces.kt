@@ -1,6 +1,6 @@
 package com.rpm.player.core.library
 
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.auth.AuthClient
 import com.rpm.player.core.cloud.CloudClient
 import com.rpm.player.core.cloud.CloudQuota
@@ -88,7 +88,7 @@ class OwnFace(private val cloud: CloudClient, private val auth: AuthClient, priv
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "own profile not read: $e")
+            Diag.w(TAG, "own profile not read: $e")
             return
         }
         if (auth.session.value?.userId == user) {

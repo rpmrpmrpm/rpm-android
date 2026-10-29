@@ -19,8 +19,14 @@
 # phone/build.gradle.kts or tv/build.gradle.kts before the next upload.
 #
 # Usage:
-#   ./scripts/bundle-play.sh [--no-ffmpeg]
+#   ./scripts/bundle-play.sh --beta|--live [--no-ffmpeg]
 #
+#   --beta       A bundle for the closed beta testers on internal testing. Its
+#                feedback and crash reports carry the tester's log, screenshot
+#                and account, and its versionName ends in "-beta".
+#   --live       A bundle for everyone. Its crash reports are anonymous and it
+#                has no Send feedback. One of the two must be given: a beta
+#                bundle sent to everyone would send their logs.
 #   --no-ffmpeg  Build without the FFmpeg decoders. ALAC, AC-3 and E-AC-3 tracks
 #                then play from the cloud's AAC copy, never from a computer on
 #                the home network. For a test build on your own device only.
@@ -40,12 +46,16 @@
 set -euo pipefail
 
 FFMPEG=true
+BETA=""
 for arg in "$@"; do
     case "$arg" in
         --no-ffmpeg) FFMPEG=false ;;
+        --beta) BETA=true ;;
+        --live) BETA=false ;;
         *) echo "Unknown argument: $arg"; exit 1 ;;
     esac
 done
+[ -n "$BETA" ] || { echo "FATAL: say --beta (closed beta testers) or --live (everyone)."; exit 1; }
 
 cd "$(dirname "$0")/../RPM.Android"
 
@@ -69,7 +79,7 @@ fi
 
 # -P wins over a developer key set as rpm.appKey in the Gradle properties. Without the configuration
 # cache, the passwords and the key are not written into it.
-GRADLE_ARGS=(--no-configuration-cache "-Prpm.appKey=$RPM_APP_KEY")
+GRADLE_ARGS=(--no-configuration-cache "-Prpm.appKey=$RPM_APP_KEY" "-Prpm.beta=$BETA")
 if $FFMPEG; then
     [ -n "${RPM_FFMPEG_ROOT:-}" ] \
         || { echo "FATAL: RPM_FFMPEG_ROOT is not set. Build it with scripts/build-android-ffmpeg.sh, or pass --no-ffmpeg."; exit 1; }

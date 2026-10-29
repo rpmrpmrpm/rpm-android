@@ -1,6 +1,6 @@
 package com.rpm.player.core.library
 
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.auth.AuthClient
 import com.rpm.player.core.cloud.CloudClient
 import com.rpm.player.core.cloud.Shelf
@@ -96,7 +96,7 @@ class SharedCollections(
             .sortedWith(compareBy({ it.createdAt }, { it.ownerId }))
             .distinctBy { it.ownerId }
         fun rows() = owners.map { SharedCollection(Shelf.Borrowed(it.ownerId), faces[it.ownerId]?.face, it.createdAt) }
-        Log.i(TAG, "${owners.size} collections shared with this account")
+        Diag.i(TAG, "${owners.size} collections shared with this account")
         publish(user, rows())
         for (owner in owners) {
             if (faces.containsKey(owner.ownerId)) continue

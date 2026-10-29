@@ -1,6 +1,6 @@
 package com.rpm.player.core.cast
 
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -84,7 +84,7 @@ class CastServer(private val ring: PcmRing) {
             val connection = try {
                 socket.accept()
             } catch (e: IOException) {
-                if (!stopped) Log.i(TAG, "accept ended: $e")
+                if (!stopped) Diag.i(TAG, "accept ended: $e")
                 return
             }
             synchronized(lock) { open += connection }
@@ -134,7 +134,7 @@ class CastServer(private val ring: PcmRing) {
         }
         previous?.let { runCatching { it.close() } }
         fetchedGeneration = stream.generation
-        Log.i(TAG, "stream ${stream.generation} fetched by ${connection.inetAddress?.hostAddress}")
+        Diag.i(TAG, "stream ${stream.generation} fetched by ${connection.inetAddress?.hostAddress}")
 
         connection.soTimeout = 0
         out.write(WavHeader.of(stream.rate, PcmConvert.OUT_CHANNELS))

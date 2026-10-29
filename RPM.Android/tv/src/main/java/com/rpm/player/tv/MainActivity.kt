@@ -12,7 +12,7 @@ import android.content.ComponentName
 import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.os.SystemClock
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -217,7 +217,7 @@ class MainActivity : ComponentActivity() {
     // so a remote can be read with `adb logcat -s rpm.keys`. The key is then handled as normal.
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
-            Log.d(KEY_LOG_TAG, describe(event))
+            Diag.d(KEY_LOG_TAG, describe(event))
         }
         // A press that brings the screens back from the screensaver does nothing else, down to its release,
         // where Back acts. The volume and media keys still do their own work: a pause pressed over the room

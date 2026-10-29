@@ -1,6 +1,6 @@
 package com.rpm.player.core.library
 
-import android.util.Log
+import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.auth.AuthClient
 import com.rpm.player.core.cloud.CloudClient
 import com.rpm.player.core.cloud.Shelf
@@ -74,13 +74,13 @@ class ClassicalMarks(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "classical marks of ${shelf.key} not read: $e")
+            Diag.w(TAG, "classical marks of ${shelf.key} not read: $e")
             return
         }
         if (auth.session.value?.userId != user || held.user != user) return
         val classical = marks.filter { it.classical == true }.map { it.albumKey }.toSet()
         held = Held(user, held.byShelf + (shelf to classical))
-        Log.i(TAG, "${classical.size} classical records on ${shelf.key}")
+        Diag.i(TAG, "${classical.size} classical records on ${shelf.key}")
     }
 
     private companion object {
