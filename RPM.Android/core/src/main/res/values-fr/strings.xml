@@ -2317,6 +2317,18 @@
     <!-- Shown when the server would not take the feedback. -->
     <string name="Feedback_Failed">Le commentaire n\'a pas pu être envoyé. Veuillez réessayer plus tard.</string>
 
+    <!-- Feedback window, under the text box when signed in. {0} is the account's email address, where a reply to the report is sent. -->
+    <string name="Feedback_RepliesTo">Les réponses seront envoyées à %1$s.</string>
+
+    <!-- Feedback window, when signed out: placeholder of the box for the address a reply to the report is sent to. -->
+    <string name="Feedback_ReplyEmail">E-mail pour les réponses (facultatif)</string>
+
+    <!-- Feedback window, area list, phone apps only: albums downloaded to play without a connection. -->
+    <string name="Feedback_AreaDownloads">Téléchargements</string>
+
+    <!-- Feedback window, area list, phone apps only: playing on speakers, Chromecast and AirPlay (Play on). -->
+    <string name="Feedback_AreaCasting">Enceintes et diffusion</string>
+
     <!-- Title of the window shown at launch after rpm crashed, asking once whether to send crash reports. -->
     <string name="Crash_PromptTitle">rpm s\'est fermé de manière inattendue</string>
 

@@ -2317,6 +2317,18 @@
     <!-- Shown when the server would not take the feedback. -->
     <string name="Feedback_Failed">反馈发送失败。请稍后再试。</string>
 
+    <!-- Feedback window, under the text box when signed in. {0} is the account's email address, where a reply to the report is sent. -->
+    <string name="Feedback_RepliesTo">回复将发送至 %1$s。</string>
+
+    <!-- Feedback window, when signed out: placeholder of the box for the address a reply to the report is sent to. -->
+    <string name="Feedback_ReplyEmail">用于回复的电子邮箱（可选）</string>
+
+    <!-- Feedback window, area list, phone apps only: albums downloaded to play without a connection. -->
+    <string name="Feedback_AreaDownloads">下载</string>
+
+    <!-- Feedback window, area list, phone apps only: playing on speakers, Chromecast and AirPlay (Play on). -->
+    <string name="Feedback_AreaCasting">扬声器与投放</string>
+
     <!-- Title of the window shown at launch after rpm crashed, asking once whether to send crash reports. -->
     <string name="Crash_PromptTitle">rpm 意外关闭</string>
 
