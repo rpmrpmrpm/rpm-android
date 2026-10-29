@@ -6,10 +6,10 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlin.math.sqrt
 
 /**
@@ -40,12 +40,13 @@ class ShakeCounter {
     }
 }
 
-/** Calls [onShake] when the phone is shaken, while this is composed. */
+/** Calls [onShake] when the phone is shaken. The motion sensor is read only while the app is resumed: a composition
+ * outlives `onStop`, and a listener left on in the background would keep the sensor running. */
 @Composable
 fun ShakeWatch(onShake: () -> Unit) {
     val context = LocalContext.current
     val latest by rememberUpdatedState(onShake)
-    DisposableEffect(context) {
+    LifecycleResumeEffect(context) {
         val sensors = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
         val accelerometer = sensors?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         val counter = ShakeCounter()
@@ -56,6 +57,6 @@ fun ShakeWatch(onShake: () -> Unit) {
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
         }
         if (accelerometer != null) sensors.registerListener(listener, accelerometer, SensorManager.SENSOR_DELAY_UI)
-        onDispose { sensors?.unregisterListener(listener) }
+        onPauseOrDispose { sensors?.unregisterListener(listener) }
     }
 }
