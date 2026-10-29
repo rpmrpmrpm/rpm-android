@@ -144,6 +144,9 @@ fun ProfilePage(
     onSignOut: () -> Unit,
     onDeleteAccount: suspend () -> String?,
     onSupport: () -> Unit,
+    crashReports: Boolean,
+    onCrashReports: (Boolean) -> Unit,
+    onFeedback: (() -> Unit)?,
     bottomRoom: Dp,
 ) {
     val density = LocalDensity.current
@@ -178,7 +181,7 @@ fun ProfilePage(
                 cards.Playback(onWifi, onCellular, onDownload, onRates, reachSavesData)
                 cards.Loudness(levelling, levelsClassical, onLevelling, onLevelsClassical)
                 cards.Device(cached, onClearCache)
-                cards.About(version, onCredits = { credits = true })
+                cards.About(version, onCredits = { credits = true }, crashReports, onCrashReports, onFeedback)
             }
             // The header stays over the scroll, as on iPhone: it is the name of the page, and nobody should have to
             // scroll back to see it.
@@ -506,11 +509,23 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
     // ── about ──
 
     @Composable
-    fun About(version: String, onCredits: () -> Unit) {
+    fun About(version: String, onCredits: () -> Unit, crashReports: Boolean, onCrashReports: (Boolean) -> Unit, onFeedback: (() -> Unit)?) {
         Card(Glyph.about, stringResource(R.string.Rpm_Profile_About)) {
             BasicText(stringResource(R.string.Rpm_Profile_Tagline), style = display(13f).copy(color = Ink.white(0xB3)))
             BasicText(stringResource(R.string.Rpm_Profile_Version, version), style = display(11f).copy(color = Ink.white(0x66)))
             Key(stringResource(R.string.About_Acknowledgements), onClick = onCredits)
+            onFeedback?.let { Key(stringResource(R.string.Shell_Feedback), onClick = it) }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Switch) { onCrashReports(!crashReports) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BasicText(stringResource(R.string.Settings_CrashReports), Modifier.weight(1f), style = display(13f).copy(color = Ink.white(0xB3)))
+                Spacer(Modifier.width(10.dp))
+                Switch(crashReports)
+            }
+            BasicText(stringResource(R.string.Settings_CrashReportsDesc), style = display(11f).copy(color = Ink.white(0x66)))
         }
     }
 
@@ -590,7 +605,7 @@ private fun ClosedMenu(text: String, dimmed: Boolean, onOpen: (Rect) -> Unit) {
 
 /** An iOS switch: a 51 by 31 capsule with a white knob, lit in the tint the iPhone gives it (white at 0x88). */
 @Composable
-private fun Switch(on: Boolean) {
+internal fun Switch(on: Boolean) {
     val knob by animateDpAsState(if (on) 22.dp else 2.dp, tween(180), label = "switch")
     Box(
         Modifier

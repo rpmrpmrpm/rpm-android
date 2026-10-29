@@ -403,8 +403,19 @@ enum class SettingsPage(val title: Int, val glyph: Char) {
 }
 
 /** Who is signed in, for the Profile section, and the way to sign out. [supporter] is whether the account has the
- * supporter features (paying supporters and closed beta testers), null while not yet known; [tester] says which. */
-class SettingsAccount(val name: String, val email: String, val supporter: Boolean?, val tester: Boolean, val signOut: () -> Unit)
+ * supporter features (paying supporters and closed beta testers), null while not yet known; [tester] says which.
+ * [crashReports] is the Send crash reports switch; [onFeedback] opens Send feedback, null when this build does not
+ * offer it (ReportScope). */
+class SettingsAccount(
+    val name: String,
+    val email: String,
+    val supporter: Boolean?,
+    val tester: Boolean,
+    val signOut: () -> Unit,
+    val crashReports: Boolean,
+    val switchCrashReports: () -> Unit,
+    val onFeedback: (() -> Unit)?,
+)
 
 /** One row of a section: its name, its value as shown, and what OK does. */
 private class SettingLine(val label: String, val value: String, val onClick: () -> Unit)
@@ -458,6 +469,9 @@ private fun settingLines(page: SettingsPage, settings: PlayerSettings, account: 
                 SettingLine(stringResource(R.string.Login_SignOut), if (asked) stringResource(R.string.Tv_SignOutConfirm) else "") {
                     if (asked) account.signOut() else asked = true
                 },
+                SettingLine(stringResource(R.string.Settings_CrashReports), if (account.crashReports) on else off, account.switchCrashReports),
+            ) + listOfNotNull(
+                account.onFeedback?.let { SettingLine(stringResource(R.string.Shell_Feedback), "", it) },
             )
         }
         SettingsPage.Display -> listOf(

@@ -168,6 +168,21 @@ fun RpmApp(
         val legend = remember(signedIn.userId) { LegendState() }
         var menuOpen by remember { mutableStateOf(false) }
         var settingsOpen by remember { mutableStateOf(false) }
+
+        // Send feedback is in the settings. The screenshot is taken as they open, while the screen under the panel is
+        // still the one the tester came from (the panel fades in from nothing), and kept for the feedback screen.
+        // Only a beta build offers it (ReportScope).
+        val diagnostics = services.diagnostics
+        var feedbackOpen by remember { mutableStateOf(false) }
+        var heldShot by remember { mutableStateOf<ByteArray?>(null) }
+        var crashReports by remember { mutableStateOf(diagnostics.sendsCrashReports) }
+        val shotActivity = androidx.compose.ui.platform.LocalContext.current.activity()
+        LaunchedEffect(settingsOpen) {
+            if (settingsOpen && diagnostics.offersFeedback && shotActivity != null) {
+                heldShot = com.rpm.player.core.diag.WindowShot.capture(shotActivity)
+            }
+        }
+        val asksAboutCrashes by diagnostics.asksAboutCrashes.collectAsStateWithLifecycle()
         // The album wall's search, kept while an album page is open over the wall (WallSearchState).
         val wallSearch = remember(signedIn.userId) { WallSearchState() }
         // Where the artists and genres screens were left, kept while a page is open over them (BrowseState).
@@ -630,11 +645,24 @@ fun RpmApp(
                                     controller?.pause()
                                     services.scope.launch { services.auth.signOut() }
                                 },
+                                crashReports = crashReports,
+                                switchCrashReports = {
+                                    crashReports = !crashReports
+                                    diagnostics.sendsCrashReports = crashReports
+                                },
+                                onFeedback = if (diagnostics.offersFeedback) ({
+                                    settingsOpen = false
+                                    feedbackOpen = true
+                                }) else null,
                             ),
                             region = services.region,
                             onClose = { settingsOpen = false },
                         )
                     }
+                    if (feedbackOpen) {
+                        FeedbackScreen(heldShot, signedIn.email, diagnostics::sendFeedback, onClose = { feedbackOpen = false })
+                    }
+                    if (asksAboutCrashes) CrashPrompt(onAnswer = diagnostics::answer)
                     // The keys of the screen just opened, in a corner the mini player is not in.
                     if (collectionUp && !menuOpen && !settingsOpen) {
                         val miniHere = settings.miniPlace.takeIf { route.hasMiniPlayer && it != MiniPlace.Off }

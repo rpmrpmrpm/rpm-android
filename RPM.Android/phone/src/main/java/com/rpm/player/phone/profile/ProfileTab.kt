@@ -3,7 +3,10 @@ package com.rpm.player.phone.profile
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.Dp
@@ -23,6 +26,7 @@ import kotlinx.coroutines.launch
  *
  * @param downloaded how many albums are on the phone and what they take; the downloads page passes it.
  * @param onDownloads opens the downloads page; null until that page exists.
+ * @param onFeedback opens Send feedback; null when this build does not offer it.
  */
 @Composable
 fun ProfileTab(
@@ -32,6 +36,7 @@ fun ProfileTab(
     bottomRoom: Dp,
     downloaded: Pair<Int, Long> = 0 to 0L,
     onDownloads: (() -> Unit)? = null,
+    onFeedback: (() -> Unit)?,
 ) {
     val account = (LocalContext.current.applicationContext as PhoneApplication).account
     val session by services.auth.session.collectAsStateWithLifecycle()
@@ -39,6 +44,7 @@ fun ProfileTab(
     val reach by account.reach.now.collectAsStateWithLifecycle()
     val links = LocalUriHandler.current
     val scope = rememberCoroutineScope()
+    var crashReports by remember { mutableStateOf(services.diagnostics.sendsCrashReports) }
 
     // Each time the tab is shown: how much the kept covers take (it asks the cache), and the plan again if the last
     // read failed.
@@ -74,6 +80,12 @@ fun ProfileTab(
         // not be cancelled with it.
         onDeleteAccount = { services.scope.async { account.deleteAccount(session?.email.orEmpty(), controller) }.await() },
         onSupport = { links.openUri(RpmSite.BECOME_SUPPORTER) },
+        crashReports = crashReports,
+        onCrashReports = { on ->
+            services.diagnostics.sendsCrashReports = on
+            crashReports = on
+        },
+        onFeedback = onFeedback,
         bottomRoom = bottomRoom,
     )
 }

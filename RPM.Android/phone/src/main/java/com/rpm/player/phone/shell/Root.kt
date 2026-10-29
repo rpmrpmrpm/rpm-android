@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -136,6 +137,8 @@ import com.rpm.player.phone.player.Speakers
 import com.rpm.player.phone.stage.findActivity
 import com.rpm.player.phone.stage.rememberTurned
 import com.rpm.player.core.playback.NowPlaying
+import com.rpm.player.core.diag.FeedbackShot
+import com.rpm.player.core.diag.WindowShot
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -266,6 +269,18 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     RereadListsOnReturn(services)
     val downloads = rememberDownloadsHere()
     var showingDownloads by rememberSaveable { mutableStateOf(false) }
+
+    // ── Send feedback ──
+
+    // Only a beta build offers it (ReportScope). The screenshot is taken first, while the screen being reported is still
+    // showing, and the page opens over it: from the profile's key, or from a shake on any screen.
+    val shotActivity = LocalContext.current.findActivity()
+    val shotScope = rememberCoroutineScope()
+    var feedbackShot by remember { mutableStateOf<FeedbackShot?>(null) }
+    val openFeedback: (() -> Unit)? = if (!services.diagnostics.offersFeedback || shotActivity == null) null else {
+        { if (feedbackShot == null) shotScope.launch { feedbackShot = FeedbackShot(WindowShot.capture(shotActivity)) } }
+    }
+    openFeedback?.let { ShakeWatch(onShake = it) }
 
     // ── what can be done to a song or a record from anywhere ──
 
@@ -585,6 +600,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                     bottomRoom = chrome,
                     downloaded = downloads.downloaded,
                     onDownloads = { showingDownloads = true },
+                    onFeedback = openFeedback,
                 )
             }
           }
@@ -684,6 +700,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
         )
         // Over everything, the player included: the stage is the whole screen while the phone is turned.
         Stage(onStage, now, controller, services, wiring.speakers)
+        Reports(services, feedbackShot, onFeedbackClosed = { feedbackShot = null })
     }
     }
 }
