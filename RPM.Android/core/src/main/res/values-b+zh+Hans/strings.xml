@@ -6467,6 +6467,9 @@
     <!-- Sign-up window: the address already has an account. -->
     <string name="SignUp_AlreadyRegistered">该电子邮件已有账户，请尝试登录。</string>
 
+    <!-- Sign-up window: the address already signs in with Apple or Google, so an email account is refused. -->
+    <string name="SignUp_SocialAccount">该电子邮件已用于 Apple 或 Google 登录，请改用 Apple 或 Google 继续。</string>
+
     <!-- Sign-up window: the password does not meet the rule. -->
     <string name="SignUp_WeakPassword">该密码太容易被猜到。请至少使用 8 个字符，包含大写字母、小写字母和数字。</string>
 
@@ -6474,7 +6477,7 @@
     <string name="SignUp_InvalidEmail">这看起来不像电子邮件地址。</string>
 
     <!-- Sign-up window: the name was refused. -->
-    <string name="SignUp_InvalidName">名字可使用字母、数字、空格、连字符和句点，长度为 2 到 50 个字符。</string>
+    <string name="SignUp_InvalidName">名字可使用字母、数字、空格、连字符、句点和撇号，长度为 2 到 50 个字符。</string>
 
     <!-- Sign-up window: the code was wrong. -->
     <string name="SignUp_InvalidCode">验证码不正确，请再看看邮件。</string>

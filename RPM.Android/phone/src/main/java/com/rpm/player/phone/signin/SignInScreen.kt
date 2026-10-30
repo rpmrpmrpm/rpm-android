@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.net.Uri
 import android.widget.ProgressBar
+import androidx.activity.compose.BackHandler
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -84,6 +85,11 @@ import com.rpm.player.phone.ui.WordmarkView
 fun SignInScreen(signIn: SignIn) {
     val backdrop = rememberBackdrop()
     val context = LocalContext.current
+    val signUp = signIn.signUp
+    val step = signUp.step
+
+    // Back from sign-up returns to the sign-in card, as its Cancel does.
+    BackHandler(enabled = step != null) { signUp.close() }
 
     // The address arrives after a request. Whichever activity is on screen then opens it.
     val address = signIn.toOpen
@@ -130,17 +136,23 @@ fun SignInScreen(signIn: SignIn) {
                 ) {
                     WordmarkView(Color.White, Modifier.width(150.dp).height(150.dp / Wordmark.aspect))
                     BasicText(
-                        stringResource(R.string.Rpm_SignIn_Subtitle),
+                        stringResource(if (step == null) R.string.Rpm_SignIn_Subtitle else R.string.SignUp_Subtitle),
                         Modifier.widthIn(max = 320.dp),
                         style = system(15f).copy(color = Ink.white(0xCC), textAlign = TextAlign.Center),
                     )
-                    Card(signIn, backdrop)
-                    // There is no sign-up link. Continuing with Apple or Google creates the account at once.
-                    BasicText(
-                        stringResource(R.string.Login_NewHere),
-                        Modifier.widthIn(max = 320.dp),
-                        style = system(13f).copy(color = Color(0xFFCCDDEE).copy(alpha = 0xAA / 255f), textAlign = TextAlign.Center),
-                    )
+                    if (step != null) {
+                        SignUpCard(signUp, step, backdrop)
+                    } else {
+                        Card(signIn, backdrop)
+                        BasicText(
+                            stringResource(R.string.Login_NewHere),
+                            Modifier.widthIn(max = 320.dp),
+                            style = system(13f).copy(color = Color(0xFFCCDDEE).copy(alpha = 0xAA / 255f), textAlign = TextAlign.Center),
+                        )
+                        GlassButton(onClick = { signUp.open() }, modifier = Modifier.widthIn(max = 320.dp), enabled = !signIn.busy) { style ->
+                            BasicText(stringResource(R.string.SignUp_Button), style = style)
+                        }
+                    }
                 }
             }
         }
@@ -196,6 +208,112 @@ private fun Card(signIn: SignIn, backdrop: Backdrop) {
             if (signIn.busy) Busy()
         }
     }
+}
+
+/**
+ * Making an account, in place of the sign-in card. The same steps as the iPhone's `SignUpCard`: the form, then the
+ * code from the mail. Once the code is taken the new account signs in, and the app replaces this screen.
+ */
+@Composable
+private fun SignUpCard(signUp: SignUp, step: SignUp.Step, backdrop: Backdrop) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var code by rememberSaveable { mutableStateOf("") }
+    val emailField = remember { FocusRequester() }
+    val passwordField = remember { FocusRequester() }
+    val enabled = !signUp.busy
+
+    GlassCard(backdrop, Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            BasicText(stringResource(R.string.SignUp_Title), style = kicker())
+            when (step) {
+                SignUp.Step.Form -> {
+                    GlassField(
+                        value = name,
+                        onValueChange = { name = it },
+                        placeholder = stringResource(R.string.SignUp_Name),
+                        modifier = Modifier.semantics { contentType = ContentType.PersonFullName },
+                        enabled = enabled,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { emailField.requestFocus() }),
+                    )
+                    GlassField(
+                        value = email,
+                        onValueChange = { email = it },
+                        placeholder = stringResource(R.string.Login_Email),
+                        modifier = Modifier.focusRequester(emailField)
+                            .semantics { contentType = ContentType.NewUsername + ContentType.EmailAddress },
+                        enabled = enabled,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.None,
+                            autoCorrectEnabled = false,
+                            keyboardType = KeyboardType.Email,
+                            imeAction = ImeAction.Next,
+                        ),
+                        keyboardActions = KeyboardActions(onNext = { passwordField.requestFocus() }),
+                    )
+                    GlassField(
+                        value = password,
+                        onValueChange = { password = it },
+                        placeholder = stringResource(R.string.Login_Password),
+                        modifier = Modifier.focusRequester(passwordField).semantics { contentType = ContentType.NewPassword },
+                        enabled = enabled,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Go),
+                        keyboardActions = KeyboardActions(onGo = { signUp.create(name, email, password) }),
+                        visualTransformation = PasswordVisualTransformation(),
+                    )
+                    BasicText(
+                        stringResource(R.string.SignUp_PasswordRule),
+                        Modifier.fillMaxWidth(),
+                        style = system(12f).copy(color = Ink.white(0x77)),
+                    )
+                }
+                is SignUp.Step.Code -> {
+                    BasicText(
+                        stringResource(R.string.SignUp_CodeSent, step.email),
+                        Modifier.fillMaxWidth(),
+                        style = system(13f).copy(color = Ink.white(0xCC), textAlign = TextAlign.Center),
+                    )
+                    GlassField(
+                        value = code,
+                        onValueChange = { typed -> code = typed.filter { it.isDigit() }.take(6) },
+                        placeholder = stringResource(R.string.SignUp_Code),
+                        modifier = Modifier.semantics { contentType = ContentType.SmsOtpCode },
+                        enabled = enabled,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { signUp.confirm(code) }),
+                    )
+                    GlassButton(onClick = { signUp.resend() }, enabled = enabled) { style ->
+                        BasicText(stringResource(R.string.SignUp_Resend), style = system(13f).copy(color = style.color))
+                    }
+                }
+            }
+            SignUpLine(signUp)
+            GlassButton(
+                onClick = { if (step is SignUp.Step.Code) signUp.confirm(code) else signUp.create(name, email, password) },
+                weight = Weight.Primary,
+                enabled = enabled,
+            ) { style ->
+                BasicText(stringResource(if (step is SignUp.Step.Code) R.string.SignUp_Confirm else R.string.SignUp_Create), style = style)
+            }
+            GlassButton(onClick = { signUp.close() }, enabled = enabled) { style ->
+                BasicText(stringResource(R.string.Common_Cancel), style = style)
+            }
+            if (signUp.busy) Busy()
+        }
+    }
+}
+
+/** What went wrong on the sign-up card; else news, such as a new code sent. */
+@Composable
+private fun SignUpLine(signUp: SignUp) {
+    val (said, color) = signUp.trouble?.let { it to Ink.red } ?: signUp.notice?.let { it to Ink.white(0xCC) } ?: return
+    BasicText(stringResource(said.id, *said.args.toTypedArray()), Modifier.fillMaxWidth(), style = system(13f).copy(color = color))
 }
 
 /** Shows what went wrong; else news such as a deleted account; else what is being waited for. The iPhone's order. */

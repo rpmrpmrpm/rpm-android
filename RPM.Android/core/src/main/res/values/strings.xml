@@ -6467,6 +6467,9 @@
     <!-- Sign-up window: the address already has an account. -->
     <string name="SignUp_AlreadyRegistered">There\'s already an account with this email. Try signing in instead.</string>
 
+    <!-- Sign-up window: the address already signs in with Apple or Google, so an email account is refused. -->
+    <string name="SignUp_SocialAccount">This email is already used with Apple or Google. Continue with Apple or Google instead.</string>
+
     <!-- Sign-up window: the password does not meet the rule. -->
     <string name="SignUp_WeakPassword">That password is too easy to guess. Use at least 8 characters, with an uppercase letter, a lowercase letter and a number.</string>
 
@@ -6474,7 +6477,7 @@
     <string name="SignUp_InvalidEmail">That doesn\'t look like an email address.</string>
 
     <!-- Sign-up window: the name was refused. -->
-    <string name="SignUp_InvalidName">Your name can use letters, numbers, spaces, hyphens and dots, 2 to 50 of them.</string>
+    <string name="SignUp_InvalidName">Your name can use letters, numbers, spaces, hyphens, dots and apostrophes, 2 to 50 of them.</string>
 
     <!-- Sign-up window: the code was wrong. -->
     <string name="SignUp_InvalidCode">That code isn\'t right. Have another look at the email.</string>

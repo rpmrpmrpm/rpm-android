@@ -7,6 +7,7 @@ import com.rpm.player.core.net.escapeSegment
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,6 +36,32 @@ sealed interface LoginAnswer {
     data class Refused(val code: Int) : LoginAnswer
 }
 
+/** How a step of signing up ended (`auth/register`, `auth/confirm`, `auth/resend-code`), as the iPhone's
+ * `SignUpAnswer`. No case carries the service's English sentence: the screen says its own. */
+sealed interface SignUpAnswer {
+    data object Done : SignUpAnswer
+
+    /** The service said no, with its own code: "already_registered", "social_account", "weak_password",
+     * "invalid_email", "invalid_name", "invalid_code", "code_expired", "code_resent", "too_many", or "refused"
+     * when the answer had no code. */
+    data class Refused(val code: String) : SignUpAnswer
+
+    /** Any other status: a 5xx, or a page that is not from the accounts service. */
+    data class Failed(val status: Int) : SignUpAnswer
+
+    companion object {
+        /** Reads an answer. A 4xx answer's code is taken, and the sentence beside it is left out. */
+        fun read(status: Int, body: String): SignUpAnswer = when (status) {
+            in 200..299 -> Done
+            in 400..499 -> Refused(
+                runCatching { (WireJson.parseToJsonElement(body) as? JsonObject)?.get("code") as? JsonPrimitive }
+                    .getOrNull()?.contentOrNull?.takeIf { it.isNotEmpty() } ?: "refused",
+            )
+            else -> Failed(status)
+        }
+    }
+}
+
 /** The accounts service's routes. This is an interface so that the ordering rules of [AuthClient] can be
  * tested without a network. */
 interface AuthWire {
@@ -54,6 +81,16 @@ interface AuthWire {
     /** `DELETE auth/account` with the address the person typed, under [accessToken]. Returns the HTTP status. Throws
      * [IOException] if the service cannot be reached. */
     suspend fun deleteAccount(accessToken: String, confirmEmail: String): Int
+
+    /** `auth/register`: makes an account that starts unconfirmed. The service mails a six-digit code. Throws
+     * [IOException] if the service cannot be reached. */
+    suspend fun register(name: String, email: String, password: String): SignUpAnswer
+
+    /** `auth/confirm`: takes the mailed code. The service answers an account that is already confirmed as done. */
+    suspend fun confirm(email: String, code: String): SignUpAnswer
+
+    /** `auth/resend-code`: mails a new code, which replaces the one sent before. */
+    suspend fun resendCode(email: String): SignUpAnswer
 }
 
 /** [AuthWire] over HTTP. None of these calls sends the app key, which the accounts service does not read. Only
@@ -135,6 +172,16 @@ class HttpAuthWire(private val http: OkHttpClient) : AuthWire {
             .build()
         http.newCall(request).await().use { response -> return response.code }
     }
+
+    override suspend fun register(name: String, email: String, password: String): SignUpAnswer =
+        post("auth/register", mapOf("name" to name.trim(), "email" to email.trim(), "password" to password))
+            .let { SignUpAnswer.read(it.code, it.body) }
+
+    override suspend fun confirm(email: String, code: String): SignUpAnswer =
+        post("auth/confirm", mapOf("email" to email.trim(), "code" to code.trim())).let { SignUpAnswer.read(it.code, it.body) }
+
+    override suspend fun resendCode(email: String): SignUpAnswer =
+        post("auth/resend-code", mapOf("email" to email.trim())).let { SignUpAnswer.read(it.code, it.body) }
 
     private class Answer(val code: Int, val body: String)
 

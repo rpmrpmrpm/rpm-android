@@ -51,6 +51,9 @@ class SignIn(
     private val bringBack: () -> Unit,
     private val online: () -> Boolean = { true },
 ) {
+    /** Making an account, on the same screen. A sign-in of an account that was never confirmed opens its code step. */
+    val signUp = SignUp(auth, scope, online)
+
     /** A sign-in is under way; the form is disabled. */
     var busy by mutableStateOf(false)
         private set
@@ -114,7 +117,8 @@ class SignIn(
                 when (val answer = auth.login(email, password)) {
                     is LoginAnswer.In -> null
                     LoginAnswer.WrongPassword -> Said(R.string.Login_WrongPassword)
-                    LoginAnswer.NotConfirmed -> Said(R.string.Login_NotConfirmed)
+                    // The mail carries only a code, so the code step opens rather than a sentence.
+                    LoginAnswer.NotConfirmed -> null.also { signUp.atCode(email, password) }
                     // A 2xx answer without a token means the sign-in did not finish. A 5xx answer means the service
                     // failed.
                     is LoginAnswer.Refused -> when (answer.code) {

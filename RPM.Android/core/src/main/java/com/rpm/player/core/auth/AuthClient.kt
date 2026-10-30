@@ -42,6 +42,14 @@ class AuthClient(
     suspend fun login(email: String, password: String): LoginAnswer =
         wire.login(email, password).also { if (it is LoginAnswer.In) adopt(it.said) }
 
+    /** Signing up: see [AuthWire.register], [AuthWire.confirm] and [AuthWire.resendCode]. None of them signs in. After
+     * the code, [login] with the new password does. */
+    suspend fun register(name: String, email: String, password: String): SignUpAnswer = wire.register(name, email, password)
+
+    suspend fun confirm(email: String, code: String): SignUpAnswer = wire.confirm(email, code)
+
+    suspend fun resendCode(email: String): SignUpAnswer = wire.resendCode(email)
+
     /** Takes a finished sign-in as the session. */
     suspend fun adopt(said: LoginResponse) {
         lock.withLock { replace(merge(previous = null, said)) }

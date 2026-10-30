@@ -9,6 +9,7 @@ import com.rpm.player.core.auth.Provider
 import com.rpm.player.core.auth.RefreshAnswer
 import com.rpm.player.core.auth.Session
 import com.rpm.player.core.auth.SessionStore
+import com.rpm.player.core.auth.SignUpAnswer
 import com.rpm.player.core.auth.SocialPoll
 import com.rpm.player.core.auth.SocialReturn
 import com.rpm.player.core.auth.SocialStart
@@ -39,6 +40,9 @@ class SignInFormTest {
         override suspend fun refresh(refreshToken: String): RefreshAnswer = RefreshAnswer.Unavailable
         override suspend fun revoke(refreshToken: String) = Unit
         override suspend fun deleteAccount(accessToken: String, confirmEmail: String): Int = throw IOException("not asked")
+        override suspend fun register(name: String, email: String, password: String): SignUpAnswer = throw IOException("not asked")
+        override suspend fun confirm(email: String, code: String): SignUpAnswer = throw IOException("not asked")
+        override suspend fun resendCode(email: String): SignUpAnswer = throw IOException("not asked")
     }
 
     private class Store : SessionStore {
@@ -62,10 +66,13 @@ class SignInFormTest {
         assertFalse(signIn.busy)
     }
 
-    @Test fun anUnconfirmedAddressSaysSo() {
+    /** The mail carries only a code, so an account that was never confirmed goes to the code step, not to a sentence. */
+    @Test fun anUnconfirmedAddressOpensTheCodeStep() {
         val (signIn, _) = form { LoginAnswer.NotConfirmed }
-        signIn.withPassword("a@b.c", "x")
-        assertEquals(Said(R.string.Login_NotConfirmed), signIn.trouble)
+        signIn.withPassword(" a@b.c ", "x")
+        assertNull(signIn.trouble)
+        assertEquals(SignUp.Step.Code("a@b.c", "x"), signIn.signUp.step)
+        assertFalse(signIn.busy)
     }
 
     @Test fun aServerFailureGivesItsStatus() {
