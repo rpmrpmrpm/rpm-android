@@ -816,7 +816,7 @@
     <string name="Settings_MusicFolderFailed">无法打开该文件夹。音乐文件夹未更改。</string>
 
     <!-- First-run setup, folder step: the chosen folder could not be opened as a library. There is no previous music folder at this point. -->
-    <string name="Wizard_FolderFailed">无法打开该文件夹。请选择其他文件夹。</string>
+    <string name="Wizard_FolderFailed">无法打开该文件夹。没关系，换一个文件夹即可。</string>
     <string name="Settings_Naming">文件命名</string>
     <string name="Settings_NamingHint">抓取、录制和导入的文件如何命名与归档。抓取和黑胶录音会以默认模板进入队列，导入也按同样方式归档。可用下方的标记自定义命名格式。</string>
     <string name="Settings_NamingNew">新建</string>
@@ -835,7 +835,7 @@
     <string name="Settings_NamingErrorDuplicate">名称“%1$s”被使用了两次。名称必须唯一。</string>
     <string name="Settings_Title">设置</string>
     <string name="Settings_Close">关闭</string>
-    <string name="Setup_ExistingLibrary">现有的 rpm 音乐文件夹。将直接打开。</string>
+    <string name="Setup_ExistingLibrary">这已经是一个 rpm 音乐文件夹，rpm 将直接打开它。</string>
 
     <!-- Shown under the folder picker when the chosen folder has visible content and no RPM mirror. -->
     <string name="Setup_NotEmpty">此文件夹不是空的。请选择一个空文件夹，或选择一个现有的 rpm 音乐文件夹以打开它。</string>
@@ -2452,7 +2452,7 @@
     <string name="Album_ReportCommentPrompt">为什么需要有人查看？举报会由人工阅读，系统不会自动隐藏任何内容。</string>
     <string name="Album_ReportPlaceholder">说明问题</string>
     <string name="Album_ReportSubmit">提交举报</string>
-    <string name="Login_NewHere">第一次使用？使用 Apple 或 Google 继续，账户会自动创建。</string>
+    <string name="Login_NewHere">新用户？用电子邮件注册，或使用 Apple 或 Google 继续，系统会为你创建账户。</string>
     <string name="Login_Subtitle">请登录您的 rpm 账户。</string>
 
     <!-- Album page, phone: the same key once this reader has written one. -->
@@ -5079,7 +5079,7 @@
     <string name="Wizard_FolderTitle">你的音乐放在哪里？</string>
 
     <!-- Setup wizard step 1, line under the heading. -->
-    <string name="Wizard_FolderBody">选择一个空文件夹。rpm 会把导入的所有音乐命名整理后存放在其中。</string>
+    <string name="Wizard_FolderBody">选择一个空文件夹，其余的交给 rpm。你导入的所有音乐都会在其中命名整理，让你的收藏始终井井有条。</string>
 
     <!-- Setup wizard step 1, the picker row before a folder is picked. -->
     <string name="Wizard_NoFolderChosen">尚未选择文件夹</string>
@@ -5088,7 +5088,7 @@
     <string name="Wizard_ImportTitle">导入你的音乐</string>
 
     <!-- Setup wizard step 2, line under the heading, before a source is chosen. -->
-    <string name="Wizard_ImportBody">选择音乐当前所在位置。rpm 会读取、检查并归档到你的收藏中。</string>
+    <string name="Wizard_ImportBody">音乐已经放在别处了？没问题！选择它所在的文件夹，rpm 会读取、检查，并将其整齐地归入你的收藏。</string>
 
     <!-- Setup wizard step 2, the scan strip over the review. -->
     <string name="Wizard_ScanSummary">%1$s 个文件，%2$s 张专辑，%3$s 首散曲</string>
@@ -5115,7 +5115,7 @@
     <string name="Wizard_PlanClashes">已自动解决 %1$s 处名称冲突</string>
 
     <!-- Setup wizard step 3 heading. -->
-    <string name="Wizard_DoneTitle">设置完成</string>
+    <string name="Wizard_DoneTitle">一切就绪！</string>
 
     <!-- Setup wizard step 3, the result card. -->
     <string name="Wizard_DoneAlbums">%1$s 张专辑</string>
@@ -5127,19 +5127,19 @@
     <string name="Wizard_SupportTitle">请考虑支持 rpm</string>
 
     <!-- Setup wizard step 3, the supporter pitch. -->
-    <string name="Wizard_SupportPitch">rpm 由一支热爱音乐的小团队打造，我们相信收藏并真正拥有自己的音乐。支持者帮助我们承担托管费用和新功能的开发。</string>
+    <string name="Wizard_SupportPitch">rpm 由一个热爱音乐的小团队打造，我们相信收藏并拥有属于自己的音乐。支持者让 rpm 得以持续：他们承担托管费用，并帮助我们开发新功能。</string>
 
     <!-- Setup wizard step 3, the button that finishes without becoming a supporter. -->
     <string name="Wizard_Finish">打开我的收藏</string>
 
     <!-- First-run hint pointing at the Import tab in the left rail. -->
-    <string name="Coach_AddMusic">在这里添加音乐。给 rpm 指定一个文件夹、一张 CD 或一台唱机，它会把所有内容归入你的收藏。</string>
+    <string name="Coach_AddMusic">你的音乐从这里进来！来吧，点一下“导入”。</string>
 
     <!-- First-run hint pointing at the grip under the artwork band. -->
-    <string name="Coach_ArtHeader">拖动这里可以展开封面，双击可以收起。</string>
+    <string name="Coach_ArtHeader">正在播放音乐，想看看封面？拖动这里打开，双击即可再收起来。</string>
 
     <!-- First-run hint pointing at the view switch in the library header. -->
-    <string name="Coach_Views">查看收藏的三种方式：列表、封面墙，或专辑网格。</string>
+    <string name="Coach_Views">按你的方式浏览收藏！随时在专辑网格、专辑列表和数据表之间切换。</string>
 
     <!-- Kicker on the locked home panel. Shown in caps. -->
     <string name="HomeLock_Kicker">主页</string>
@@ -5187,7 +5187,10 @@
     <string name="ListLock_Hide">隐藏</string>
 
     <!-- Setup wizard step 1, under the wordmark and tagline, above the folder question. -->
-    <string name="Wizard_Welcome">欢迎使用 rpm。我们将引导你完成音乐收藏的设置。</string>
+    <string name="Wizard_Welcome">欢迎使用 rpm！我们来设置你的音乐收藏，只需几个步骤。</string>
+
+    <!-- Setup wizard, first launch: the welcome alone in the middle of the window while the opening sound plays, before step 1 fades in. -->
+    <string name="Wizard_Hello">欢迎使用 rpm！</string>
 
     <!-- Setup wizard step 2: the one source. Onboarding imports a folder of files and nothing else. -->
     <string name="Wizard_ChooseFolder">选择文件夹</string>
@@ -5211,13 +5214,13 @@
     <string name="Wizard_ImportCopyUnknown">将 %1$s 个文件复制到收藏（%2$s 个归为未知艺人）</string>
 
     <!-- Setup wizard step 2, under the Folder layout heading, above the template choices. -->
-    <string name="Wizard_LayoutHint">请选择音乐收藏所使用的文件夹结构。</string>
+    <string name="Wizard_LayoutHint">你希望收藏如何排列？选择最适合你的文件夹结构。</string>
 
     <!-- Setup wizard step 2, under The original files heading, above the move/copy choice. -->
-    <string name="Wizard_OriginalsHint">你希望 rpm 如何处理所选文件夹中的音乐文件？</string>
+    <string name="Wizard_OriginalsHint">rpm 应如何处理你所选文件夹中的音乐文件？</string>
 
     <!-- Setup wizard step 2, under the Music collection heading, above the destination grid. -->
-    <string name="Wizard_PlanHint">这是你音乐收藏的初始文件夹结构。</string>
+    <string name="Wizard_PlanHint">这是你的音乐收藏最初的样子预览。</string>
 
     <!-- Tooltip on the cloud mark in the import queue. -->
     <string name="QueueDup_InCloud">已在你的云端，但此电脑上没有文件。导入后文件就会在本机。</string>
@@ -5307,7 +5310,7 @@
     <string name="Settings_ShowHintsAgain">重新显示首次运行提示</string>
 
     <!-- First-run hint pointing at the menu, shown only while signed out. -->
-    <string name="Coach_SignIn">登录 rpm 即可使用云功能：手机上访问你的收藏，随时随地在线播放。</string>
+    <string name="Coach_SignIn">把音乐随身带走！登录 rpm 即可使用云端：收藏就在你的手机上，随时随地都能播放。</string>
 
     <!-- Display settings, card heading over the button that replays the coachmarks. -->
     <string name="Settings_Hints">首次运行提示</string>
@@ -6274,4 +6277,220 @@
 
     <!-- Line under the title of the TV player's Now playing drawer while rearranging is on. OK, Up and Down are the TV remote's keys. -->
     <string name="Tv_QueueRearrangeHint">按 OK 拿起歌曲，上下键移动，再按 OK 放下。</string>
+
+    <!-- Setup wizard step 1, line under the Country and language heading. -->
+    <string name="Wizard_RegionBody">选择应用使用的语言，以及用于本地化的国家。</string>
+
+    <!-- Setup wizard step 4 heading: the background, Pegasus's visualizer, the record and when rpm opens by itself. -->
+    <string name="Wizard_LookTitle">打造你的 rpm</string>
+
+    <!-- Setup wizard step 4, line under the Background heading. -->
+    <string name="Wizard_LookBackgroundHint">整个应用背后的图片。之后也可以在设置中使用你自己的图片。</string>
+
+    <!-- Setup wizard step 4, heading over the two switches: open rpm for a music CD, and for a music file. -->
+    <string name="Wizard_LookStart">自动打开 rpm</string>
+
+    <!-- Setup wizard step 5 heading: the view the library opens in. -->
+    <string name="Wizard_LayoutTitle">你想如何浏览你的收藏？</string>
+
+    <!-- Setup wizard step 5, line over the three view pictures. -->
+    <string name="Wizard_LayoutBody">选择资料库打开时的视图。你可以随时在资料库顶部切换。</string>
+
+    <!-- Setup wizard step 5, under the Album grid picture. -->
+    <string name="Wizard_LayoutWallDesc">所有封面并排陈列，就像架子上的唱片。</string>
+
+    <!-- Setup wizard step 5, under the Album list picture. -->
+    <string name="Wizard_LayoutListDesc">每张专辑配上封面和曲目列表。</string>
+
+    <!-- Setup wizard step 5, under the Data table picture. -->
+    <string name="Wizard_LayoutTableDesc">所有歌曲以行列呈现，便于排序和编辑。</string>
+
+    <!-- Pegasus's Original room animation, one line under its name (setup wizard and Display settings). -->
+    <string name="Wizard_RoomOriginalDesc">柔和的光随音乐飘动、律动。</string>
+
+    <!-- Pegasus's Yang room animation, one line under its name. -->
+    <string name="Wizard_RoomYangDesc">发光的球体绕着中心旋转，拖曳出光尾。</string>
+
+    <!-- Pegasus's Lava room animation, one line under its name. -->
+    <string name="Wizard_RoomLavaDesc">像熔岩灯一样上升又下沉的色块。</string>
+
+    <!-- Pegasus's Alchemy room animation, one line under its name. -->
+    <string name="Wizard_RoomAlchemyDesc">宽阔的光带在屏幕上流淌。</string>
+
+    <!-- Heading for the choice of Pegasus's room animation (setup wizard step 4 and Display settings). -->
+    <string name="Settings_PegasusVisualizer">Pegasus 中的可视化效果</string>
+
+    <!-- Line under the Visualizer in Pegasus heading. -->
+    <string name="Settings_PegasusVisualizerHint">Pegasus 播放时音乐背后流动的光。</string>
+
+    <!-- Display settings, first entry of the language and country pickers: follow Windows. {0} is what Windows gives now. -->
+    <string name="Settings_SameAsWindows">与 Windows 相同（%1$s）</string>
+
+    <!-- Display settings, shown after the language is changed. -->
+    <string name="Settings_LanguageRestart">重新启动 rpm 以在所有地方使用新语言。</string>
+
+    <!-- Display settings, button that closes rpm and starts it again. -->
+    <string name="Settings_RestartNow">立即重新启动</string>
+
+    <!-- Library settings, heading of the card for opening music files with rpm. -->
+    <string name="Settings_MusicFiles">音乐文件</string>
+
+    <!-- Switch: make rpm the app Windows opens music files with (setup wizard step 4 and Library settings). -->
+    <string name="Settings_OpenMusicFiles">播放音乐文件时打开 rpm</string>
+
+    <!-- Line under the Open rpm when a music file is played switch. -->
+    <string name="Settings_OpenMusicFilesHint">你打开的音乐文件会在 rpm 中播放。Windows 会请你在其设置中确认使用 rpm。</string>
+
+    <!-- What Windows calls a file type rpm opens, in Explorer's Type column and Open with. -->
+    <string name="Settings_OpenMusicFilesType">音乐文件</string>
+
+    <!-- Library settings, heading of the choice of the view the library opens in. -->
+    <string name="Settings_LibraryLayout">资料库布局</string>
+
+    <!-- Line under the Library layout heading. -->
+    <string name="Settings_LibraryLayoutHint">资料库打开时的视图。资料库顶部的按钮也可以切换。</string>
+
+    <!-- Setup wizard, first launch: the line under the welcome greeting, shown after two seconds. -->
+    <string name="Wizard_HelloSubtitle">让我们开始吧。</string>
+
+    <!-- Setup wizard, first launch: the button under the welcome that goes on to step 1. -->
+    <string name="Wizard_Continue">继续</string>
+
+    <!-- The note shown once after setup: its heading. -->
+    <string name="Beta_WelcomeTitle">感谢你加入封闭测试！</string>
+
+    <!-- The beta welcome: the first paragraph, under the heading. -->
+    <string name="Beta_WelcomeIntro">很高兴你的加入！你是最早使用 rpm 的人之一，也因此成为打造它的一员。</string>
+
+    <!-- The beta welcome: the small heading over its three points. -->
+    <string name="Beta_WelcomeWhatHeading">封闭测试是什么</string>
+
+    <!-- The beta welcome, first point: what testers are asked to do. -->
+    <string name="Beta_WelcomeUse">把你自己的收藏带进 rpm，让它成为你的音乐播放器。翻录 CD、录制黑胶或导入文件，全由你决定！</string>
+
+    <!-- The beta welcome, second point: reporting back. -->
+    <string name="Beta_WelcomeTell">有东西坏了、缺了，或者特别好用？告诉我们！你会直接和打造 rpm 的人交流，你的反馈决定我们接下来做什么。</string>
+
+    <!-- The beta welcome, third point: what testers get. -->
+    <string name="Beta_WelcomeGet">作为感谢，你将获得带 100 GB 云空间的 iPhone 版 rpm，以及所有支持者福利。Android TV 版 rpm 即将完成，你会第一个拿到！</string>
+
+    <!-- The beta welcome: the last paragraph, saying the tour of hints follows. -->
+    <string name="Beta_WelcomeTourLine">接下来，快速游览一下！rpm 会一步步带你认识应用，让你清楚每样东西在哪里。我们开始吧！</string>
+
+    <!-- The beta welcome's button: closes it and starts the tour of hints. -->
+    <string name="Beta_WelcomeTour">带我看看</string>
+
+    <!-- First-run hint beside the import pane, after Import was pressed. Asks for the pane to be closed again. -->
+    <string name="Coach_ImportSources">你可以选择从文件夹、CD、黑胶唱片或 DVD 导入。然后通过目录编号、条形码或标题和艺人找到这张发行。很简单吧？现在，先把这个区域关上吧。</string>
+
+    <!-- First-run hint pointing at the rail's track info, visualizations and internet radio buttons. -->
+    <string name="Coach_SideScreens">在左侧边栏，你还能找到曲目信息、可视化效果和网络电台。了解你的音乐，让可视化效果在后台静静播放，或者收听电台。</string>
+
+    <!-- First-run hint pointing at the deck's eye button, which opens the views picker. -->
+    <string name="Coach_AppViews">rpm 有不止一种方式呈现你的音乐！点一下这里看看各种视图。</string>
+
+    <!-- First-run hint beside the open views picker: what Main, RPaMp and Pegasus each are. Main is View_Library's own word. -->
+    <string name="Coach_AppViewsOpen">“主界面”是完整的应用，用来浏览和管理收藏。RPaMp 是一个小巧的播放器，工作时不会打扰你。Pegasus 则铺满整个屏幕，专为沙发而生，配有可视化效果和歌词。随时都可以切换！</string>
+
+    <!-- Setup wizard step 2 heading. -->
+    <string name="Wizard_AccountTitle">你的 rpm 账户</string>
+
+    <!-- Setup wizard step 2, line under the heading: the cloud needs an account, nothing else does. -->
+    <string name="Wizard_AccountBody">把音乐随身带走！有了 rpm 账户，你的收藏就在手机上，随时随地都能播放。云端功能仅限有账户的用户使用，其他一切无需账户也能用，所以你随时可以稍后再登录。</string>
+
+    <!-- Setup wizard step 2, once signed in. {0} is the account's name or email. -->
+    <string name="Wizard_AccountSignedIn">已登录：%1$s</string>
+
+    <!-- The link under a first-run hint that moves the tour on to the next one. -->
+    <string name="Coach_Next">下一步</string>
+
+    <!-- The card that ends the first-run tour: its heading. -->
+    <string name="Coach_DoneTitle">游览到此结束！</string>
+
+    <!-- The card that ends the first-run tour: the line under the heading. -->
+    <string name="Coach_DoneBody">现在你已经熟悉 rpm 了。尽情翻录、录制、导入和播放，打造属于你自己的收藏。祝你收藏愉快！</string>
+
+    <!-- The card that ends the first-run tour: the button that closes it and hands the app over. -->
+    <string name="Coach_DoneButton">开始收藏</string>
+
+    <!-- Setup wizard step 2, once signed in: the news, over who is signed in. -->
+    <string name="Wizard_AccountLoggedIn">你已登录！</string>
+
+    <!-- Setup wizard step 2, once signed in: the heading of the offer to connect Discogs. -->
+    <string name="Wizard_DiscogsTitle">关联你的 Discogs 账户</string>
+
+    <!-- Setup wizard step 2, once signed in: why to connect Discogs. -->
+    <string name="Wizard_DiscogsBody">有 Discogs 账户吗？把它关联到 rpm，找到唱片的确切版本就轻而易举。Discogs 由和你一样的收藏者编目，所以就连最稀有的发行通常也能找到！</string>
+
+    <!-- Setup wizard step 2, once Discogs is connected. The Discogs user name may follow in brackets. -->
+    <string name="Wizard_DiscogsLinked">Discogs 已关联！</string>
+
+    <!-- The sign-up window's title. -->
+    <string name="SignUp_Title">注册 rpm</string>
+
+    <!-- Sign-in window: the button beside Sign in that opens the sign-up window instead. -->
+    <string name="SignUp_Button">注册</string>
+
+    <!-- Sign-up window, the line over the form. -->
+    <string name="SignUp_Subtitle">一分钟创建你的 rpm 账户！之后你的收藏随你而行。</string>
+
+    <!-- Sign-up window: the name field's placeholder. -->
+    <string name="SignUp_Name">名字</string>
+
+    <!-- Sign-up window, under the password field: the accounts service's password rule. -->
+    <string name="SignUp_PasswordRule">至少 8 个字符，包含大写字母、小写字母和数字。</string>
+
+    <!-- Sign-up window: the button that sends the form. -->
+    <string name="SignUp_Create">创建账户</string>
+
+    <!-- Sign-up window: the button that sends the mailed code. -->
+    <string name="SignUp_Confirm">确认</string>
+
+    <!-- Sign-up window, the code face. {0} is the email address. -->
+    <string name="SignUp_CodeSent">快好了！我们已向 %1$s 发送了六位数验证码，请在下方输入。</string>
+
+    <!-- Sign-up window: the code field's placeholder. -->
+    <string name="SignUp_Code">验证码</string>
+
+    <!-- Sign-up window, under the code field. -->
+    <string name="SignUp_Resend">重新发送验证码</string>
+
+    <!-- Sign-up window: a fresh code was mailed (asked for, or because the old one expired). -->
+    <string name="SignUp_CodeResent">新的验证码已发送，请查看收件箱！</string>
+
+    <!-- Sign-up window: a field was left empty. -->
+    <string name="SignUp_NeedFields">请填写名字、电子邮件和密码。</string>
+
+    <!-- Sign-up window: the code field was left empty. -->
+    <string name="SignUp_NeedCode">请输入邮件中的验证码。</string>
+
+    <!-- Sign-up window: the address already has an account. -->
+    <string name="SignUp_AlreadyRegistered">该电子邮件已有账户，请尝试登录。</string>
+
+    <!-- Sign-up window: the password does not meet the rule. -->
+    <string name="SignUp_WeakPassword">该密码太容易被猜到。请至少使用 8 个字符，包含大写字母、小写字母和数字。</string>
+
+    <!-- Sign-up window: the address was refused. -->
+    <string name="SignUp_InvalidEmail">这看起来不像电子邮件地址。</string>
+
+    <!-- Sign-up window: the name was refused. -->
+    <string name="SignUp_InvalidName">名字可使用字母、数字、空格、连字符和句点，长度为 2 到 50 个字符。</string>
+
+    <!-- Sign-up window: the code was wrong. -->
+    <string name="SignUp_InvalidCode">验证码不正确，请再看看邮件。</string>
+
+    <!-- Sign-up window: the accounts service is limiting attempts. -->
+    <string name="SignUp_TooMany">尝试次数过多，请稍后再试。</string>
+
+    <!-- Sign-up window: any other failure. -->
+    <string name="SignUp_Failed">无法创建账户，请重试。</string>
+
+    <!-- Setup wizard step 2: opens the sign-up window. -->
+    <string name="Wizard_AccountSignUp">注册 rpm</string>
+
+    <!-- Setup wizard step 2, under Sign up: opens the sign-in window for an email and password. -->
+    <string name="Wizard_AccountHaveOne">已有账户？登录</string>
+
+    <!-- Setup wizard step 4, over the import's progress bar after ten seconds of importing. -->
+    <string name="Wizard_ImportSlow">请稍候！大型收藏的导入可能需要一些时间，不妨去喝杯咖啡，让 rpm 慢慢整理。</string>
 </resources>

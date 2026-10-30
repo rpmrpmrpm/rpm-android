@@ -816,7 +816,7 @@
     <string name="Settings_MusicFolderFailed">Dieser Ordner konnte nicht geöffnet werden. Dein Musikordner wurde nicht geändert.</string>
 
     <!-- First-run setup, folder step: the chosen folder could not be opened as a library. There is no previous music folder at this point. -->
-    <string name="Wizard_FolderFailed">Dieser Ordner konnte nicht geöffnet werden. Wähle einen anderen Ordner.</string>
+    <string name="Wizard_FolderFailed">Dieser Ordner konnte nicht geöffnet werden. Kein Problem, wähle einfach einen anderen.</string>
     <string name="Settings_Naming">Dateibenennung</string>
     <string name="Settings_NamingHint">Wie gerippte, aufgenommene und importierte Dateien benannt und abgelegt werden. Rips und Vinyl-Aufnahmen kommen mit der Standardvorlage in die Warteschlange, und der Import legt alles genauso ab. Baue dein eigenes Layout aus den Bausteinen unten.</string>
     <string name="Settings_NamingNew">Neu</string>
@@ -835,7 +835,7 @@
     <string name="Settings_NamingErrorDuplicate">Der Name „%1$s“ wird zweimal verwendet. Namen müssen eindeutig sein.</string>
     <string name="Settings_Title">Einstellungen</string>
     <string name="Settings_Close">Schließen</string>
-    <string name="Setup_ExistingLibrary">Vorhandener rpm-Musikordner. Er wird geöffnet.</string>
+    <string name="Setup_ExistingLibrary">Das ist bereits ein rpm-Musikordner. rpm öffnet ihn.</string>
 
     <!-- Shown under the folder picker when the chosen folder has visible content and no RPM mirror. -->
     <string name="Setup_NotEmpty">Dieser Ordner ist nicht leer. Wähle einen leeren Ordner, oder einen vorhandenen rpm-Musikordner, um ihn zu öffnen.</string>
@@ -2452,7 +2452,7 @@
     <string name="Album_ReportCommentPrompt">Warum sollte sich das jemand ansehen? Meldungen werden von einer Person gelesen, nichts wird automatisch ausgeblendet.</string>
     <string name="Album_ReportPlaceholder">Beschreiben Sie das Problem</string>
     <string name="Album_ReportSubmit">Meldung senden</string>
-    <string name="Login_NewHere">Neu hier? Weiter mit Apple oder Google, ein Konto wird für dich angelegt.</string>
+    <string name="Login_NewHere">Neu hier? Registriere dich mit deiner E-Mail oder mach mit Apple oder Google weiter, dann wird ein Konto für dich erstellt.</string>
     <string name="Login_Subtitle">Bitte melde dich bei deinem rpm-Konto an.</string>
 
     <!-- Album page, phone: the same key once this reader has written one. -->
@@ -5079,7 +5079,7 @@
     <string name="Wizard_FolderTitle">Wo soll deine Musik liegen?</string>
 
     <!-- Setup wizard step 1, line under the heading. -->
-    <string name="Wizard_FolderBody">Wähle einen leeren Ordner. rpm legt alles Importierte benannt und geordnet darin ab.</string>
+    <string name="Wizard_FolderBody">Wähle einen leeren Ordner, und rpm kümmert sich um den Rest. Alles, was du importierst, wird darin benannt und geordnet, damit deine Sammlung immer aufgeräumt bleibt.</string>
 
     <!-- Setup wizard step 1, the picker row before a folder is picked. -->
     <string name="Wizard_NoFolderChosen">Kein Ordner gewählt</string>
@@ -5088,7 +5088,7 @@
     <string name="Wizard_ImportTitle">Importiere deine Musik</string>
 
     <!-- Setup wizard step 2, line under the heading, before a source is chosen. -->
-    <string name="Wizard_ImportBody">Gib an, wo deine Musik jetzt liegt. rpm liest sie, prüft sie und legt sie in deiner Sammlung ab.</string>
+    <string name="Wizard_ImportBody">Deine Musik liegt schon woanders? Kein Problem! Wähle den Ordner, in dem sie liegt, und rpm liest sie, prüft sie und legt sie ordentlich in deiner Sammlung ab.</string>
 
     <!-- Setup wizard step 2, the scan strip over the review. -->
     <string name="Wizard_ScanSummary">%1$s Dateien, %2$s Alben, %3$s einzelne Titel</string>
@@ -5115,7 +5115,7 @@
     <string name="Wizard_PlanClashes">%1$s Namenskonflikte automatisch gelöst</string>
 
     <!-- Setup wizard step 3 heading. -->
-    <string name="Wizard_DoneTitle">Alles bereit</string>
+    <string name="Wizard_DoneTitle">Alles bereit!</string>
 
     <!-- Setup wizard step 3, the result card. -->
     <string name="Wizard_DoneAlbums">%1$s Alben</string>
@@ -5127,19 +5127,19 @@
     <string name="Wizard_SupportTitle">Bitte erwäge, rpm zu unterstützen</string>
 
     <!-- Setup wizard step 3, the supporter pitch. -->
-    <string name="Wizard_SupportPitch">rpm wird von einem kleinen, engagierten Team gebaut, das Musik liebt und daran glaubt, die eigene Musik zu sammeln und zu besitzen. Unterstützer helfen bei den Hosting-Kosten und bei der Entwicklung neuer Funktionen.</string>
+    <string name="Wizard_SupportPitch">rpm wird von einem kleinen Team gemacht, das Musik liebt und daran glaubt, die eigene Musik zu sammeln und zu besitzen. Supporter halten es am Laufen: Sie decken die Hostingkosten und helfen uns, neue Funktionen zu bauen.</string>
 
     <!-- Setup wizard step 3, the button that finishes without becoming a supporter. -->
     <string name="Wizard_Finish">Sammlung öffnen</string>
 
     <!-- First-run hint pointing at the Import tab in the left rail. -->
-    <string name="Coach_AddMusic">Hier kommt Musik herein. Zeig rpm einen Ordner, eine CD oder einen Plattenspieler, und alles wird in deiner Sammlung abgelegt.</string>
+    <string name="Coach_AddMusic">Hier kommt deine Musik rein! Na los, drück auf Importieren.</string>
 
     <!-- First-run hint pointing at the grip under the artwork band. -->
-    <string name="Coach_ArtHeader">Zieh hier, um das Cover zu öffnen, oder klick doppelt, um es wegzulegen.</string>
+    <string name="Coach_ArtHeader">Läuft gerade etwas und du willst das Artwork sehen? Zieh hieran, um es zu öffnen, oder doppelklicke, um es wieder wegzupacken.</string>
 
     <!-- First-run hint pointing at the view switch in the library header. -->
-    <string name="Coach_Views">Drei Ansichten deiner Sammlung: eine Liste, eine Cover-Wand oder die Alben im Raster.</string>
+    <string name="Coach_Views">Durchstöbere deine Sammlung, wie du willst! Wechsle jederzeit zwischen Albenraster, Albenliste und Datentabelle.</string>
 
     <!-- Kicker on the locked home panel. Shown in caps. -->
     <string name="HomeLock_Kicker">START</string>
@@ -5187,7 +5187,10 @@
     <string name="ListLock_Hide">Ausblenden</string>
 
     <!-- Setup wizard step 1, under the wordmark and tagline, above the folder question. -->
-    <string name="Wizard_Welcome">Willkommen bei rpm. Wir führen dich durch die Einrichtung deiner Musiksammlung.</string>
+    <string name="Wizard_Welcome">Willkommen bei rpm! Lass uns deine Musiksammlung einrichten. Es sind nur ein paar Schritte.</string>
+
+    <!-- Setup wizard, first launch: the welcome alone in the middle of the window while the opening sound plays, before step 1 fades in. -->
+    <string name="Wizard_Hello">Willkommen bei rpm!</string>
 
     <!-- Setup wizard step 2: the one source. Onboarding imports a folder of files and nothing else. -->
     <string name="Wizard_ChooseFolder">Ordner wählen</string>
@@ -5211,13 +5214,13 @@
     <string name="Wizard_ImportCopyUnknown">%1$s Dateien in die Sammlung kopieren (%2$s als Unbekannter Interpret)</string>
 
     <!-- Setup wizard step 2, under the Folder layout heading, above the template choices. -->
-    <string name="Wizard_LayoutHint">Wähle die Ordnerstruktur, die für die Musiksammlung verwendet werden soll.</string>
+    <string name="Wizard_LayoutHint">Wie soll deine Sammlung aufgebaut sein? Wähle die Ordnerstruktur, die am besten zu dir passt.</string>
 
     <!-- Setup wizard step 2, under The original files heading, above the move/copy choice. -->
-    <string name="Wizard_OriginalsHint">Was soll rpm mit den Musikdateien im gewählten Ordner tun?</string>
+    <string name="Wizard_OriginalsHint">Was soll rpm mit den Musikdateien in dem gewählten Ordner machen?</string>
 
     <!-- Setup wizard step 2, under the Music collection heading, above the destination grid. -->
-    <string name="Wizard_PlanHint">Das ist die anfängliche Ordnerstruktur deiner Musiksammlung.</string>
+    <string name="Wizard_PlanHint">Hier siehst du, wie deine Musiksammlung zu Beginn aussehen wird.</string>
 
     <!-- Tooltip on the cloud mark in the import queue. -->
     <string name="QueueDup_InCloud">In deiner Cloud, ohne Datei auf diesem Computer. Beim Import landet die Datei hier.</string>
@@ -5307,7 +5310,7 @@
     <string name="Settings_ShowHintsAgain">Erste-Schritte-Hinweise wieder anzeigen</string>
 
     <!-- First-run hint pointing at the menu, shown only while signed out. -->
-    <string name="Coach_SignIn">Melde dich bei rpm an, um die Cloud zu nutzen: deine Sammlung auf dem Handy und Streaming von überall.</string>
+    <string name="Coach_SignIn">Nimm deine Musik mit! Melde dich bei rpm an, um die Cloud zu nutzen: deine Sammlung auf deinem Handy, gestreamt, wo immer du bist.</string>
 
     <!-- Display settings, card heading over the button that replays the coachmarks. -->
     <string name="Settings_Hints">Erste-Schritte-Hinweise</string>
@@ -6274,4 +6277,220 @@
 
     <!-- Line under the title of the TV player's Now playing drawer while rearranging is on. OK, Up and Down are the TV remote's keys. -->
     <string name="Tv_QueueRearrangeHint">OK nimmt einen Titel auf, Hoch und Runter verschieben ihn, OK legt ihn ab.</string>
+
+    <!-- Setup wizard step 1, line under the Country and language heading. -->
+    <string name="Wizard_RegionBody">Wähle die Sprache der App und dein Land für die Lokalisierung.</string>
+
+    <!-- Setup wizard step 4 heading: the background, Pegasus's visualizer, the record and when rpm opens by itself. -->
+    <string name="Wizard_LookTitle">Mach rpm zu deinem</string>
+
+    <!-- Setup wizard step 4, line under the Background heading. -->
+    <string name="Wizard_LookBackgroundHint">Das Bild hinter der ganzen App. Später kannst du in den Einstellungen auch ein eigenes verwenden.</string>
+
+    <!-- Setup wizard step 4, heading over the two switches: open rpm for a music CD, and for a music file. -->
+    <string name="Wizard_LookStart">rpm automatisch öffnen</string>
+
+    <!-- Setup wizard step 5 heading: the view the library opens in. -->
+    <string name="Wizard_LayoutTitle">Wie möchtest du deine Sammlung durchsuchen?</string>
+
+    <!-- Setup wizard step 5, line over the three view pictures. -->
+    <string name="Wizard_LayoutBody">Wähle die Ansicht, in der sich deine Bibliothek öffnet. Du kannst jederzeit oben in der Bibliothek wechseln.</string>
+
+    <!-- Setup wizard step 5, under the Album grid picture. -->
+    <string name="Wizard_LayoutWallDesc">Alle Cover nebeneinander, wie deine Platten im Regal.</string>
+
+    <!-- Setup wizard step 5, under the Album list picture. -->
+    <string name="Wizard_LayoutListDesc">Jedes Album mit Cover und Titelliste.</string>
+
+    <!-- Setup wizard step 5, under the Data table picture. -->
+    <string name="Wizard_LayoutTableDesc">Alle Songs in Zeilen und Spalten, zum Sortieren und Bearbeiten.</string>
+
+    <!-- Pegasus's Original room animation, one line under its name (setup wizard and Display settings). -->
+    <string name="Wizard_RoomOriginalDesc">Sanfte Lichter, die mit der Musik treiben und pulsieren.</string>
+
+    <!-- Pegasus's Yang room animation, one line under its name. -->
+    <string name="Wizard_RoomYangDesc">Leuchtende Kugeln, die um die Mitte kreisen und Licht hinter sich herziehen.</string>
+
+    <!-- Pegasus's Lava room animation, one line under its name. -->
+    <string name="Wizard_RoomLavaDesc">Blasen, die wie in einer Lavalampe steigen und sinken.</string>
+
+    <!-- Pegasus's Alchemy room animation, one line under its name. -->
+    <string name="Wizard_RoomAlchemyDesc">Breite Lichtbänder, die über den Bildschirm fließen.</string>
+
+    <!-- Heading for the choice of Pegasus's room animation (setup wizard step 4 and Display settings). -->
+    <string name="Settings_PegasusVisualizer">Visualizer in Pegasus</string>
+
+    <!-- Line under the Visualizer in Pegasus heading. -->
+    <string name="Settings_PegasusVisualizerHint">Die bewegten Lichter hinter der Musik, wenn Pegasus spielt.</string>
+
+    <!-- Display settings, first entry of the language and country pickers: follow Windows. {0} is what Windows gives now. -->
+    <string name="Settings_SameAsWindows">Wie Windows (%1$s)</string>
+
+    <!-- Display settings, shown after the language is changed. -->
+    <string name="Settings_LanguageRestart">Starte rpm neu, um die neue Sprache überall zu sehen.</string>
+
+    <!-- Display settings, button that closes rpm and starts it again. -->
+    <string name="Settings_RestartNow">Jetzt neu starten</string>
+
+    <!-- Library settings, heading of the card for opening music files with rpm. -->
+    <string name="Settings_MusicFiles">Musikdateien</string>
+
+    <!-- Switch: make rpm the app Windows opens music files with (setup wizard step 4 and Library settings). -->
+    <string name="Settings_OpenMusicFiles">rpm öffnen, wenn eine Musikdatei abgespielt wird</string>
+
+    <!-- Line under the Open rpm when a music file is played switch. -->
+    <string name="Settings_OpenMusicFilesHint">Musikdateien, die du öffnest, werden in rpm abgespielt. Windows bittet dich, rpm in den eigenen Einstellungen zu bestätigen.</string>
+
+    <!-- What Windows calls a file type rpm opens, in Explorer's Type column and Open with. -->
+    <string name="Settings_OpenMusicFilesType">Musikdatei</string>
+
+    <!-- Library settings, heading of the choice of the view the library opens in. -->
+    <string name="Settings_LibraryLayout">Bibliotheksansicht</string>
+
+    <!-- Line under the Library layout heading. -->
+    <string name="Settings_LibraryLayoutHint">Die Ansicht, in der sich deine Bibliothek öffnet. Die Tasten oben in der Bibliothek wechseln sie ebenfalls.</string>
+
+    <!-- Setup wizard, first launch: the line under the welcome greeting, shown after two seconds. -->
+    <string name="Wizard_HelloSubtitle">Lass uns loslegen.</string>
+
+    <!-- Setup wizard, first launch: the button under the welcome that goes on to step 1. -->
+    <string name="Wizard_Continue">Weiter</string>
+
+    <!-- The note shown once after setup: its heading. -->
+    <string name="Beta_WelcomeTitle">Danke, dass du bei der geschlossenen Beta dabei bist!</string>
+
+    <!-- The beta welcome: the first paragraph, under the heading. -->
+    <string name="Beta_WelcomeIntro">Wir freuen uns riesig, dass du dabei bist! Du gehörst zu den allerersten, die rpm benutzen, und damit baust du es mit uns.</string>
+
+    <!-- The beta welcome: the small heading over its three points. -->
+    <string name="Beta_WelcomeWhatHeading">Worum es in der geschlossenen Beta geht</string>
+
+    <!-- The beta welcome, first point: what testers are asked to do. -->
+    <string name="Beta_WelcomeUse">Bring deine eigene Sammlung in rpm und mach es zu deinem Musikplayer. Rippe deine CDs, nimm deine Platten auf oder importiere deine Dateien. Ganz wie du willst!</string>
+
+    <!-- The beta welcome, second point: reporting back. -->
+    <string name="Beta_WelcomeTell">Etwas ist kaputt, fehlt oder funktioniert richtig gut? Sag es uns! Du sprichst direkt mit den Leuten, die rpm bauen, und dein Feedback entscheidet, woran wir als Nächstes arbeiten.</string>
+
+    <!-- The beta welcome, third point: what testers get. -->
+    <string name="Beta_WelcomeGet">Als Dankeschön bekommst du rpm für das iPhone mit 100 GB in der Cloud und alle Supporter-Vorteile. rpm für Android TV ist fast fertig, und du bekommst es zuerst!</string>
+
+    <!-- The beta welcome: the last paragraph, saying the tour of hints follows. -->
+    <string name="Beta_WelcomeTourLine">Als Nächstes eine kurze Tour! rpm zeigt dir Schritt für Schritt alles, damit du sofort weißt, wo was ist. Los geht\'s!</string>
+
+    <!-- The beta welcome's button: closes it and starts the tour of hints. -->
+    <string name="Beta_WelcomeTour">Zeig mir alles</string>
+
+    <!-- First-run hint beside the import pane, after Import was pressed. Asks for the pane to be closed again. -->
+    <string name="Coach_ImportSources">Du kannst auswählen, ob du aus einem Ordner, von deiner CD, einer Schallplatte oder einer DVD importierst. Danach findest du die Veröffentlichung über die Katalognummer, den Barcode oder Titel und Künstler. Einfach, oder? Für jetzt schließen wir diesen Bereich.</string>
+
+    <!-- First-run hint pointing at the rail's track info, visualizations and internet radio buttons. -->
+    <string name="Coach_SideScreens">In der linken Seitenleiste findest du außerdem die Bereiche für Titelinfos, Visualizer und Internetradio. Lies mehr über deine Musik, lass einfach einen Visualizer im Hintergrund laufen oder hör Radio.</string>
+
+    <!-- First-run hint pointing at the deck's eye button, which opens the views picker. -->
+    <string name="Coach_AppViews">rpm kann deine Musik auf mehr als eine Art zeigen! Drück hier, um die Ansichten zu sehen.</string>
+
+    <!-- First-run hint beside the open views picker: what Main, RPaMp and Pegasus each are. Main is View_Library's own word. -->
+    <string name="Coach_AppViewsOpen">Die Hauptansicht ist die ganze App, zum Durchstöbern und Verwalten deiner Sammlung. RPaMp ist ein kompakter Player, der dir beim Arbeiten nicht im Weg ist. Und Pegasus füllt den ganzen Bildschirm, gemacht fürs Sofa, mit Visualizer und Songtexten. Wechsle, wann immer du willst!</string>
+
+    <!-- Setup wizard step 2 heading. -->
+    <string name="Wizard_AccountTitle">Dein rpm-Konto</string>
+
+    <!-- Setup wizard step 2, line under the heading: the cloud needs an account, nothing else does. -->
+    <string name="Wizard_AccountBody">Nimm deine Musik mit! Mit einem rpm-Konto ist deine Sammlung auf deinem Handy und wird gestreamt, wo immer du bist. Die Cloud funktioniert nur mit einem Konto, alles andere aber auch ohne, also kannst du das jederzeit später machen.</string>
+
+    <!-- Setup wizard step 2, once signed in. {0} is the account's name or email. -->
+    <string name="Wizard_AccountSignedIn">Angemeldet als %1$s</string>
+
+    <!-- The link under a first-run hint that moves the tour on to the next one. -->
+    <string name="Coach_Next">Weiter</string>
+
+    <!-- The card that ends the first-run tour: its heading. -->
+    <string name="Coach_DoneTitle">Und das war die Tour!</string>
+
+    <!-- The card that ends the first-run tour: the line under the heading. -->
+    <string name="Coach_DoneBody">Jetzt kennst du dich in rpm aus. Rippe, nimm auf, importiere und hör so viel du willst, und mach deine Sammlung zu deiner. Viel Spaß beim Sammeln!</string>
+
+    <!-- The card that ends the first-run tour: the button that closes it and hands the app over. -->
+    <string name="Coach_DoneButton">Losgehen mit dem Sammeln</string>
+
+    <!-- Setup wizard step 2, once signed in: the news, over who is signed in. -->
+    <string name="Wizard_AccountLoggedIn">Du bist angemeldet!</string>
+
+    <!-- Setup wizard step 2, once signed in: the heading of the offer to connect Discogs. -->
+    <string name="Wizard_DiscogsTitle">Verknüpfe dein Discogs-Konto</string>
+
+    <!-- Setup wizard step 2, once signed in: why to connect Discogs. -->
+    <string name="Wizard_DiscogsBody">Du hast ein Discogs-Konto? Verknüpfe es mit rpm, und die genaue Pressung deiner Platten zu finden ist ein Kinderspiel. Discogs wird von Sammlern wie dir katalogisiert, also sind selbst die seltensten Veröffentlichungen meistens dabei!</string>
+
+    <!-- Setup wizard step 2, once Discogs is connected. The Discogs user name may follow in brackets. -->
+    <string name="Wizard_DiscogsLinked">Discogs ist verknüpft!</string>
+
+    <!-- The sign-up window's title. -->
+    <string name="SignUp_Title">Bei rpm registrieren</string>
+
+    <!-- Sign-in window: the button beside Sign in that opens the sign-up window instead. -->
+    <string name="SignUp_Button">Registrieren</string>
+
+    <!-- Sign-up window, the line over the form. -->
+    <string name="SignUp_Subtitle">Erstell dein rpm-Konto in einer Minute! Dann ist deine Sammlung überall dabei.</string>
+
+    <!-- Sign-up window: the name field's placeholder. -->
+    <string name="SignUp_Name">Name</string>
+
+    <!-- Sign-up window, under the password field: the accounts service's password rule. -->
+    <string name="SignUp_PasswordRule">Mindestens 8 Zeichen, mit einem Großbuchstaben, einem Kleinbuchstaben und einer Zahl.</string>
+
+    <!-- Sign-up window: the button that sends the form. -->
+    <string name="SignUp_Create">Konto erstellen</string>
+
+    <!-- Sign-up window: the button that sends the mailed code. -->
+    <string name="SignUp_Confirm">Bestätigen</string>
+
+    <!-- Sign-up window, the code face. {0} is the email address. -->
+    <string name="SignUp_CodeSent">Fast geschafft! Wir haben einen sechsstelligen Code an %1$s geschickt. Gib ihn unten ein.</string>
+
+    <!-- Sign-up window: the code field's placeholder. -->
+    <string name="SignUp_Code">Code</string>
+
+    <!-- Sign-up window, under the code field. -->
+    <string name="SignUp_Resend">Neuen Code senden</string>
+
+    <!-- Sign-up window: a fresh code was mailed (asked for, or because the old one expired). -->
+    <string name="SignUp_CodeResent">Ein neuer Code ist unterwegs. Schau in dein Postfach!</string>
+
+    <!-- Sign-up window: a field was left empty. -->
+    <string name="SignUp_NeedFields">Gib deinen Namen, deine E-Mail und ein Passwort ein.</string>
+
+    <!-- Sign-up window: the code field was left empty. -->
+    <string name="SignUp_NeedCode">Gib den Code aus der E-Mail ein.</string>
+
+    <!-- Sign-up window: the address already has an account. -->
+    <string name="SignUp_AlreadyRegistered">Mit dieser E-Mail gibt es schon ein Konto. Melde dich stattdessen an.</string>
+
+    <!-- Sign-up window: the password does not meet the rule. -->
+    <string name="SignUp_WeakPassword">Dieses Passwort ist zu leicht zu erraten. Nimm mindestens 8 Zeichen, mit einem Großbuchstaben, einem Kleinbuchstaben und einer Zahl.</string>
+
+    <!-- Sign-up window: the address was refused. -->
+    <string name="SignUp_InvalidEmail">Das sieht nicht nach einer E-Mail-Adresse aus.</string>
+
+    <!-- Sign-up window: the name was refused. -->
+    <string name="SignUp_InvalidName">Dein Name darf Buchstaben, Zahlen, Leerzeichen, Bindestriche und Punkte enthalten, 2 bis 50 Zeichen.</string>
+
+    <!-- Sign-up window: the code was wrong. -->
+    <string name="SignUp_InvalidCode">Der Code stimmt nicht. Schau noch mal in die E-Mail.</string>
+
+    <!-- Sign-up window: the accounts service is limiting attempts. -->
+    <string name="SignUp_TooMany">Gerade zu viele Versuche. Warte kurz und versuch es noch mal.</string>
+
+    <!-- Sign-up window: any other failure. -->
+    <string name="SignUp_Failed">Das Konto konnte nicht erstellt werden. Bitte versuch es noch mal.</string>
+
+    <!-- Setup wizard step 2: opens the sign-up window. -->
+    <string name="Wizard_AccountSignUp">Bei rpm registrieren</string>
+
+    <!-- Setup wizard step 2, under Sign up: opens the sign-in window for an email and password. -->
+    <string name="Wizard_AccountHaveOne">Schon ein Konto? Anmelden</string>
+
+    <!-- Setup wizard step 4, over the import's progress bar after ten seconds of importing. -->
+    <string name="Wizard_ImportSlow">Gleich geschafft! Eine große Sammlung braucht etwas Zeit zum Importieren, also hol dir ruhig einen Kaffee, während rpm alles ablegt.</string>
 </resources>
