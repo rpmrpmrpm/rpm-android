@@ -152,9 +152,13 @@ internal object GenreText {
     /** What a tag is cut into words on when it is looked up. */
     private val WORD_BREAKS: Set<Char> = setOf('/', ',', '&', ';', '|', ' ', '-', '_')
 
-    /** Letters and digits only, lower cased: "Hip-Hop", "hip hop" and "HipHop" are one key. */
+    /**
+     * Letters and digits only, lower cased and without accents: "Hip-Hop", "hip hop" and "HipHop" are one
+     * key, and so are "Opéra Comique" and "Opera Comique". Decomposing splits "é" into "e" and a mark, and the
+     * mark is not a letter.
+     */
     fun fold(value: String): String = buildString {
-        for (c in value) if (c.isLetterOrDigit()) append(c)
+        for (c in java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)) if (c.isLetterOrDigit()) append(c)
     }.lowercase()
 
     /** The whole label, then its parts cut on [breaks], left to right. */
