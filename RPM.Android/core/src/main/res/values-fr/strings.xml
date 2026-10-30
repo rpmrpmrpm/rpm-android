@@ -3221,6 +3221,36 @@
     <!-- Album editor choice: this is not a classical record. The default. -->
     <string name="AlbumEdit_ClassicalNo">Non</string>
 
+    <!-- Album editor group kicker for the series a record is one volume of, such as a box-set edition released over many volumes. ALLCAPS, like every other group kicker. -->
+    <string name="AlbumEdit_GroupSeries">SÉRIE</string>
+
+    <!-- Album editor field label: whether this record is one volume of a series of releases, such as volume 43 of The Complete Mozart Edition. -->
+    <string name="AlbumEdit_InSeries">Fait partie d\'une série</string>
+
+    <!-- Album editor choice: this record is one volume of a series. -->
+    <string name="AlbumEdit_SeriesYes">Oui</string>
+
+    <!-- Album editor choice: this record stands alone. The default. -->
+    <string name="AlbumEdit_SeriesNo">Non</string>
+
+    <!-- Album editor field label: the name of the series this record belongs to. The box also offers the series already in the library. -->
+    <string name="AlbumEdit_SeriesName">Série</string>
+
+    <!-- Placeholder in the album editor's series name box. The example is a real box set's own title, so it stays in English. -->
+    <string name="AlbumEdit_SeriesNameHint">p. ex. The Complete Mozart Edition</string>
+
+    <!-- Album editor field label: which volume of the series this record is. -->
+    <string name="AlbumEdit_SeriesVolume">Volume</string>
+
+    <!-- Placeholder in the album editor's volume box. -->
+    <string name="AlbumEdit_SeriesVolumeHint">p. ex. 43</string>
+
+    <!-- Line under an album's title on its page: which volume of which series it is. {0} is the volume as the listener typed it (43, IV, 3a), {1} the series' name. -->
+    <string name="Album_SeriesVolume">Volume %1$s de %2$s</string>
+
+    <!-- Line under an album's title on its page, for a series whose volumes are not numbered. {0} is the series' name. -->
+    <string name="Album_SeriesPart">Fait partie de %1$s</string>
+
     <!-- Album editor group kicker for the answers kept in the library rather than written into the files. ALLCAPS, like every other group kicker. -->
     <string name="AlbumEdit_GroupSettings">RÉGLAGES</string>
 
