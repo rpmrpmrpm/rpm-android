@@ -8,7 +8,7 @@ package com.rpm.player.core.library
 /** The shelves and styles, generated from the same JSON as the desktop's `Subgenres.Data.cs`
  * and the phone's `Subgenres.Data.swift`. See [Genres], which does the looking up. */
 internal object SubgenreTable {
-    const val VERSION = 2118520763
+    const val VERSION = 1498540663
 
     /** The shelves, in the order they are offered. */
     val shelves: List<String> = listOf(
@@ -704,7 +704,6 @@ internal object SubgenreTable {
     val blockedKeys: Set<String> = setOf(
         "10spop",
         "alternativepunk",
-        "ballroom",
         "country",
         "dance",
         "edm",
