@@ -2,10 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Neither is required, so the one APK installs on Google TV and on Fire TV. Amazon refuses an app
-         that requires a touch screen, and its own example declares leanback as not required. -->
+    <!-- The touch screen is never required: Amazon refuses an app that requires one. Leanback is required
+         only in the bundle for Google Play, whose Android TV track refuses a bundle that does not require
+         it. Every other build leaves it not required, as Amazon's own example does, so the APK also
+         installs on Fire TV. The value comes from tv/build.gradle.kts (leanbackRequired). -->
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
-    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.software.leanback" android:required="${leanbackRequired}" />
 
     <!-- The permissions and the playback service come from :core's manifest. -->
 

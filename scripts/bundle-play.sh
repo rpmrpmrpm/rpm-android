@@ -79,7 +79,8 @@ fi
 
 # -P wins over a developer key set as rpm.appKey in the Gradle properties. Without the configuration
 # cache, the passwords and the key are not written into it.
-GRADLE_ARGS=(--no-configuration-cache "-Prpm.appKey=$RPM_APP_KEY" "-Prpm.beta=$BETA")
+# rpm.play: the TV bundle requires leanback, which Google Play's Android TV track demands.
+GRADLE_ARGS=(--no-configuration-cache "-Prpm.appKey=$RPM_APP_KEY" "-Prpm.beta=$BETA" "-Prpm.play=true")
 if $FFMPEG; then
     [ -n "${RPM_FFMPEG_ROOT:-}" ] \
         || { echo "FATAL: RPM_FFMPEG_ROOT is not set. Build it with scripts/build-android-ffmpeg.sh, or pass --no-ffmpeg."; exit 1; }

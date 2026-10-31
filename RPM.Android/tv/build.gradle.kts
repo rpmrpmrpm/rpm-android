@@ -23,6 +23,10 @@ android {
         // A closed beta bundle (scripts/bundle-play.sh --beta) says so in its name, so it is seen before it is
         // promoted to production: its reports carry the tester's log and screenshot (ReportScope in core/diag).
         versionName = "0.6.1" + if (providers.gradleProperty("rpm.beta").orNull == "true") "-beta" else ""
+        // Google Play's Android TV track refuses a bundle that does not require leanback, and Fire TV
+        // needs it not required. scripts/bundle-play.sh passes rpm.play, so only the Play bundle requires
+        // it. See the uses-feature in the manifest.
+        manifestPlaceholders["leanbackRequired"] = (providers.gradleProperty("rpm.play").orNull == "true").toString()
     }
 
     // Bundles for Google Play are signed with the upload key. scripts/bundle-play.sh sets these variables.
