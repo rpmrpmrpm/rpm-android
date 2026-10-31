@@ -8,7 +8,7 @@ package com.rpm.player.core.library
 /** The shelves and styles, generated from the same JSON as the desktop's `Subgenres.Data.cs`
  * and the phone's `Subgenres.Data.swift`. See [Genres], which does the looking up. */
 internal object SubgenreTable {
-    const val VERSION = 1498540663
+    const val VERSION = 2098435208
 
     /** The shelves, in the order they are offered. */
     val shelves: List<String> = listOf(
@@ -532,6 +532,7 @@ internal object SubgenreTable {
         "Requiem" to "Classical",
         "Art Song" to "Classical",
         "Ballet" to "Classical",
+        "Ballroom Dance" to "Classical",
         "Modern Classical" to "Neo-Classical",
         "Post-Minimalism" to "Neo-Classical",
         "Ambient Classical" to "Neo-Classical",
