@@ -2882,6 +2882,9 @@
     <!-- On the conductor's card in the track info pane, for a conductor who is alive: the year they were born. {0} is the year. -->
     <string name="TrackInfo_ConductorBorn">Né en %1$s</string>
 
+    <!-- Heading over the conductor's card in the track info pane, under the album's card, on a record that credits a conductor. -->
+    <string name="TrackInfo_AboutConductor">À propos du chef d\'orchestre</string>
+
     <!-- Heading over the album notes, in the track info pane, on the drawer's album screen, and on the phone's sheet with the full Wikipedia text about an album. -->
     <string name="TrackInfo_AboutAlbum">À propos de l\'album</string>
 
