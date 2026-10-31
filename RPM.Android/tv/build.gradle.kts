@@ -19,7 +19,7 @@ android {
         // Google Play refuses a bundle for this app that targets lower than 36. The Back key is handled
         // only through BackHandler, which works with the predictive back that API 36 turns on.
         targetSdk = 36
-        versionCode = 4
+        versionCode = 5
         // A closed beta bundle (scripts/bundle-play.sh --beta) says so in its name, so it is seen before it is
         // promoted to production: its reports carry the tester's log and screenshot (ReportScope in core/diag).
         versionName = "0.6.1" + if (providers.gradleProperty("rpm.beta").orNull == "true") "-beta" else ""
