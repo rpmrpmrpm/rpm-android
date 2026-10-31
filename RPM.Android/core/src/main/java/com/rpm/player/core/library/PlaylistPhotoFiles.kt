@@ -22,7 +22,6 @@ internal object PlaylistPhotoFiles {
         Cut("Calm", "R&B", 0) to "calm-rb.jpg",
         Cut("Calm", "Rap", 0) to "calm-rap.jpg",
         Cut("Calm", "Hip-Hop / Rap", 0) to "calm-hiphoprap.jpg",
-        Cut("Calm", "House", 0) to "calm-house.jpg",
         Cut("Calm", "Electronic / Dance", 0) to "calm-electronicdance.jpg",
         Cut("Calm", "Jazz", 0) to "calm-jazz.jpg",
         Cut("Calm", "Folk", 0) to "calm-folk.jpg",
