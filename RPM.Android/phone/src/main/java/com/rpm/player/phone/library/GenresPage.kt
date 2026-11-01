@@ -185,7 +185,7 @@ private fun albumCount(count: Int): String =
 private fun Empty(lent: Boolean) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         BasicText(
-            stringResource(if (lent) R.string.Rpm_Share_EmptyShelf else R.string.Genres_Empty),
+            stringResource(if (lent) R.string.Rpm_Share_EmptyShelf else R.string.Rpm_Library_Empty),
             Modifier.widthIn(max = 300.dp),
             style = display(14f).copy(color = Ink.white(0x88), textAlign = TextAlign.Center),
         )

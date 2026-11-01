@@ -46,7 +46,7 @@ import com.rpm.player.phone.design.system
  * radio and the profile. Playlists are a way of reading the library, not a tab.
  */
 enum class Tab(val glyph: String, @StringRes val label: Int) {
-    Home(Glyph.home, R.string.Home_Heading),
+    Home(Glyph.home, R.string.Rpm_Tab_Home),
     Library(Glyph.library, R.string.Settings_Library),
     Radio(Glyph.radio, R.string.Rpm_Tab_Radio),
     Profile(Glyph.profile, R.string.Rpm_Tab_Profile),

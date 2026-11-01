@@ -116,7 +116,7 @@ fun GenresScreen(walls: Walls, images: ImageLoader, state: BrowseState, mini: Mi
 
     Box(Modifier.fillMaxSize()) {
         if (genres.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Message(stringResource(R.string.Genres_Empty)) }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Message(stringResource(R.string.Rpm_Library_Empty)) }
         } else {
             LazyVerticalGrid(
                 state = grid,

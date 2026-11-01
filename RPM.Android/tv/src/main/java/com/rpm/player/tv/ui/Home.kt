@@ -176,7 +176,7 @@ fun HomeScreen(
 
     if (collection.albums.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Message(stringResource(R.string.Tv_Library_Empty))
+            Message(stringResource(R.string.Rpm_Library_Empty))
         }
         return
     }

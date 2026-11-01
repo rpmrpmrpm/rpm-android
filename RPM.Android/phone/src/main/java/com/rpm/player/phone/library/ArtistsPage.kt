@@ -369,7 +369,7 @@ private fun Empty(lent: Boolean) {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
         MarkView(ArtistMark, Ink.white(0x3A), Modifier.size(46.dp))
         BasicText(
-            stringResource(if (lent) R.string.Rpm_Share_EmptyShelf else R.string.Artists_Empty),
+            stringResource(if (lent) R.string.Rpm_Share_EmptyShelf else R.string.Rpm_Library_Empty),
             Modifier.widthIn(max = 300.dp),
             style = display(14f).copy(color = Ink.white(0x88), textAlign = TextAlign.Center),
         )

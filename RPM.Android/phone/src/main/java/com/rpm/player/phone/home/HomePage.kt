@@ -79,6 +79,7 @@ import com.rpm.player.core.library.BannerCard
 import com.rpm.player.core.library.CloudAlbum
 import com.rpm.player.core.library.Collection
 import com.rpm.player.core.library.HomeShelf
+import com.rpm.player.core.cloud.Shelf
 import com.rpm.player.core.library.Kicker
 import com.rpm.player.core.library.LibraryState
 import com.rpm.player.core.library.QuickPick
@@ -196,7 +197,6 @@ class HomeActions(
  *
  * @param onScreen whether home is the page showing: the banner turns only then.
  * @param onSwitch opens the collections picker, or null when there is only the person's own to choose.
- * @param onAddMusic what the lock's key does: the library's albums.
  * @param onReady called once the page has drawn what it opens on: the banner's front card with its photograph looked
  * for, or no banner at all. The launch keeps its wait cover until then.
  */
@@ -210,12 +210,11 @@ fun HomePage(
     actions: HomeActions,
     onScreen: Boolean,
     onSwitch: (() -> Unit)?,
-    onAddMusic: () -> Unit,
     onReady: () -> Unit,
 ) {
     val collection = ready.collection
     val home = ready.home
-    // The glass on home (the switch key, the lock's key) frosts the page's ground, never the page itself: a key that
+    // The glass on home (the switch key) frosts the page's ground, never the page itself: a key that
     // drew a layer holding itself would nest without end.
     val backdrop = rememberBackdrop()
     // Home needs a row's worth of records before it can say anything (`HomeGate` on iPhone).
@@ -223,7 +222,7 @@ fun HomePage(
         Box(Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxSize().backdropSource(backdrop)) { ArtGround(null, images) }
             LaunchedEffect(Unit) { onReady() }
-            HomeLock(collection.albums.size, HomeShelf.ROW_LENGTH, backdrop, onAddMusic, Modifier.align(Alignment.Center).padding(bottom = bottomRoom))
+            HomeLock(collection.albums.size, HomeShelf.ROW_LENGTH, lent = collection.shelf != Shelf.Own, Modifier.align(Alignment.Center).padding(bottom = bottomRoom))
             if (onSwitch != null) {
                 SwitchKey(backdrop, onSwitch, Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 4.dp, end = 16.dp))
             }

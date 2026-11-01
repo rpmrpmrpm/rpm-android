@@ -162,7 +162,7 @@ fun ArtistsScreen(
 
     Box(Modifier.fillMaxSize()) {
         if (shown.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Message(stringResource(R.string.Artists_Empty)) }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Message(stringResource(R.string.Rpm_Library_Empty)) }
         } else {
             LazyVerticalGrid(
                 state = grid,

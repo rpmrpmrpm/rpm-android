@@ -1803,8 +1803,8 @@
     <string name="Rpm_Tab_Radio">Radio</string>
     <string name="Rpm_Library_Loading">Bibliothek wird geladen…</string>
 
-    <!-- Empty state on the iPhone library tab when the user's cloud store is empty. -->
-    <string name="Rpm_Library_Empty">Hier ist noch nichts. Lade deine Mediathek aus rpm auf deinem Rechner hoch, dann erscheint sie hier.</string>
+    <!-- Phone and TV apps: empty state of home, the album wall, the artists wall and the genres wall when the person's own collection has no music. A shared collection uses Rpm_Share_EmptyShelf. -->
+    <string name="Rpm_Library_Empty">Hier ist noch nichts. Lade deine Mediathek aus rpm auf deinem Rechner hoch, dann erscheint sie hier. Melde dich dort mit diesem Konto an.</string>
     <string name="Rpm_Library_Error">Bibliothek nicht erreichbar.</string>
     <string name="Rpm_Library_Retry">Erneut versuchen</string>
     <string name="Rpm_NowPlaying_Nothing">Nichts wird abgespielt</string>
@@ -2028,6 +2028,9 @@
 
     <!-- iPhone tab bar label for the account and settings screen. -->
     <string name="Rpm_Tab_Profile">Profil</string>
+
+    <!-- Phone tab bar label for the home screen. The page itself uses Home_Heading, in lower case. -->
+    <string name="Rpm_Tab_Home">Start</string>
     <string name="Rpm_Profile_Subtitle">Dein Konto, dein Speicher und wie sich die App verhält.</string>
     <string name="Rpm_Profile_Account">Konto</string>
     <string name="Rpm_Profile_SignOut">Abmelden</string>
@@ -5210,8 +5213,11 @@
     <!-- Locked home panel heading when a single album is missing. -->
     <string name="HomeLock_ToGoOne">Noch 1 Album</string>
 
-    <!-- Locked home panel, line under the heading. -->
-    <string name="HomeLock_Body">Start zeigt, was du gehört hast und was als Nächstes läuft. Dafür braucht es noch ein paar Platten mehr.</string>
+    <!-- Locked home panel, line under the heading. Desktop, where the heading already says how many albums are missing, and the phone and Apple TV for a shared collection, where the person cannot add music. -->
+    <string name="HomeLock_Body">Start zeigt, was du zuletzt gehört hast, und schlägt vor, was du als Nächstes hören kannst.</string>
+
+    <!-- Phone and Apple TV: locked home screen for the person's own collection, line under the heading. Music can only be added in the desktop app, so the line says where. A shared collection uses HomeLock_Body. -->
+    <string name="Rpm_HomeLock_Body">Start zeigt, was du zuletzt gehört hast, und schlägt vor, was du als Nächstes hören kannst. Lade mehr Alben aus rpm auf deinem Rechner hoch.</string>
 
     <!-- Locked home panel, under the progress bar. -->
     <string name="HomeLock_Progress">%1$s von %2$s Alben</string>
@@ -5738,8 +5744,11 @@
     <!-- Android TV sign-in screen, under the two QR codes (Google and Apple). The person scans one with a phone and finishes signing in there; the TV signs in by itself. -->
     <string name="Tv_SignIn_Scan">Scanne einen Code mit der Kamera deines Telefons und melde dich auf dem Telefon an.</string>
 
-    <!-- Android TV album wall when the signed-in account has no music in the cloud. -->
-    <string name="Tv_Library_Empty">Hier ist noch nichts. Lade deine Bibliothek mit rpm auf deinem Computer hoch, dann erscheint sie hier.</string>
+    <!-- Apple TV: artist page when the artist is not in the collection on screen, for example after switching collections. -->
+    <string name="Tv_Artist_NotHere">Dieser Interpret hat keine Alben in dieser Sammlung.</string>
+
+    <!-- Apple TV: genre page when no album in the collection on screen is in the genre, for example after switching collections. -->
+    <string name="Tv_Genre_NotHere">Dieses Genre hat keine Alben in dieser Sammlung.</string>
 
     <!-- Android TV: under the rpm logo on the opening screen while the library is read from the cloud with nothing cached on the TV. {0} is how many tracks have arrived so far. -->
     <string name="Tv_Library_ReadingCount">Deine Mediathek wird gelesen (%1$s Titel)</string>

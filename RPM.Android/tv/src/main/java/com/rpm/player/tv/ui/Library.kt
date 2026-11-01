@@ -362,7 +362,7 @@ fun AlbumsScreen(
             val columns = WALL_COLUMNS
             if (shown.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Message(stringResource(if (collection.albums.isEmpty()) R.string.Tv_Library_Empty else R.string.Viz_LibraryNoMatch))
+                    Message(stringResource(if (collection.albums.isEmpty()) R.string.Rpm_Library_Empty else R.string.Viz_LibraryNoMatch))
                 }
             } else if (carousel) {
                 val unknownAlbum = stringResource(R.string.Queue_UnknownAlbum)
