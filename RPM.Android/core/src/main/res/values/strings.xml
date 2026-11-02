@@ -3950,18 +3950,6 @@
     <!-- Tooltip on the back button of an artist's page. -->
     <string name="Artists_Back">Back to artists</string>
 
-    <!-- Tooltip on the back arrow of the photo slideshow on an artist's page. -->
-    <string name="Artists_PhotoPrevious">Previous photo</string>
-
-    <!-- Tooltip on the forward arrow of the photo slideshow on an artist's page. -->
-    <string name="Artists_PhotoNext">Next photo</string>
-
-    <!-- Tooltip on the slideshow button of an artist's page while it is off. -->
-    <string name="Artists_PhotoSlideshowStart">Start slideshow</string>
-
-    <!-- Tooltip on the slideshow button of an artist's page while it is running. -->
-    <string name="Artists_PhotoSlideshowStop">Stop slideshow</string>
-
     <!-- Heading over the records filed under the artist on their page. -->
     <string name="Artists_Albums">Albums</string>
 
@@ -4090,9 +4078,6 @@
 
     <!-- Line under the Most popular heading saying where the ranking comes from. -->
     <string name="Artists_PopularSource">By collectors on Discogs</string>
-
-    <!-- Shown in the Most popular card on an artist's page when no Discogs account is connected. -->
-    <string name="Artists_PopularConnect">Connect a Discogs account in Settings to see this.</string>
 
     <!-- Under a record in the Most popular card: how many Discogs users own a copy. -->
     <string name="Artists_PopularHave">%1$s have it</string>
