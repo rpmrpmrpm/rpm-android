@@ -2016,6 +2016,21 @@
     <!-- Tooltip on the rip chip while it is asking about a disc rather than showing a rip. -->
     <string name="Rip_OfferTooltip">An audio CD is in the drive</string>
 
+    <!-- Heading of the card that slides up when an audio CD goes into the drive. -->
+    <string name="Rip_CardTitle">Disc inserted</string>
+
+    <!-- Disc card: shown beside the turning record while the CD is read and looked up. -->
+    <string name="Rip_CardLooking">Looking up your disc…</string>
+
+    <!-- Disc card: the CD was read but no catalogue knows it. -->
+    <string name="Rip_CardUnknown">We couldn’t find this disc, but you can still play or rip it.</string>
+
+    <!-- Disc card button: plays the CD straight away without adding it to the collection. -->
+    <string name="Rip_CardPlay">Play CD</string>
+
+    <!-- Disc card button: opens Import from CD on this disc. -->
+    <string name="Rip_CardRip">Rip CD</string>
+
     <!-- How rpm names itself in the Windows AutoPlay list of things that can happen when a music CD goes in. Windows shows it, not the app. -->
     <string name="Rip_AutoPlayAction">Rip the disc with rpm</string>
     <string name="Rip_CancelTooltip">Discard everything this rip has made</string>
