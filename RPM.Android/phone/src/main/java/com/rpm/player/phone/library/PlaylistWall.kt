@@ -84,6 +84,7 @@ fun PlaylistWall(
     images: ImageLoader,
     targetStride: Double,
     bottomRoom: Dp,
+    topRoom: Dp,
     onPress: (PlaylistRow) -> Unit,
     onPinch: (Double?) -> Unit,
     footer: @Composable () -> Unit,
@@ -98,9 +99,9 @@ fun PlaylistWall(
             state = grid,
             modifier = Modifier
                 .fillMaxSize()
-                .dissolvesAtTop(30.dp) { grid.scrolled() }
+                .dissolvesAtTop(topRoom) { grid.scrolled() }
                 .pinches { pinch(it) },
-            contentPadding = PaddingValues(start = EDGE.dp, end = EDGE.dp, top = 4.dp, bottom = FOOT + bottomRoom),
+            contentPadding = PaddingValues(start = EDGE.dp, end = EDGE.dp, top = topRoom + 4.dp, bottom = FOOT + bottomRoom),
             horizontalArrangement = Arrangement.spacedBy(WALL_GUTTER.dp),
         ) {
             items(rows, key = { it.id }, contentType = { "list" }) { row ->

@@ -1,5 +1,6 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.phone.design.UnderHeader
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
@@ -234,8 +235,7 @@ fun LibraryPage(
 
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(page)) {
-            VinylGround(Modifier.backdropSource(ground))
-            Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            UnderHeader(ground, ground = { VinylGround() }, header = { Column(Modifier.statusBarsPadding()) {
                 Box(Modifier.padding(start = 20.dp, end = 16.dp, bottom = 10.dp)) {
                     PageHeading(stringResource(R.string.Settings_Library), lent(reading.lender, counts(ready.albums))) {
                         KeyGroup(ground) {
@@ -254,17 +254,20 @@ fun LibraryPage(
                     SearchRow(asked, { asked = it }, stringResource(R.string.Lookup_SearchButton), focus, raise, onRaised = { raise = false }, ground, onClose = ::closeSearch)
                 }
                 ModeTabs(mode, onMode = settings::changeLibraryMode, backdrop = ground)
-                // Kept above the keyboard while it is open, so the answers stay in view.
-                Box(Modifier.weight(1f).imePadding()) {
+            } }) { top ->
+                // Kept above the keyboard while it is open, so the answers stay in view. The wall runs up under the header
+                // and fades out over it; everything else starts below it.
+                Box(Modifier.fillMaxSize().imePadding()) {
+                    val below = Modifier.fillMaxSize().padding(top = top)
                     when {
                         mode != LibraryMode.Albums -> Unit
-                        searching && asked.isNotEmpty() -> SearchResults(asked, answer, ready.collection, images, playing, bottomRoom, onOpen, onPlaySong)
-                        standing == WallStanding.Reading -> Reading()
-                        standing == WallStanding.Trouble -> Failed(onRetry)
-                        ready.albums.isEmpty() -> Empty(reading.lender != null)
+                        searching && asked.isNotEmpty() -> Box(below) { SearchResults(asked, answer, ready.collection, images, playing, bottomRoom, onOpen, onPlaySong) }
+                        standing == WallStanding.Reading -> Box(below) { Reading() }
+                        standing == WallStanding.Trouble -> Box(below) { Failed(onRetry) }
+                        ready.albums.isEmpty() -> Box(below) { Empty(reading.lender != null) }
                         else -> ordered?.let { wall ->
                             // Only the wall reads the collection again on a pull, not the search's answers.
-                            PullToRefresh(reading.refreshing, reading.onRefresh) {
+                            PullToRefresh(reading.refreshing, reading.onRefresh, top = top) {
                                 AlbumWall(
                                     wall,
                                     { ready.collection.cover(it) },
@@ -276,6 +279,7 @@ fun LibraryPage(
                                         onZoom = { pinching = pinchedStride(settings.wallStride, it, WALL_SMALLEST) },
                                         onEnd = { pinching?.let(settings::changeWallStride); pinching = null },
                                     ),
+                                    topRoom = top,
                                 )
                             }
                         }

@@ -1,5 +1,6 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.phone.design.UnderHeader
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -171,8 +172,7 @@ fun ArtistsPage(
 
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(page)) {
-            VinylGround(Modifier.backdropSource(ground))
-            Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            UnderHeader(ground, ground = { VinylGround() }, header = { Column(Modifier.statusBarsPadding()) {
                 Box(Modifier.padding(start = 20.dp, end = 16.dp, bottom = 10.dp)) {
                     PageHeading(stringResource(R.string.Artists_Title), lent(reading.lender, counts(ready.walls.artists.size))) {
                         KeyGroup(ground) {
@@ -185,14 +185,16 @@ fun ArtistsPage(
                     SearchRow(asked, { asked = it }, stringResource(R.string.Artists_SearchPlaceholder), focus, raise, onRaised = { raise = false }, ground, onClose = ::closeSearch)
                 }
                 ModeTabs(LibraryMode.Artists, onMode = settings::changeLibraryMode, backdrop = ground)
+            } }) { top ->
                 // Kept above the keyboard while it is open, so the search results, or the no-match message, stay in
-                // view.
-                Box(Modifier.weight(1f).imePadding()) {
+                // view. The wall runs up under the header and fades out over it; the messages start below it.
+                Box(Modifier.fillMaxSize().imePadding()) {
+                    val below = Modifier.fillMaxSize().padding(top = top)
                     when {
-                        ready.walls.artists.isEmpty() -> Empty(reading.lender != null)
+                        ready.walls.artists.isEmpty() -> Box(below) { Empty(reading.lender != null) }
                         shown == null -> Unit
-                        shown.isEmpty() -> NoMatch()
-                        else -> PullToRefresh(reading.refreshing, reading.onRefresh) {
+                        shown.isEmpty() -> Box(below) { NoMatch() }
+                        else -> PullToRefresh(reading.refreshing, reading.onRefresh, top = top) {
                             Boxes(
                                 shown,
                                 collection,
@@ -205,6 +207,7 @@ fun ArtistsPage(
                                     onZoom = { pinching = pinchedStride(settings.artistBox, it, BOX_SMALLEST) },
                                     onEnd = { pinching?.let(settings::changeArtistBox); pinching = null },
                                 ),
+                                top = top,
                             )
                         }
                     }
@@ -267,6 +270,7 @@ private fun Boxes(
     onOpen: (ArtistWallItem) -> Unit,
     stride: Double,
     modifier: Modifier,
+    top: Dp,
 ) {
     BoxWithConstraints(modifier.fillMaxSize()) {
         val (columns, width) = WallLayout.wall(maxWidth.value.toDouble(), stride, EDGE, BOX_GUTTER, BOX_COLUMNS)
@@ -274,8 +278,8 @@ private fun Boxes(
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             state = grid,
-            modifier = Modifier.fillMaxSize().dissolvesAtTop(30.dp) { grid.scrolled() },
-            contentPadding = PaddingValues(start = EDGE.dp, end = EDGE.dp, top = 4.dp, bottom = FOOT + bottomRoom),
+            modifier = Modifier.fillMaxSize().dissolvesAtTop(top) { grid.scrolled() },
+            contentPadding = PaddingValues(start = EDGE.dp, end = EDGE.dp, top = top + 4.dp, bottom = FOOT + bottomRoom),
             horizontalArrangement = Arrangement.spacedBy(BOX_GUTTER.dp),
             verticalArrangement = Arrangement.spacedBy(BOX_GUTTER.dp),
         ) {

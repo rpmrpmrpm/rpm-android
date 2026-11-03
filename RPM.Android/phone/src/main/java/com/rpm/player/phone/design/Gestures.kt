@@ -1,5 +1,7 @@
 package com.rpm.player.phone.design
 
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.layout.padding
 import androidx.compose.animation.core.animate
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
@@ -42,10 +44,11 @@ private const val PULL_RESISTANCE = 0.5f
  * [onRefresh]. The spinner stays while [refreshing] is true, then the content goes back up.
  *
  * Only the overscroll at the top is taken, through nested scrolling, so an ordinary scroll of the wall is untouched.
- * The content is moved in its layer, so a pull redraws nothing but the layer's position.
+ * The content is moved in its layer, so a pull redraws nothing but the layer's position. [top] is how much of a header
+ * stands over the content's top, for content that runs up under one ([UnderHeader]): the spinner shows below it.
  */
 @Composable
-fun PullToRefresh(refreshing: Boolean, onRefresh: () -> Unit, modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
+fun PullToRefresh(refreshing: Boolean, onRefresh: () -> Unit, modifier: Modifier = Modifier, top: Dp = 0.dp, content: @Composable BoxScope.() -> Unit) {
     val density = LocalDensity.current
     val trigger = with(density) { PULL_TRIGGER.toPx() }
     val rest = with(density) { PULL_REST.toPx() }
@@ -93,6 +96,7 @@ fun PullToRefresh(refreshing: Boolean, onRefresh: () -> Unit, modifier: Modifier
         Box(
             Modifier
                 .align(Alignment.TopCenter)
+                .padding(top = top)
                 .fillMaxWidth()
                 .height(PULL_REST)
                 .graphicsLayer { alpha = (pulled / trigger).coerceIn(0f, 1f) },

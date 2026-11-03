@@ -69,6 +69,8 @@ val FOOT = 16.dp
  * at the top edge as they scroll off it.
  *
  * @param bottomRoom how much of the bottom of the page the chrome covers. The last row can then scroll clear of it.
+ * @param topRoom how much of the top the page's header covers: the first row starts under it, and the covers fade
+ * out over it as they scroll up behind it ([com.rpm.player.phone.design.UnderHeader]).
  */
 @Composable
 fun AlbumWall(
@@ -79,6 +81,7 @@ fun AlbumWall(
     bottomRoom: Dp,
     onOpen: (CloudAlbum) -> Unit,
     modifier: Modifier = Modifier,
+    topRoom: Dp = 0.dp,
 ) {
     BoxWithConstraints(modifier.fillMaxSize()) {
         val (columns, art) = WallLayout.wall(maxWidth.value.toDouble(), targetStride, EDGE, WALL_GUTTER, WALL_COLUMNS)
@@ -87,8 +90,8 @@ fun AlbumWall(
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             state = grid,
-            modifier = Modifier.fillMaxSize().dissolvesAtTop(30.dp) { grid.scrolled() },
-            contentPadding = PaddingValues(start = EDGE.dp, end = EDGE.dp, top = 4.dp, bottom = FOOT + bottomRoom),
+            modifier = Modifier.fillMaxSize().dissolvesAtTop(if (topRoom > 0.dp) topRoom else 30.dp) { grid.scrolled() },
+            contentPadding = PaddingValues(start = EDGE.dp, end = EDGE.dp, top = topRoom + 4.dp, bottom = FOOT + bottomRoom),
             horizontalArrangement = Arrangement.spacedBy(WALL_GUTTER.dp),
         ) {
             items(albums, key = { it.key }, contentType = { "album" }) { album ->

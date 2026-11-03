@@ -1,5 +1,6 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.phone.design.UnderHeader
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -157,8 +158,8 @@ fun PlaylistsPage(
 
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(page)) {
-            VinylGround(Modifier.backdropSource(ground))
-            Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            // The lists run up under the header and fade out over it, as on iPhone.
+            UnderHeader(ground, ground = { VinylGround() }, header = { Column(Modifier.statusBarsPadding()) {
                 Row(Modifier.padding(start = 20.dp, end = 16.dp, bottom = 10.dp)) {
                     if (back != null) {
                         BackKey(ground, onBack = { haptics.pick(); at = back }, modifier = Modifier.padding(end = BESIDE_TITLE))
@@ -173,6 +174,7 @@ fun PlaylistsPage(
                     }
                 }
                 ModeTabs(LibraryMode.Playlists, onMode = onMode, backdrop = ground)
+            } }) { top ->
                 // A folder is a new place, and a new place starts at the top.
                 com.rpm.player.phone.design.PullToRefresh(
                     rereading,
@@ -180,11 +182,12 @@ fun PlaylistsPage(
                         rereading = true
                         pulls.launch { try { onReread() } finally { rereading = false } }
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxSize(),
+                    top = top,
                 ) { key(browse.at, settings.playlistLayout) {
                     when (settings.playlistLayout) {
                         PlaylistLayout.List -> Column(Modifier.fillMaxSize()) {
-                            Rows(browse, queue, marked.orEmpty(), pictureOf, images, bottomRoom, ::press) {
+                            Rows(browse, queue, marked.orEmpty(), pictureOf, images, bottomRoom, top, ::press) {
                                 Footer(browse, empty = collection.lists.isEmpty(), own = own)
                             }
                         }
@@ -197,6 +200,7 @@ fun PlaylistsPage(
                                 images = images,
                                 targetStride = pinching ?: boundedStride(settings.playlistStride),
                                 bottomRoom = bottomRoom,
+                                topRoom = top,
                                 onPress = ::press,
                                 onPinch = { factor ->
                                     if (factor == null) {
@@ -249,14 +253,15 @@ private fun androidx.compose.foundation.layout.ColumnScope.Rows(
     pictureOf: (PlaylistRow) -> Any?,
     images: ImageLoader,
     bottomRoom: Dp,
+    top: Dp,
     onPress: (PlaylistRow) -> Unit,
     footer: @Composable () -> Unit,
 ) {
     val list = rememberLazyListState()
     LazyColumn(
         state = list,
-        modifier = Modifier.weight(1f).fillMaxWidth().dissolvesAtTop(30.dp) { list.scrolled() },
-        contentPadding = PaddingValues(bottom = FOOT + bottomRoom),
+        modifier = Modifier.weight(1f).fillMaxWidth().dissolvesAtTop(top) { list.scrolled() },
+        contentPadding = PaddingValues(top = top, bottom = FOOT + bottomRoom),
     ) {
         items(browse.rows, key = { it.id }, contentType = { "row" }) { row ->
             Line(row, queue, marked, pictureOf(row), framedOf(row), images) { onPress(row) }

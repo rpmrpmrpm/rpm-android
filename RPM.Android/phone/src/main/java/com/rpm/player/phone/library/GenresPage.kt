@@ -1,5 +1,6 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.phone.design.UnderHeader
 import android.graphics.Paint
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
@@ -138,22 +139,23 @@ fun GenresPage(
     val ground = rememberBackdrop()
     val genres = ready.walls.genres
     Box(Modifier.fillMaxSize()) {
-        VinylGround(Modifier.backdropSource(ground))
-        Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        // The wall runs up under the header and fades out over it, as on iPhone; the empty message starts below it.
+        UnderHeader(ground, ground = { VinylGround() }, header = { Column(Modifier.statusBarsPadding()) {
             Box(Modifier.padding(start = 20.dp, end = 16.dp, bottom = 10.dp)) {
                 PageHeading(stringResource(R.string.Genres_Title), counts(genres.size)) {}
             }
             ModeTabs(LibraryMode.Genres, onMode = settings::changeLibraryMode, backdrop = ground)
-            Box(Modifier.weight(1f)) {
+        } }) { top ->
+            Box(Modifier.fillMaxSize()) {
                 if (genres.isEmpty()) {
-                    Empty(lent = ready.collection.shelf != Shelf.Own)
-                } else PullToRefresh(reading.refreshing, reading.onRefresh) {
+                    Box(Modifier.fillMaxSize().padding(top = top)) { Empty(lent = ready.collection.shelf != Shelf.Own) }
+                } else PullToRefresh(reading.refreshing, reading.onRefresh, top = top) {
                     val grid = rememberLazyGridState()
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
                         state = grid,
-                        modifier = Modifier.fillMaxSize().dissolvesAtTop(30.dp) { grid.scrolled() },
-                        contentPadding = PaddingValues(start = EDGE.dp, end = EDGE.dp, top = 4.dp, bottom = FOOT + bottomRoom),
+                        modifier = Modifier.fillMaxSize().dissolvesAtTop(top) { grid.scrolled() },
+                        contentPadding = PaddingValues(start = EDGE.dp, end = EDGE.dp, top = top + 4.dp, bottom = FOOT + bottomRoom),
                         horizontalArrangement = Arrangement.spacedBy(CARD_GUTTER.dp),
                         verticalArrangement = Arrangement.spacedBy(CARD_GUTTER.dp),
                     ) {
