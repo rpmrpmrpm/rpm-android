@@ -2,17 +2,18 @@ package com.rpm.player.phone.design
 
 import android.content.Context
 import android.graphics.Paint
-import android.graphics.Rect
+import android.graphics.Path
+import android.graphics.RectF
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.AlignmentLine
+import androidx.compose.ui.layout.FirstBaseline
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -44,26 +45,37 @@ fun PageHeading(title: String, line: String, keys: @Composable () -> Unit) {
     val sizePx = with(density) { size.dp.toPx() }
     val metrics = remember(title, sizePx) { TitleMetrics.of(context, title, sizePx) }
 
-    Column {
-        Box(Modifier.fillMaxWidth()) {
-            BasicText(
-                title,
-                maxLines = 1,
-                style = header(size).copy(color = Color.White),
-                modifier = Modifier.trimBottom(metrics.descent),
-            )
-            Box(Modifier.align(Alignment.TopEnd)) { keys() }
+    val start = if (metrics.descenderEnd > 0) with(density) { metrics.descenderEnd.toDp() } + BESIDE_DESCENDER else 0.dp
+    // Placed by baselines, not stacked: the line's baseline is SUBTITLE_GAP plus the iPhone's ascent for the line's
+    // 11 points under the title's baseline, which is where the iPhone's stack puts it (the title trimmed to its
+    // baseline, the gap, then the line). Stacked boxes stood the line 11 dp lower than that here, because Android's
+    // line boxes for both texts are not the iPhone's.
+    Layout(
+        content = {
+            BasicText(title, maxLines = 1, style = header(size).copy(color = Color.White))
+            Box { keys() }
+            BasicText(line, maxLines = 1, style = kicker(), modifier = Modifier.padding(start = start))
+        },
+    ) { (titleText, keyRow, lineText), constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val shownTitle = titleText.measure(loose)
+        val shownKeys = keyRow.measure(loose)
+        val shownLine = lineText.measure(loose)
+        val titleBase = shownTitle[FirstBaseline].takeIf { it != AlignmentLine.Unspecified } ?: shownTitle.height
+        val lineBase = shownLine[FirstBaseline].takeIf { it != AlignmentLine.Unspecified } ?: 0
+        val lineTop = titleBase + (SUBTITLE_GAP + LINE_ASCENT).roundToPx() - lineBase
+        val width = constraints.maxWidth
+        val height = max(lineTop + shownLine.height, shownKeys.height)
+        layout(width, height) {
+            shownTitle.place(0, 0)
+            shownKeys.place(width - shownKeys.width, 0)
+            shownLine.place(0, lineTop)
         }
-        BasicText(
-            line,
-            maxLines = 1,
-            style = kicker(),
-            modifier = Modifier
-                .padding(top = SUBTITLE_GAP)
-                .padding(start = if (metrics.descenderEnd > 0) with(density) { metrics.descenderEnd.toDp() } + BESIDE_DESCENDER else 0.dp),
-        )
     }
 }
+
+/** How far the iPhone's 11-point line rises above its baseline: SF Pro's ascent, 0.952 of the em. */
+private val LINE_ASCENT = 10.5.dp
 
 /**
  * The name at the top of a page, in the title font. The iPhone app has the same `PageTitle`. The part of
@@ -106,15 +118,24 @@ private class TitleMetrics(
                 textSize = sizePx
             }
             // A letter counts as a descender only if it goes more than half a dp below the baseline.
-            // So a round letter that dips slightly under it is not counted.
+            // So a round letter that dips slightly under it is not counted. The ink is measured from the
+            // glyphs' outlines, not getTextBounds: that rounds out to whole pixels, and at 450 dpi it turns
+            // the 0.38 dp that c, o and e dip into 2 px, past the half dp, so "collection" counted as having
+            // a descender and its line was set beside the n.
             val dip = context.resources.displayMetrics.density * 0.5f
-            val ink = Rect()
-            paint.getTextBounds(said, 0, said.length, ink)
-            val slack = max(0f, paint.fontMetrics.descent - max(0, ink.bottom))
+            val outline = Path()
+            val ink = RectF()
+            fun inkOf(start: Int, end: Int): RectF {
+                outline.reset()
+                paint.getTextPath(said, start, end, 0f, 0f, outline)
+                outline.computeBounds(ink, true)
+                return ink
+            }
+            val slack = max(0f, paint.fontMetrics.descent - max(0f, inkOf(0, said.length).bottom))
             var end = 0f
             for (i in said.indices) {
-                paint.getTextBounds(said, i, i + 1, ink)
-                if (ink.bottom > dip) end = max(end, paint.measureText(said, 0, i) + ink.right)
+                val letter = inkOf(i, i + 1)
+                if (letter.bottom > dip) end = max(end, paint.measureText(said, 0, i) + letter.right)
             }
             return TitleMetrics(descent = paint.fontMetrics.descent, descenderEnd = end, slack = slack)
         }
