@@ -378,8 +378,14 @@
     <!-- Tag field: the orchestra or choir, on a classical record. -->
     <string name="Details_Ensemble">Ensemble</string>
 
-    <!-- Tag field: the featured performers, as the sleeve credits them. -->
-    <string name="Details_Soloists">Solistes</string>
+    <!-- Tag field, classical credits: the people who played on the track, one per line, each with their instrument in brackets. -->
+    <string name="Details_Performers">Interprètes</string>
+
+    <!-- Tag field, classical credits: the people who sang on the track, one per line, each with their voice in brackets. -->
+    <string name="Details_Vocalists">Chanteurs</string>
+
+    <!-- Tooltip on the + beside a list of performers or vocalists: adds an empty line for one more person. -->
+    <string name="Details_AddLine">Ajouter un autre nom</string>
 
     <!-- Tag field: who wrote the words, as against the music. -->
     <string name="Details_Lyricist">Parolier</string>
@@ -473,6 +479,9 @@
 
     <!-- Dense form group heading: what the measurement came out of (grid, confidences, which analyser). -->
     <string name="MassEdit_GroupReading">LECTURE</string>
+
+    <!-- All-caps group heading over the classical credits: composer, conductor, ensemble, performers and vocalists. -->
+    <string name="MassEdit_GroupClassical">CLASSIQUE</string>
 
     <!-- Group heading over the work and movement fields. -->
     <string name="MassEdit_GroupWork">ŒUVRE</string>
@@ -3232,6 +3241,9 @@
 
     <!-- Album editor choice: leave this record at its own level whatever the global setting says. -->
     <string name="AlbumEdit_NormalizeOff">Jamais</string>
+
+    <!-- Tick beside Cancel in the album editor: on save, every field is written to every track of the record, and the album artist becomes each track's own artist. -->
+    <string name="AlbumEdit_ApplyToTracks">Appliquer aux pistes</string>
 
     <!-- Album editor field label: whether this is a classical record, which decides whether its tracklist is drawn as works with movements under them. -->
     <string name="AlbumEdit_Classical">Classique</string>
