@@ -182,20 +182,20 @@
     <!-- Tagline beside the rpm mark in the parked header, when nothing is playing. -->
     <string name="Art_ParkedTagline">entdecken Sie Ihre Sammlung neu</string>
     <string name="Catalog_DiscogsConnect">Discogs verbinden</string>
-    <string name="Catalog_DiscogsConnectFailed">Discogs hat die Verbindung nicht abgeschlossen. Versuchen Sie es erneut.</string>
+    <string name="Catalog_DiscogsConnectFailed">Die Verbindung mit Discogs hat nicht geklappt. Versuch es gleich noch mal!</string>
     <string name="Catalog_DiscogsConnected">verbunden</string>
     <string name="Catalog_DiscogsConnectedAs">verbunden als %1$s</string>
     <string name="Catalog_DiscogsDisconnect">Trennen</string>
     <string name="Catalog_DiscogsNotConnected">nicht verbunden</string>
-    <string name="Catalog_DiscogsPending">Schließen Sie die Anmeldung bei Discogs in Ihrem Browser ab und prüfen Sie dann erneut.</string>
+    <string name="Catalog_DiscogsPending">Schließ die Anmeldung bei Discogs in deinem Browser ab, dann komm zurück und prüf es noch einmal.</string>
 
     <!-- Discogs status in Catalogues settings when nobody is signed in to rpm. -->
     <string name="Catalog_DiscogsSignIn">melde dich zuerst bei rpm an</string>
     <string name="Catalog_DiscogsRecheck">Erneut prüfen</string>
     <string name="Catalog_DiscogsUnavailable">hier nicht verfügbar</string>
-    <string name="Catalog_DiscogsWhy">Discogs wird von den Leuten katalogisiert, denen die Platten gehören. Pressungen, die in der rpm-Datenbank fehlen, sind dort meist zu finden. Mit einem eigenen Konto zählen deine Suchen auf dein Limit statt auf eines, das sich alle rpm-Nutzer teilen.</string>
+    <string name="Catalog_DiscogsWhy">Discogs wird von den Leuten gepflegt, denen die Platten gehören, deshalb findest du dort oft Pressungen, die die rpm-Datenbank nicht hat. Verbinde dein eigenes Konto, dann zählen deine Suchen gegen dein eigenes Limit statt gegen eines, das sich alle teilen.</string>
     <string name="Catalog_Heading">Kataloge</string>
-    <string name="Catalog_Intro">Wo rpm sucht, wenn du ein Album nachschlägst. Die Suche benötigt ein rpm-Konto; verbinde ein Discogs-Konto, um auch Discogs zu durchsuchen.</string>
+    <string name="Catalog_Intro">Hier sucht rpm, wenn du ein Album nachschlägst. Zum Suchen brauchst du ein rpm-Konto, und wenn du Discogs verbindest, sucht rpm auch dort.</string>
 
     <!-- RPM catalogue status on the Catalog settings page, signed in. -->
     <string name="Catalog_RpmSearched">Wird immer durchsucht. Nichts zu verbinden.</string>
@@ -204,7 +204,7 @@
     <string name="Catalog_RpmSignIn">Melde dich bei deinem rpm-Konto an, um die Kataloge zu durchsuchen.</string>
 
     <!-- Catalog settings page, fanart.tv section: what fanart.tv provides and what adding a personal key changes. -->
-    <string name="Catalog_FanartWhy">rpm lädt Künstlerfotos, quadratische Künstlerbilder und Logos von fanart.tv. Füge deinen kostenlosen persönlichen fanart.tv-Schlüssel hinzu, um neue Bilder nach 2 statt nach 7 Tagen zu erhalten. Der Schlüssel wird in deinem rpm-Konto gespeichert und auf allen deinen Geräten verwendet.</string>
+    <string name="Catalog_FanartWhy">rpm holt Künstlerfotos, quadratische Bilder und Logos von fanart.tv. Füg deinen eigenen kostenlosen persönlichen Schlüssel hinzu, dann bekommst du neue Bilder schon nach 2 statt nach 7 Tagen. Der Schlüssel wird in deinem rpm-Konto gespeichert und funktioniert so auf all deinen Geräten.</string>
 
     <!-- Placeholder in the fanart.tv key box. -->
     <string name="Catalog_FanartKeyPlaceholder">Persönlicher fanart.tv-API-Schlüssel</string>
@@ -244,7 +244,7 @@
     <string name="Cloud_Cancel">Abbrechen</string>
     <string name="Cloud_Failed">%1$s fehlgeschlagen</string>
     <string name="Cloud_Heading">Cloud-Speicher</string>
-    <string name="Cloud_Intro">Bewahre deine Musik zusätzlich zu diesem Rechner in der rpm-Cloud auf. Deine Dateien bleiben auf der Festplatte, sofern du nichts anderes verlangst.</string>
+    <string name="Cloud_Intro">Bewahre deine Musik sicher in der rpm-Cloud auf, zusätzlich zu diesem Computer. Deine Dateien bleiben, wo sie sind, solange du nichts anderes sagst.</string>
     <string name="Cloud_ModeAll">Alle Musik synchronisieren</string>
     <string name="Cloud_ModeAllHint">Deine gesamte Sammlung und alles, was du hinzufügst.</string>
     <string name="Cloud_ModeNone">Nicht synchronisieren</string>
@@ -256,7 +256,7 @@
     <string name="Cloud_OnlyInCloud">Musik, die nur in der Cloud liegt</string>
 
     <!-- Cloud settings, under Cloud_OnlyInCloud. -->
-    <string name="Cloud_OnlyInCloudHint">rpm entfernt deine Dateien nie. Wenn du Musik löschst, um Platz zu schaffen, bleibt die Cloud-Kopie erhalten, und du kannst sie über das Kontextmenü wieder herunterladen.</string>
+    <string name="Cloud_OnlyInCloudHint">rpm entfernt nie deine Dateien. Wenn du Musik löschst, um Platz zu schaffen, bleibt die Kopie in der Cloud, und du kannst sie jederzeit über das Rechtsklickmenü wieder herunterladen.</string>
     <string name="Cloud_Pending">Noch %1$s</string>
     <string name="Cloud_Retry">Fehlgeschlagene Uploads erneut versuchen</string>
     <string name="Cloud_SignIn">Anmelden</string>
@@ -697,10 +697,10 @@
     <string name="Settings_AnalysisTagsBackfill">In die ganze Sammlung schreiben</string>
 
     <!-- Settings > Collection: explanation under the tempo-and-key toggle. -->
-    <string name="Settings_AnalysisTagsHint">rpm ermittelt Tempo und Tonart jedes Titels, der im DJ-Modus genutzt wird. Ist das aktiv, werden sie nach der Analyse in die Tags des Titels geschrieben, wo ein Dateimanager und jedes andere Musikprogramm sie lesen können. Nur leere Felder werden gefüllt: ein Wert, der schon in der Datei steht, bleibt unangetastet.</string>
+    <string name="Settings_AnalysisTagsHint">rpm ermittelt Tempo und Tonart jedes Titels für den DJ-Modus. Schalte das ein, und jeder analysierte Titel bekommt sie in seine eigenen Tags geschrieben, damit dein Dateibrowser und andere Musik-Apps sie auch lesen können. Nur leere Felder werden gefüllt, was schon in einer Datei steht, bleibt also, wie es ist.</string>
 
     <!-- Settings > Collection: shown in place of the count when nothing is waiting. -->
-    <string name="Settings_AnalysisTagsNoneWaiting">Bei jedem analysierten Titel sind Tempo und Tonart geschrieben.</string>
+    <string name="Settings_AnalysisTagsNoneWaiting">Fertig! Jeder analysierte Titel hat Tempo und Tonart.</string>
 
     <!-- Settings > Collection: tick beside the backfill button. Off, the pass fills blanks only. -->
     <string name="Settings_AnalysisTagsOverwrite">Vorhandene Werte in den Dateien ersetzen</string>
@@ -712,7 +712,7 @@
     <string name="Settings_AnalysisTagsStop">Anhalten</string>
 
     <!-- Settings > Collection: how many analysed tracks the backfill would write to. -->
-    <string name="Settings_AnalysisTagsWaiting">%1$s analysierte Titel warten auf Tempo und Tonart.</string>
+    <string name="Settings_AnalysisTagsWaiting">%1$s analysierte Titel warten noch auf Tempo und Tonart.</string>
 
     <!-- Settings > Collection: the toggle that turns the automatic tagging pass on. -->
     <string name="Settings_AnalysisTagsWrite">Gemessenes Tempo und gemessene Tonart in die Dateien schreiben</string>
@@ -727,19 +727,19 @@
     <string name="Settings_HeaderRecord">Drehende Schallplatte</string>
 
     <!-- Settings > Display: hint under the spinning record toggle. -->
-    <string name="Settings_HeaderRecordHint">Zeigt die drehende Schallplatte rechts in der Coveranzeige. Aus füllt das Bild die volle Breite.</string>
+    <string name="Settings_HeaderRecordHint">Zeigt die drehende Platte rechts in der Cover-Anzeige. Schalte es aus, und das Artwork füllt die ganze Breite.</string>
 
     <!-- Settings > Display: toggle for the artist photograph behind the art display. -->
     <string name="Settings_HeaderArtistPhoto">Künstlerfoto</string>
 
     <!-- Settings > Display: hint under the artist photo toggle. -->
-    <string name="Settings_HeaderArtistPhotoHint">Zeigt ein Foto des Künstlers hinter der Coveranzeige. Aus werden keine Fotos geladen und stattdessen die Albumfarben verwendet.</string>
+    <string name="Settings_HeaderArtistPhotoHint">Zeigt ein Foto des Künstlers hinter der Cover-Anzeige. Schalte es aus, dann lädt rpm keine Fotos und nimmt stattdessen die Farben des Albums.</string>
 
     <!-- Settings > Collection: title of the card choosing how multi-disc releases are handled. -->
     <string name="Settings_MultiDisc">Alben mit mehreren CDs</string>
 
     <!-- Settings > Collection: hint under the multi-disc mode picker. -->
-    <string name="Settings_MultiDiscHint">Wie eine Veröffentlichung über mehrere CDs beim Rippen oder Importieren behandelt wird.</string>
+    <string name="Settings_MultiDiscHint">Wie rpm eine Veröffentlichung über mehrere Discs behandelt, wenn du sie rippst oder importierst.</string>
 
     <!-- Settings > Collection: multi-disc mode option, the default merged mode. -->
     <string name="Settings_MultiDiscMerged">Ein Album, fortlaufende Titelnummern</string>
@@ -757,10 +757,10 @@
     <string name="Settings_ShareListening">Meine Wiedergaben teilen</string>
 
     <!-- Settings hint under the Share what I play toggle: what leaves the computer and what it is for. -->
-    <string name="Settings_ShareListeningHint">Sendet, wie oft Sie jeden Titel spielen, ohne Zeiten und ohne Verlauf. Damit wird der meistgespielte Titel auf Albumseiten markiert. Ausgeschaltet wird nichts mehr gesendet.</string>
+    <string name="Settings_ShareListeningHint">Sendet, wie oft du jeden Song spielst, ohne Uhrzeiten und ohne Verlauf. So markieren die Albumseiten den meistgespielten Song. Schalte es aus, und es wird nichts mehr gesendet.</string>
 
     <!-- Settings > Collection: hint under the fingerprinting toggle. -->
-    <string name="Settings_FingerprintHint">rpm berechnet für jeden Titel einen Audio-Fingerabdruck und teilt ihn mit dem Erkennungsdienst, was die Identifizierung für alle verbessert. Das läuft im Hintergrund und ändert deine Dateien nie.</string>
+    <string name="Settings_FingerprintHint">rpm erstellt von jedem Titel einen Audio-Fingerabdruck und teilt ihn mit dem Erkennungsdienst, das hilft allen, Musik besser zu erkennen. Das läuft leise im Hintergrund und ändert nie deine Dateien.</string>
 
     <!-- Settings section heading, above the setting that makes rpm the app the machine opens for a music CD. -->
     <string name="Settings_Discs">Discs</string>
@@ -769,7 +769,7 @@
     <string name="Settings_DiscDefault">rpm öffnen, wenn eine Musik-CD eingelegt wird</string>
 
     <!-- Hint under the disc-handler toggle. -->
-    <string name="Settings_DiscDefaultHint">Dieser Rechner öffnet Audio-Discs mit rpm statt mit der eigenen Musik-App. rpm fragt nach, bevor es etwas rippt. Es ist dieselbe Einstellung wie in den Systemeinstellungen, und beide Stellen ändern sie.</string>
+    <string name="Settings_DiscDefaultHint">Leg eine Audio-CD ein, und sie öffnet sich in rpm statt in der Musik-App deines Computers. Keine Sorge, rpm fragt immer, bevor es etwas rippt. Es ist dieselbe Einstellung wie in den Systemeinstellungen, du kannst sie also an beiden Stellen ändern.</string>
 
     <!-- Shown instead of the disc-handler toggle when the app is not running from an installed bundle. -->
     <string name="Settings_DiscDefaultUnavailable">Registrieren lässt sich nur die installierte App, daher ist dies in einem Entwicklungs-Build deaktiviert.</string>
@@ -782,7 +782,7 @@
     <string name="Settings_Background">Hintergrund</string>
 
     <!-- Hint under the Background heading in Display settings, above the row of backdrop tiles. -->
-    <string name="Settings_BackgroundHint">Wähle einen der mitgelieferten Hintergründe, oder verwende ein eigenes Bild.</string>
+    <string name="Settings_BackgroundHint">Wähle einen der Hintergründe von rpm oder nimm ein eigenes Bild.</string>
 
     <!-- Backdrop tile: the default backdrop, RPaMp's ground (bands of cyan light in deep blue). -->
     <string name="Settings_BackgroundDefault">Standard</string>
@@ -811,7 +811,7 @@
     <string name="Settings_Library">Sammlung</string>
 
     <!-- Settings > Collection: caption under the page heading. -->
-    <string name="Settings_LibraryIntro">Wo deine Musik liegt, wie Dateien benannt werden und was mit neuer Musik geschieht.</string>
+    <string name="Settings_LibraryIntro">Wo deine Musik zu Hause ist, wie deine Dateien heißen und was passiert, wenn neue Musik dazukommt.</string>
     <string name="Settings_MusicFolder">Musikordner</string>
     <string name="Settings_MusicFolderHint">Wo rpm deine Sammlung ablegt.</string>
 
@@ -827,7 +827,7 @@
     <!-- First-run setup, folder step: the chosen folder could not be opened as a library. There is no previous music folder at this point. -->
     <string name="Wizard_FolderFailed">Dieser Ordner konnte nicht geöffnet werden. Kein Problem, wähle einfach einen anderen.</string>
     <string name="Settings_Naming">Dateibenennung</string>
-    <string name="Settings_NamingHint">Wie gerippte, aufgenommene und importierte Dateien benannt und abgelegt werden. Rips und Vinyl-Aufnahmen kommen mit der Standardvorlage in die Warteschlange, und der Import legt alles genauso ab. Baue dein eigenes Layout aus den Bausteinen unten.</string>
+    <string name="Settings_NamingHint">Wie deine gerippten, aufgenommenen und importierten Dateien heißen und abgelegt werden. Rips und Vinyl-Aufnahmen kommen mit der Standardvorlage in die Warteschlange, und der Import legt alles genauso ab. Bau dir mit den Bausteinen unten dein eigenes Schema!</string>
     <string name="Settings_NamingNew">Neu</string>
     <string name="Settings_NamingDuplicate">Duplizieren</string>
     <string name="Settings_NamingDelete">Löschen</string>
@@ -841,7 +841,7 @@
     <string name="Settings_NamingUnsaved">Nicht gespeicherte Änderungen</string>
     <string name="Settings_NamingSaved">Gespeichert.</string>
     <string name="Settings_NamingErrorEmpty">Jede Vorlage braucht einen Namen und ein Muster.</string>
-    <string name="Settings_NamingErrorDuplicate">Der Name „%1$s“ wird zweimal verwendet. Namen müssen eindeutig sein.</string>
+    <string name="Settings_NamingErrorDuplicate">Der Name „%1$s“ ist schon vergeben. Jeder Name muss anders sein.</string>
     <string name="Settings_Title">Einstellungen</string>
     <string name="Settings_Close">Schließen</string>
     <string name="Setup_ExistingLibrary">Das ist bereits ein rpm-Musikordner. rpm öffnet ihn.</string>
@@ -2061,14 +2061,14 @@
     <string name="Rpm_Profile_PlanFreeDetail">25 GB Cloud-Speicher, alle Funktionen, ohne Zeitlimit.</string>
 
     <!-- Settings, Profile page: second paragraph under 'Not a supporter', asking the account to support rpm. -->
-    <string name="Rpm_Profile_PlanFreeAppeal">Bitte erwäge, rpm zu unterstützen. Unterstützer halten das Licht an und erhalten Zugang zu exklusiven Funktionen.</string>
+    <string name="Rpm_Profile_PlanFreeAppeal">Gefällt dir rpm? Überleg doch, es zu unterstützen! Unterstützer halten den Laden am Laufen und bekommen ein paar exklusive Extras.</string>
     <string name="Rpm_Profile_PlanSupporter">Unterstützer</string>
 
     <!-- Settings, Profile page: what supporting rpm gets you. -->
     <string name="Rpm_Profile_PlanSupporterDetail">Unbegrenzter Cloud-Speicher, höhere Bitraten, erweiterte Erkennung, DJ-Modus und mehr.</string>
 
     <!-- Settings, Profile page: second paragraph under 'Supporter', thanking the account for supporting rpm. -->
-    <string name="Rpm_Profile_PlanSupporterThanks">Danke, dass du rpm unterstützt. Du hilfst, rpm am Laufen zu halten, und finanzierst die Weiterentwicklung. Deine Großzügigkeit bewegt uns.</string>
+    <string name="Rpm_Profile_PlanSupporterThanks">Danke, dass du rpm unterstützt! Du hältst rpm am Laufen und hilfst, alles Neue zu finanzieren. Wir sind ehrlich gerührt.</string>
 
     <!-- Settings, Profile page: the standing of an account marked as a closed beta tester. -->
     <string name="Rpm_Profile_PlanTester">Tester der geschlossenen Beta</string>
@@ -2077,7 +2077,7 @@
     <string name="Rpm_Profile_PlanTesterDetail">Unterstützer-Funktionen und 100 GB Cloud-Speicher.</string>
 
     <!-- Settings, Profile page: second paragraph under 'Closed beta tester', thanking the account for testing. -->
-    <string name="Rpm_Profile_PlanTesterThanks">Danke, dass du rpm testest. Deine Meldungen helfen uns, Fehler vor der öffentlichen Beta zu beheben.</string>
+    <string name="Rpm_Profile_PlanTesterThanks">Danke, dass du rpm testest! Deine Berichte helfen uns, Probleme vor der öffentlichen Beta zu beheben.</string>
     <string name="Rpm_Profile_Playback">Wiedergabe</string>
 
     <!-- Settings, Profile page: what the quality choices do. -->
@@ -2118,7 +2118,7 @@
     <string name="Naming_ApplyStop">Anhalten</string>
     <string name="Naming_ApplyStopped">Gestoppt. Bereits verschobene Dateien bleiben, wo sie sind.</string>
     <string name="Naming_ApplyClose">Schließen</string>
-    <string name="Settings_NamingSaveHint">Beim Speichern wird die Vorlage oben zur Standardvorlage der Sammlung.</string>
+    <string name="Settings_NamingSaveHint">Speichere, um die Vorlage oben zum Standard für deine Sammlung zu machen.</string>
     <string name="Naming_ApplyTemplate">Vorlage: %1$s</string>
     <string name="CloudChip_Title">Cloud</string>
     <string name="CloudChip_StageWaiting">Wartet</string>
@@ -2149,7 +2149,7 @@
     <!-- Tooltip on the cloud chip's Resume button. -->
     <string name="CloudChip_ResumeTooltip">Upload dort fortsetzen, wo er gestoppt wurde.</string>
     <string name="Cloud_History">Letzte Cloud-Aktivität</string>
-    <string name="Cloud_HistoryHint">Uploads, Entfernungen und Downloads der letzten %1$s Tage.</string>
+    <string name="Cloud_HistoryHint">Alles, was in den letzten %1$s Tagen hochgeladen, entfernt und heruntergeladen wurde.</string>
     <string name="Cloud_HistoryEmpty">Noch nichts.</string>
     <string name="Cloud_HistoryClear">Verlauf löschen</string>
     <string name="Cloud_HistoryUploaded">Hochgeladen</string>
@@ -2164,8 +2164,8 @@
     <string name="CloudChip_SummaryPreparingRemove">Musik wird aus der Cloud entfernt.</string>
     <string name="CloudChip_SummaryPreparingRestore">Deine Musik wird heruntergeladen.</string>
     <string name="Settings_Profile">Profil</string>
-    <string name="Profile_SignedOut">Du bist nicht angemeldet. Für Cloud-Speicher, die Kataloge und deinen Tarif wird ein Konto benötigt.</string>
-    <string name="Profile_SignOutDetail">Beim Abmelden stoppt die Cloud-Synchronisierung. Die Musik auf diesem Computer bleibt, wo sie ist.</string>
+    <string name="Profile_SignedOut">Du bist nicht angemeldet. Mit einem Konto bekommst du Cloud-Speicher, die Kataloge und deinen Tarif.</string>
+    <string name="Profile_SignOutDetail">Beim Abmelden stoppt die Cloud-Synchronisierung. Keine Sorge, die Musik auf diesem Computer bleibt genau, wo sie ist.</string>
 
     <!-- Button in Settings, Profile (desktop), under Sign out. Opens the confirmation; also the confirmation's red button on the desktop and the iPhone, and the spoken label of the iPhone's shorter Rpm_Profile_DeleteAccount key. -->
     <string name="Account_Delete">Konto löschen</string>
@@ -2177,7 +2177,7 @@
     <string name="Account_DeleteBody">Dadurch werden dein rpm-Konto, dein Profil und alles in deiner Cloud-Bibliothek gelöscht: hochgeladene Musik, Cover und Playlists. Deine Rezensionen und Kommentare bleiben und werden als Gelöschter Nutzer angezeigt. Dies kann nicht rückgängig gemacht werden.</string>
 
     <!-- Second line of the delete-account confirmation on the desktop. -->
-    <string name="Account_DeleteKeepsFiles">Musikdateien auf diesem Computer werden nicht gelöscht.</string>
+    <string name="Account_DeleteKeepsFiles">Die Musikdateien auf diesem Computer bleiben unberührt.</string>
 
     <!-- Desktop delete-account confirmation, when exactly one track on this computer exists only in the cloud (offloaded). -->
     <string name="Account_DeleteCloudOnlyOne">1 Titel ist nur in der Cloud und geht verloren.</string>
@@ -2192,28 +2192,28 @@
     <string name="Account_Deleting">Wird gelöscht…</string>
 
     <!-- Shown in the delete-account confirmation when the server refuses the typed address. -->
-    <string name="Account_DeleteEmailRefused">Diese E-Mail-Adresse passt nicht zu deinem Konto. Wenn sie stimmt, wende dich an den Support.</string>
+    <string name="Account_DeleteEmailRefused">Diese E-Mail-Adresse passt nicht zu deinem Konto. Wenn du sicher bist, dass sie stimmt, melde dich bitte beim Support.</string>
 
     <!-- Shown in the delete-account confirmation when the request did not get through or the server failed. Nothing was deleted. -->
-    <string name="Account_DeleteFailed">Dein Konto konnte nicht gelöscht werden. Prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="Account_DeleteFailed">Dein Konto konnte nicht gelöscht werden. Prüf deine Verbindung und versuch es noch einmal.</string>
 
     <!-- Title of the note shown after the account was deleted. -->
     <string name="Account_DeletedTitle">Konto gelöscht</string>
 
     <!-- Body of the note shown after the account was deleted, on both heads. -->
-    <string name="Account_DeletedBody">Dein Konto ist gelöscht und du bist abgemeldet. Deine Cloud-Bibliothek wird innerhalb von zwei Stunden entfernt. Du kannst rpm ohne Konto weiter nutzen.</string>
+    <string name="Account_DeletedBody">Dein Konto ist gelöscht und du bist abgemeldet. Deine Cloud-Bibliothek wird innerhalb von zwei Stunden entfernt. Du kannst rpm natürlich auch ohne Konto weiter nutzen.</string>
 
     <!-- Shown in place of the author's name on a review, comment or wall post whose account was deleted. -->
     <string name="Community_DeletedUser">Gelöschter Nutzer</string>
     <string name="Profile_DataFolder">App-Daten</string>
-    <string name="Profile_DataFolderDetail">Einstellungen, der Cover-Cache und deine Anmeldung liegen hier. Deine Musik nicht: die liegt in deinem Musikordner.</string>
+    <string name="Profile_DataFolderDetail">Hier liegen deine Einstellungen, der Artwork-Cache und deine Anmeldung. Deine Musik nicht: Die bleibt in deinem Musikordner.</string>
     <string name="Profile_ShowFolder">Ordner anzeigen</string>
 
     <!-- Settings, Profile page: title of the card for downloaded lookup data. -->
     <string name="Profile_Cache">Zwischengespeicherte Daten</string>
 
     <!-- Settings, Profile page: what the cached data card holds. -->
-    <string name="Profile_CacheDetail">Cover, Radiosender, Songtexte und Albuminformationen aus dem Internet. Sie werden 30 Tage aufbewahrt und bei Bedarf erneut geladen.</string>
+    <string name="Profile_CacheDetail">Artwork, Radiosender, Songtexte und Albuminfos aus dem Internet. rpm behält sie 30 Tage und holt sie danach neu, wenn sie gebraucht werden.</string>
 
     <!-- Settings, Profile page: size of the cache. {0} is a size such as 24.3 MB. -->
     <string name="Profile_CacheUsed">%1$s belegt</string>
@@ -2225,7 +2225,7 @@
     <string name="Update_Title">Update verfügbar</string>
 
     <!-- Body of the update window. {0} is a version such as 0.2.0. -->
-    <string name="Update_Body">rpm %1$s kann installiert werden. Jetzt neu starten, oder es wird beim nächsten Beenden installiert.</string>
+    <string name="Update_Body">rpm %1$s ist bereit zur Installation. Starte jetzt neu, oder es installiert sich, wenn du die App das nächste Mal beendest.</string>
 
     <!-- Button in the update window: quit and come back on the new version. -->
     <string name="Update_Restart">Jetzt neu starten</string>
@@ -2237,7 +2237,7 @@
     <string name="Profile_Updates">Updates</string>
 
     <!-- Settings, Profile page: what the updates card does. -->
-    <string name="Profile_UpdatesDetail">rpm sucht beim Start nach einer neuen Version, lädt sie im Hintergrund und installiert sie beim Beenden.</string>
+    <string name="Profile_UpdatesDetail">rpm sucht beim Start nach einer neuen Version, lädt sie leise im Hintergrund und installiert sie, wenn du die App beendest. Du musst gar nichts tun!</string>
 
     <!-- Settings, Profile page: button that reads the update feed now. -->
     <string name="Profile_CheckUpdates">Nach Updates suchen</string>
@@ -2357,7 +2357,7 @@
     <string name="Settings_CrashReports">Absturzberichte senden</string>
 
     <!-- Settings > Profile: hint under the crash reports switch. -->
-    <string name="Settings_CrashReportsDesc">Wenn rpm unerwartet beendet wird, einen Bericht senden, damit das Problem behoben werden kann.</string>
+    <string name="Settings_CrashReportsDesc">Falls sich rpm unerwartet schließt, schickt es uns einen Bericht, damit wir das Problem beheben können.</string>
 
     <!-- Settings, Profile page: confirmation shown after the cache is emptied. -->
     <string name="Profile_CacheCleared">Cache geleert</string>
@@ -2483,25 +2483,31 @@
     <string name="Settings_Display">Anzeige</string>
 
     <!-- Settings > Display: caption under the page heading. -->
-    <string name="Settings_DisplayIntro">Das Aussehen von rpm: das Hintergrundbild und die Cover-Ansicht.</string>
+    <string name="Settings_DisplayIntro">Wie rpm aussieht: das Bild hinter der App und die Cover-Anzeige oben.</string>
 
     <!-- Settings rail: the section for the speakers the music comes out of. -->
     <string name="Settings_Sound">Ton</string>
 
     <!-- Settings > Sound: caption under the page heading. -->
-    <string name="Settings_SoundIntro">Über welche Lautsprecher die Musik läuft, wie laut sie ist und wie sie eingestellt ist.</string>
+    <string name="Settings_SoundIntro">Über welche Lautsprecher deine Musik läuft, wie laut sie ist und wie sie klingt.</string>
 
     <!-- Settings, Sound: label above the output-device picker. -->
     <string name="Settings_Output">Lautsprecher</string>
 
     <!-- Settings, Sound: hint under the output-device picker. -->
-    <string name="Settings_OutputHint">Wo die Musik spielt. Mit dem Systemstandard wechselt rpm mit, sobald du einen Lautsprecher anschließt oder die Ausgabe wechselst. Wähle ein Gerät, und es bleibt dabei.</string>
+    <string name="Settings_OutputHint">Wo deine Musik spielt. Mit dem Systemstandard zieht rpm mit, sobald du einen Lautsprecher anschließt oder die Ausgabe wechselst. Wähle ein Gerät, und rpm bleibt dabei.</string>
 
     <!-- Settings, Sound: first item in the output picker, the default. -->
     <string name="Settings_OutputSystem">Systemstandard verwenden</string>
 
+    <!-- Settings > Sound > Output: switch. On, the volume slider sets a Bluetooth speaker's own volume (the computer's output volume) instead of rpm's own volume. -->
+    <string name="Settings_DeviceVolume">Gerätelautstärke steuern</string>
+
+    <!-- Settings > Sound > Output: explains the device volume switch above. -->
+    <string name="Settings_DeviceVolumeHint">Bei einem Bluetooth-Lautsprecher kann der Regler die Lautstärke des Lautsprechers selbst einstellen, so bleibt jedes Detail des Klangs erhalten. Das ist aber auch die Lautstärke deines Computers, also wird alles andere, was gerade läuft, mit lauter und leiser. Schalte es aus, und der Regler ändert nur noch rpm.</string>
+
     <!-- Settings, Sound: shown when the chosen device is not currently on the machine. -->
-    <string name="Settings_OutputMissing">Gerade nicht verbunden, die Musik läuft daher über die Systemlautsprecher, bis es wieder da ist.</string>
+    <string name="Settings_OutputMissing">Gerade nicht verbunden, deshalb läuft deine Musik über die Systemlautsprecher, bis es wieder da ist.</string>
 
     <!-- Settings, Sound: which endpoint the app is actually on. {0} is the device name. -->
     <string name="Settings_OutputNow">Ausgabe: %1$s</string>
@@ -2510,7 +2516,7 @@
     <string name="Settings_Eq">Equalizer</string>
 
     <!-- Settings, Sound: hint under the equalizer heading, explaining the per-device curves. -->
-    <string name="Settings_EqHint">Dieselben zehn Bänder wie im Player, pro Lautsprecherpaar gespeichert: eine Kurve, die zu einem Laptop passt, taugt nicht für eine Anlage, deshalb wird jede einzeln gemerkt.</string>
+    <string name="Settings_EqHint">Dieselben zehn Bänder wie im Player, für jedes Lautsprecherpaar gespeichert. Eine Kurve, die zu deinem Laptop passt, klingt an einer Hi-Fi-Anlage falsch, deshalb merkt sich rpm jede einzeln.</string>
 
     <!-- Settings, Sound: the equalizer's on/off switch. -->
     <string name="Settings_EqOn">Equalizer ein</string>
@@ -2997,7 +3003,7 @@
     <string name="Cloud_Errors">Fehler</string>
 
     <!-- Cloud settings: hint under the errors card title. -->
-    <string name="Cloud_ErrorsHint">Was die Cloud nicht ausführen konnte, und warum. Sende einen Bericht, dann sehen wir uns das an.</string>
+    <string name="Cloud_ErrorsHint">Was die Cloud nicht geschafft hat, und warum. Schick uns einen Bericht, und wir sehen uns das an.</string>
 
     <!-- Cloud settings: shown in place of the error list when there are none. -->
     <string name="Cloud_ErrorsEmpty">Keine Fehler.</string>
@@ -3012,7 +3018,7 @@
     <string name="Cloud_ErrorsReported">Bericht gesendet</string>
 
     <!-- Cloud settings: shown when sending the error report was refused. -->
-    <string name="Cloud_ErrorsReportRefused">Der Bericht konnte nicht gesendet werden. Bitte später erneut versuchen.</string>
+    <string name="Cloud_ErrorsReportRefused">Der Bericht konnte nicht gesendet werden. Versuch es bitte etwas später noch einmal.</string>
 
     <!-- Cloud chip flyout: link to the error list in cloud settings. -->
     <string name="CloudChip_ErrorsHint">Einige Titel konnten nicht synchronisiert werden. Öffnen Sie die Cloud-Einstellungen, um zu sehen, warum.</string>
@@ -3032,12 +3038,12 @@
     <!-- Album context-menu item: download a cloud-only album onto this machine. -->
     <string name="AlbumMenu_KeepOnComputer">Auf diesen Computer herunterladen</string>
     <string name="Cloud_BringBackTitle">Deine Dateien zurückholen?</string>
-    <string name="Cloud_BringBackBody">%1$s Titel fehlen auf diesem Rechner und liegen noch in der Cloud. Sie herunterzuladen braucht %2$s, und auf dieser Festplatte sind %3$s frei. Geladen wird nur, was auf diesem Rechner entfernt wurde, nicht das von deinen anderen Rechnern.</string>
+    <string name="Cloud_BringBackBody">%1$s Titel fehlen auf diesem Computer, sind aber noch sicher in der Cloud. Zum Herunterladen brauchst du %2$s, und auf diesem Laufwerk sind %3$s frei. Es kommen nur Titel zurück, die auf diesem Computer entfernt wurden, nicht die von deinen anderen Rechnern.</string>
     <string name="Cloud_BringBackConfirm">Herunterladen</string>
     <string name="Cloud_BringBackLeave">In der Cloud lassen</string>
-    <string name="Cloud_BringBackNoSpace">Auf dieser Festplatte ist nicht genug Platz: %1$s nötig, %2$s frei.</string>
+    <string name="Cloud_BringBackNoSpace">Auf diesem Laufwerk ist nicht genug Platz: Du brauchst %1$s, frei sind %2$s.</string>
     <string name="Cloud_BringBackFailed">%1$s von %2$s Titeln konnten nicht heruntergeladen werden.</string>
-    <string name="Cloud_OffloadState">%1$s Titel liegen nur in der Cloud. Das spart %2$s auf diesem Rechner.</string>
+    <string name="Cloud_OffloadState">%1$s Titel liegen nur in der Cloud, das spart %2$s auf diesem Computer.</string>
 
     <!-- Cloud settings, shown when nothing of this machine's own music is missing. Says only what this machine has, never what the whole library holds. -->
     <string name="Cloud_OffloadStateNone">Auf diesem Rechner fehlt kein Titel.</string>
@@ -3051,7 +3057,7 @@
 
     <!-- Log book verb: the cloud copy was kept, the file on this computer was deleted. -->
     <string name="Cloud_HistoryOffloaded">Lokale Kopie entfernt</string>
-    <string name="Cloud_OffloadElsewhere">%1$s Titel waren nie auf diesem Rechner. Deine anderen Rechner haben sie hochgeladen, sie werden aus der Cloud gestreamt.</string>
+    <string name="Cloud_OffloadElsewhere">%1$s Titel waren nie auf diesem Computer. Deine anderen Computer haben sie hochgeladen, und sie streamen direkt aus der Cloud.</string>
 
     <!-- Import pane: caption under the animation while a move-import is running. -->
     <string name="Queue_ImportingMove">Ausgewählte Dateien werden in deine Sammlung verschoben</string>
@@ -3063,7 +3069,7 @@
     <string name="Settings_ImportAction">Dateien importieren</string>
 
     <!-- Settings > Collection: hint under the import-action picker. -->
-    <string name="Settings_ImportActionHint">Was mit den Originaldateien passiert, wenn die Import-Warteschlange in deine Sammlung übernommen wird.</string>
+    <string name="Settings_ImportActionHint">Was mit deinen Originaldateien passiert, wenn die Import-Warteschlange zu deiner Sammlung hinzukommt.</string>
 
     <!-- Settings > Collection: import-action option, the default. -->
     <string name="Settings_ImportActionMove">In die Sammlung verschieben</string>
@@ -3210,7 +3216,7 @@
     <string name="Settings_Normalize">Lautstärkeanpassung</string>
 
     <!-- Explains what volume levelling does, under the Sound settings heading. -->
-    <string name="Settings_NormalizeHint">Spielt jede Platte gleich laut, damit du zwischen einem Album und dem nächsten nicht die Lautstärke ändern musst. Jeder Titel wird einmal gemessen, im Hintergrund.</string>
+    <string name="Settings_NormalizeHint">Spielt jede Platte gleich laut, damit du zwischen zwei Alben nicht zur Lautstärke greifen musst. rpm misst jeden Titel einmal, ganz leise im Hintergrund.</string>
 
     <!-- Volume levelling mode: every record plays at the level it was mastered at. -->
     <string name="Settings_NormalizeOff">Aus</string>
@@ -3225,7 +3231,7 @@
     <string name="Settings_NormalizeClassical">Auch klassische Aufnahmen anpassen</string>
 
     <!-- Explains why classical records are excluded from volume levelling by default. -->
-    <string name="Settings_NormalizeClassicalHint">Standardmäßig aus. Ein leiser Satz soll leise sein, und eine Lautheitsangleichung nimmt der Aufführung die Dynamik, auf der sie beruht.</string>
+    <string name="Settings_NormalizeClassicalHint">Standardmäßig aus. Ein leiser Satz soll leise sein, und das Angleichen würde die Dynamik plätten, von der die Aufführung lebt.</string>
 
     <!-- Progress line while the background loudness pass works through the library. {0} is a track count. -->
     <string name="Settings_NormalizeMeasuring">Sammlung wird gemessen: noch %1$s Titel.</string>
@@ -3366,7 +3372,7 @@
     <string name="Supporters_Dj">Der DJ-Modus steht nur Unterstützern von rpm zur Verfügung. Bitte unterstütze rpm.</string>
 
     <!-- Supporters-only window: shown when the gold backdrop is picked by an account that is not a supporter. -->
-    <string name="Supporters_Backdrop">Dieser Hintergrund steht nur Unterstützern von rpm zur Verfügung. Bitte unterstütze rpm.</string>
+    <string name="Supporters_Backdrop">Dieser Hintergrund ist nur für Unterstützer von rpm. Gefällt er dir? Überleg doch, rpm zu unterstützen!</string>
 
     <!-- Supporters-only window: shown when word by word lyric timing is switched on by an account that is not a supporter. -->
     <string name="Supporters_Karaoke">Der Karaoke-Modus steht nur Unterstützern von rpm zur Verfügung. Bitte unterstütze rpm.</string>
@@ -3384,10 +3390,10 @@
     <string name="Cloud_UsageFull">%1$s von %2$s belegt (voll)</string>
 
     <!-- Cloud settings: the warning shown while the account is almost full. -->
-    <string name="Cloud_AlmostFullHint">Weniger als %1$s übrig. Ist er voll, lädt rpm nichts mehr hoch.</string>
+    <string name="Cloud_AlmostFullHint">Weniger als %1$s übrig. Sobald er voll ist, hört rpm mit dem Hochladen auf.</string>
 
     <!-- Cloud settings: shown while the sync mode is the one the full store dropped it to. -->
-    <string name="Cloud_SyncAllPaused">Auf ausgewählte Musik umgestellt, weil der Cloud-Speicher voll war.</string>
+    <string name="Cloud_SyncAllPaused">Dein Cloud-Speicher ist voll, deshalb synchronisiert rpm jetzt nur noch deine ausgewählte Musik.</string>
 
     <!-- Cloud settings: title of the card showing whether the account supports rpm. -->
     <string name="Cloud_SupporterHeading">Unterstützerstatus</string>
@@ -3396,16 +3402,16 @@
     <string name="Cloud_SupporterFree">Kostenloses Konto mit 25 GB Cloud-Speicher.</string>
 
     <!-- Cloud settings: the standing of a supporter. -->
-    <string name="Cloud_SupporterYes">Du bist Unterstützer. Dein Cloud-Speicher ist unbegrenzt.</string>
+    <string name="Cloud_SupporterYes">Du bist Unterstützer, dein Cloud-Speicher ist also unbegrenzt. Danke!</string>
 
     <!-- Cloud settings: a supporter whose support has an end date. -->
-    <string name="Cloud_SupporterYesUntil">Du bist Unterstützer bis zum %1$s. Dein Cloud-Speicher ist unbegrenzt.</string>
+    <string name="Cloud_SupporterYesUntil">Du bist bis %1$s Unterstützer, dein Cloud-Speicher ist also unbegrenzt. Danke!</string>
 
     <!-- Cloud settings: the standing of an account marked as a closed beta tester. -->
-    <string name="Cloud_SupporterTester">Du testest die geschlossene Beta. Du hast die Unterstützer-Funktionen und 100 GB Cloud-Speicher.</string>
+    <string name="Cloud_SupporterTester">Du bist Tester der geschlossenen Beta und bekommst die Unterstützer-Funktionen und 100 GB Cloud-Speicher. Danke fürs Mithelfen!</string>
 
     <!-- Cloud settings: the server did not answer, which is not the same as 'not a supporter'. -->
-    <string name="Cloud_SupporterUnknown">Dein Unterstützer-Status konnte nicht abgerufen werden.</string>
+    <string name="Cloud_SupporterUnknown">Wir konnten deinen Unterstützer-Status gerade nicht prüfen.</string>
 
     <!-- Storage-full window: the second line when the app dropped 'all music' to the selection. -->
     <string name="CloudFull_PausedAll">Die Synchronisierung ist von aller Musik auf nur ausgewählte Musik umgestellt. Neue Alben lassen sich manuell hochladen, sobald andere Alben entfernt sind.</string>
@@ -3546,7 +3552,7 @@
     <string name="Share_MyLibrary">Meine Sammlung</string>
 
     <!-- Strip above the sharing settings when nobody is signed in. -->
-    <string name="Share_SignInNeeded">Zum Teilen ist ein rpm-Konto nötig. Melde dich an, um deine Sammlung zu teilen und die geteilten zu öffnen.</string>
+    <string name="Share_SignInNeeded">Zum Teilen brauchst du ein rpm-Konto. Melde dich an, um deine Sammlung zu teilen und die zu öffnen, die mit dir geteilt werden.</string>
 
     <!-- Header of the sharing chip flyout, and of the sharing section in settings. -->
     <string name="Share_Title">Sammlungen teilen</string>
@@ -3576,16 +3582,16 @@
     <string name="Settings_ShareLibrary">Meine Sammlung in diesem Netzwerk teilen</string>
 
     <!-- Settings: hint under the sharing toggle. -->
-    <string name="Settings_ShareLibraryHint">Computer mit rpm in diesem Netzwerk können eine Freigabe anfragen. Sie entscheiden, wer Zugriff erhält.</string>
+    <string name="Settings_ShareLibraryHint">Computer mit rpm in diesem Netzwerk können fragen, ob sie teilen dürfen. Du entscheidest, wer Zugriff bekommt.</string>
 
     <!-- Settings: label of the text box holding the name other computers see. -->
     <string name="Settings_ShareName">Dieser Computer heißt</string>
 
     <!-- Settings, Sharing: hint under the "This computer is called" box. Empty falls back to the account display name, then to the machine name. -->
-    <string name="Settings_ShareNameHint">Lassen Sie dieses Feld leer, um Ihren Anzeigenamen zu verwenden. Wenn Sie nicht angemeldet sind, wird der Name dieses Computers verwendet.</string>
+    <string name="Settings_ShareNameHint">Lass das leer, um deinen Anzeigenamen zu verwenden. Wenn du nicht angemeldet bist, nimmt rpm den Namen dieses Computers.</string>
 
     <!-- Settings: empty state of the shared computers list. -->
-    <string name="Settings_ShareNobody">Noch nichts geteilt. Öffnen Sie rpm auf einem anderen Computer in diesem Netzwerk, dann erscheint er hier.</string>
+    <string name="Settings_ShareNobody">Noch nichts geteilt. Öffne rpm auf einem anderen Computer in diesem Netzwerk, dann taucht er hier auf.</string>
 
     <!-- Settings: button that removes one computer from the shared list. -->
     <string name="Settings_ShareRemove">Teilen beenden</string>
@@ -3717,13 +3723,13 @@
     <string name="Settings_RequiredTagsTitle">Erforderliche Tags</string>
 
     <!-- Settings hint under the required tags checkboxes. -->
-    <string name="Settings_RequiredTagsHint">Eine Datei in der Warteschlange wird markiert, wenn eines dieser Tags fehlt. Der Import wird dadurch nicht blockiert.</string>
+    <string name="Settings_RequiredTagsHint">Eine Datei in der Warteschlange bekommt eine Markierung, wenn ihr eines davon fehlt. Keine Sorge, importieren kannst du sie trotzdem.</string>
 
     <!-- Settings > Collection, required tags card: toggle that looks each added record up in the catalogue and fills blank genre, subgenre and year in the import queue. -->
     <string name="Settings_CatalogueFill">Fehlendes Genre und Jahr beim Hinzufügen von Musik ergänzen</string>
 
     <!-- Settings hint under the catalogue fill toggle. -->
-    <string name="Settings_CatalogueFillHint">rpm sucht jede Platte in seinem Katalog und ergänzt Genre, Subgenre und Jahr, wo sie fehlen oder nicht in der Genreliste von rpm stehen. Bereits gesetzte Werte bleiben erhalten. Bis zum Import wird nichts in deine Dateien geschrieben.</string>
+    <string name="Settings_CatalogueFillHint">rpm schlägt jede Platte in seinem Katalog nach und ergänzt Genre, Subgenre und Jahr, wo sie leer sind oder nicht auf der Genreliste von rpm stehen. Was du schon eingetragen hast, bleibt, und in deine Dateien wird erst beim Import etwas geschrieben.</string>
 
     <!-- Import filter chip: hides the copies Remove duplicates would delete. -->
     <string name="Queue_ChipDuplicates">Duplikate ausblenden</string>
@@ -5379,7 +5385,7 @@
     <string name="Settings_Hints">Erste-Schritte-Hinweise</string>
 
     <!-- Display settings, line under the first-run hints heading. -->
-    <string name="Settings_HintsHint">Die Pfeile, die zeigen, wo Musik hereinkommt, wie sich das Cover-Banner öffnet und wie man die Ansicht wechselt. Jeder erscheint einmal und dann nicht mehr.</string>
+    <string name="Settings_HintsHint">Die kleinen Pfeile, die dir zeigen, wo Musik hereinkommt, wie sich die Cover-Leiste öffnet und wie du die Ansicht wechselst. Jeder taucht einmal auf und lässt dich dann in Ruhe.</string>
 
     <!-- Display settings, what the replay button says once it has been pressed. -->
     <string name="Settings_HintsBack">Die Hinweise sind zurück</string>
@@ -6207,7 +6213,7 @@
     <string name="Tv_SettingsKaraoke">Karaoke-Liedtexte</string>
 
     <!-- Line under the "Mixtape when a record ends" heading (Tv_SettingsMixtapeAfter) on the desktop Sound settings page, above its on/off switch. -->
-    <string name="Settings_MixtapeAfterHint">Wenn ein Album, eine Playlist oder eine Single endet, geht die Musik mit ähnlichen Songs aus deiner Sammlung weiter.</string>
+    <string name="Settings_MixtapeAfterHint">Wenn ein Album, eine Playlist oder eine Single zu Ende ist, geht die Musik mit ähnlichen Songs aus deiner Sammlung weiter.</string>
 
     <!-- Row in the Android TV app's settings, and in Pegasus's, and the heading of its card on the desktop Sound settings page: whether a mixtape like the album or playlist that just finished starts by itself when it ends. -->
     <string name="Tv_SettingsMixtapeAfter">Mixtape nach dem Ende einer Platte</string>
@@ -6387,7 +6393,7 @@
     <string name="Settings_PegasusVisualizer">Visualizer in Pegasus</string>
 
     <!-- Line under the Visualizer in Pegasus heading. -->
-    <string name="Settings_PegasusVisualizerHint">Die bewegten Lichter hinter der Musik, wenn Pegasus spielt.</string>
+    <string name="Settings_PegasusVisualizerHint">Die bewegten Lichter hinter der Musik, während Pegasus spielt.</string>
 
     <!-- Display settings, first entry of the language and country pickers: follow Windows. {0} is what Windows gives now. -->
     <string name="Settings_SameAsWindows">Wie Windows (%1$s)</string>
@@ -6405,7 +6411,7 @@
     <string name="Settings_OpenMusicFiles">rpm öffnen, wenn eine Musikdatei abgespielt wird</string>
 
     <!-- Line under the Open rpm when a music file is played switch. -->
-    <string name="Settings_OpenMusicFilesHint">Musikdateien, die du öffnest, werden in rpm abgespielt. Windows bittet dich, rpm in den eigenen Einstellungen zu bestätigen.</string>
+    <string name="Settings_OpenMusicFilesHint">Musikdateien, die du öffnest, laufen dann in rpm. Windows bittet dich, rpm in seinen eigenen Einstellungen zu bestätigen.</string>
 
     <!-- What Windows calls a file type rpm opens, in Explorer's Type column and Open with. -->
     <string name="Settings_OpenMusicFilesType">Musikdatei</string>
@@ -6414,7 +6420,7 @@
     <string name="Settings_LibraryLayout">Bibliotheksansicht</string>
 
     <!-- Line under the Library layout heading. -->
-    <string name="Settings_LibraryLayoutHint">Die Ansicht, in der sich deine Bibliothek öffnet. Die Tasten oben in der Bibliothek wechseln sie ebenfalls.</string>
+    <string name="Settings_LibraryLayoutHint">Die Ansicht, in der deine Bibliothek öffnet. Mit den Knöpfen oben in der Bibliothek kannst du sie jederzeit wechseln.</string>
 
     <!-- Setup wizard, first launch: the line under the welcome greeting, shown after two seconds. -->
     <string name="Wizard_HelloSubtitle">Lass uns loslegen.</string>
