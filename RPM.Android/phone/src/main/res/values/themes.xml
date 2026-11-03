@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The app's background from the first frame, before Compose draws. Same colour as `RPMInk.ground`
-         on iPhone. Dark bars with light icons, because the app is dark throughout. -->
+    <!-- The opening screen's black with its dimmed wordmark from the first frame, before Compose draws
+         (opening_window.xml). Dark bars with light icons, because the app is dark throughout. -->
     <style name="Theme.RpmPhone" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/ground</item>
+        <item name="android:windowBackground">@drawable/opening_window</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>

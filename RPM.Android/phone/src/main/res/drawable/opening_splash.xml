@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The launch screen's picture from Android 12 on, in place of the launcher icon: the dimmed wordmark at the
+     opening screen's 130 by 50 dp, in the middle of the 288 dp square the system draws an icon without a
+     background at (the insets make the square). The opening screen (shell/Opening.kt) takes over at the same
+     size and place. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:drawable="@drawable/wordmark_dim"
+        android:left="79dp"
+        android:right="79dp"
+        android:top="119dp"
+        android:bottom="119dp" />
+</layer-list>

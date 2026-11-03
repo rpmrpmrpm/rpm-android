@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The window's background while the app starts, before Android 12 draws a launch screen of its own: black,
+     with the dimmed wordmark where the opening screen (shell/Opening.kt) draws it, so the opening is there
+     from the moment the app is tapped. MainActivity takes the background away after the first frame. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@android:color/black" />
+    <item
+        android:drawable="@drawable/wordmark_dim"
+        android:gravity="center"
+        android:width="130dp"
+        android:height="50dp" />
+</layer-list>

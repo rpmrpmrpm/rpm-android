@@ -170,6 +170,8 @@ fun Root(services: Services, settings: PhoneSettings, signIn: SignIn, controller
         }
     }
     val reach by (LocalContext.current.applicationContext as com.rpm.player.phone.PhoneApplication).line.collectAsStateWithLifecycle()
+    var opening by rememberSaveable { mutableStateOf(true) }
+    var fading by remember { mutableStateOf(false) }
     Box(Modifier.fillMaxSize()) {
         when {
             session == null -> SignInScreen(signIn)
@@ -198,6 +200,23 @@ fun Root(services: Services, settings: PhoneSettings, signIn: SignIn, controller
             showing = !reach.isOnline,
             detail = if (showing) stringResource(R.string.Rpm_Net_OfflineDownloads) else null,
         )
+        // The opening screen (Opening), over everything until the sign-in form or the library is up, then faded away.
+        // Once per process: a later read (another collection, a retry) shows its own wait.
+        if (opening) {
+            val shownNow by animateFloatAsState(
+                if (fading) 0f else 1f,
+                tween(OPENING_FADE_MS),
+                label = "opening",
+                finishedListener = { if (fading) opening = false },
+            )
+            val reading = (shown as? LibraryState.Loading)?.takeIf { it.shelf == Shelf.Own && it.rows > 0 }
+            Opening(
+                ready = session == null || shown is LibraryState.Ready || shown is LibraryState.Failed,
+                reading = if (reading != null) stringResource(R.string.Rpm_Library_Reading) else null,
+                onSwept = { fading = true },
+                modifier = Modifier.fillMaxSize().graphicsLayer { alpha = shownNow },
+            )
+        }
     }
 }
 
