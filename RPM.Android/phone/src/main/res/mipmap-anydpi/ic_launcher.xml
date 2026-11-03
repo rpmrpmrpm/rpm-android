@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The same icon as the iPhone app (RPM.iOS/rpm/Assets.xcassets/AppIcon): the white rpm wordmark on a dark gradient. -->
+<!-- The same icon as the desktop app (RPM.Desktop/Assets/Icons/icon.png): its face, wordmark and shadow
+     taken from that picture, filling the 72 dp the launcher shows and carried on to the 108 dp edge, so
+     the launcher's own shape gives the outline. Themed icons get the plain wordmark. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@drawable/ic_launcher_background" />
-    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <background android:drawable="@drawable/ic_launcher_face" />
+    <foreground android:drawable="@android:color/transparent" />
     <monochrome android:drawable="@drawable/ic_launcher_foreground" />
 </adaptive-icon>
