@@ -1,5 +1,7 @@
 package com.rpm.player.phone.design
 
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.runtime.Composable
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.ui.Modifier
@@ -30,16 +32,13 @@ import androidx.compose.ui.unit.dp
  *
  * [scrolled] is read during drawing, so a scroll redraws the band without recomposing anything.
  */
-fun Modifier.dissolvesAtTop(under: Dp, scrolled: () -> Float): Modifier = this
+fun Modifier.dissolvesAtTop(under: Dp, frosted: Boolean = false, scrolled: () -> Float): Modifier = this
     .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
     .drawWithCache {
         val edge = EDGE.toPx()
         val band = minOf(under.toPx() + edge, size.height)
         val taken = Brush.verticalGradient(
-            0f to Color.Black,
-            0.45f to Color.Black.copy(alpha = 0.95f),
-            0.75f to Color.Black.copy(alpha = 0.6f),
-            1f to Color.Transparent,
+            *(if (frosted) FROSTED_TAKEN else TAKEN),
             startY = 0f,
             endY = band,
         )
@@ -51,6 +50,45 @@ fun Modifier.dissolvesAtTop(under: Dp, scrolled: () -> Float): Modifier = this
             }
         }
     }
+
+/**
+ * The frosted edge under a header that stands on a picture (home's): what scrolls up under the title is shown blurred
+ * as it goes, and fades out towards the top, see-through, so the page's own colours show through and no band of colour
+ * stands behind the title (Chivan, 2026-11-04: as the collection's header, "a transparent blur", not a colour). Laid
+ * over a list that [dissolvesAtTop] under the same [under], `frosted`: the list's sharp rows fade out, and their blurred
+ * copy takes their place and fades out in turn towards the top. [content] is the list's own drawing, recorded without the band's fade.
+ *
+ * Its strength grows with the scroll as the band's does, so a page at rest is untouched. One blur, at the chrome's
+ * strength and at a quarter size ([frost]).
+ */
+@Composable
+fun Modifier.frostsAtTop(content: Backdrop, under: Dp, scrolled: () -> Float): Modifier = this
+    .graphicsLayer {
+        val edge = EDGE.toPx()
+        alpha = (minOf(scrolled(), edge) / edge).coerceIn(0f, 1f)
+        compositingStrategy = CompositingStrategy.Offscreen
+    }
+    .drawWithCache {
+        val shown = Brush.verticalGradient(
+            0f to Color.Black.copy(alpha = 0.3f),
+            0.6f to Color.Black,
+            1f to Color.Transparent,
+            startY = 0f,
+            endY = minOf(under.toPx() + EDGE.toPx(), size.height),
+        )
+        onDrawWithContent {
+            drawContent()
+            drawRect(shown, blendMode = BlendMode.DstIn)
+        }
+    }
+    .frost(content, RectangleShape, CHROME_BLUR)
+
+/** How much of the list the band takes away, down the band: the iPhone's grading. */
+private val TAKEN = arrayOf(0f to Color.Black, 0.45f to Color.Black.copy(alpha = 0.95f), 0.75f to Color.Black.copy(alpha = 0.6f), 1f to Color.Transparent)
+
+/** The same under a frosted edge ([frostsAtTop]): the sharp rows are gone by the band's middle, where their blurred copy
+ * stands in full. Left at the iPhone's grading, they showed through the frost behind the title, still readable. */
+private val FROSTED_TAKEN = arrayOf(0f to Color.Black, 0.6f to Color.Black, 1f to Color.Transparent)
 
 /** How deep the band reaches past the chrome, and how far a list scrolls before it is at full strength (`EdgeFade.depth`). */
 private val EDGE = 30.dp

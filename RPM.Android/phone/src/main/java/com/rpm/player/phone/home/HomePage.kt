@@ -1,5 +1,10 @@
 package com.rpm.player.phone.home
 
+import com.rpm.player.phone.design.frostsAtTop
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -236,6 +241,8 @@ fun HomePage(
     var heading by remember { mutableStateOf(0.dp) }
     var dress by remember { mutableStateOf<Any?>(null) }
     val scroll = rememberScrollState()
+    // The rows as they scroll, for the frost under the title.
+    val rows = rememberBackdrop()
     // The iPhone's band at the top: pulled past its top, the page comes down and the banner grows to cover the gap.
     val pull = rememberTopPull()
     // Read once per change of the answer, not on every frame of a scroll.
@@ -251,7 +258,8 @@ fun HomePage(
         Column(
             Modifier
                 .fillMaxSize()
-                .dissolvesAtTop(statusBar + heading) { scroll.value.toFloat() }
+                .dissolvesAtTop(statusBar + heading, frosted = true) { scroll.value.toFloat() }
+                .backdropSource(rows)
                 .verticalScroll(scroll, overscrollEffect = pull)
                 .padding(bottom = FOOT + bottomRoom),
             verticalArrangement = Arrangement.spacedBy(SECTIONS_APART),
@@ -280,6 +288,8 @@ fun HomePage(
                 ListsRow(stringResource(heading), home.madeForYou, collection, images, actions.onOpenList)
             }
         }
+        // What scrolls up under the title, frosted as it goes, over the rows fading out there.
+        Box(Modifier.fillMaxWidth().height(statusBar + heading + 30.dp).frostsAtTop(rows, statusBar + heading) { scroll.value.toFloat() })
         // The title is drawn over the scroll. It does not move with the scroll. It sits on the same line as the title
         // of every other page.
         PageTitle(
@@ -300,6 +310,19 @@ fun HomePage(
 /** How long after the banner is drawn the other cards' photographs start to be cut: after the front card's own, so the
  * two do not compete for the network. */
 private const val PRELOAD_AFTER_MS = 2_500L
+
+/** A banner card's photograph as cut for [scene], and the run-off baked from it for a card of that size. */
+private class HeldPhoto(val scene: ArtScene, val photo: Bitmap, val runOff: ImageBitmap, val width: Dp, val plate: Dp, val mirror: Dp) {
+    /** The run-off, if it was baked from [picture] at this size. */
+    fun bakedFor(picture: Bitmap?, width: Dp, plate: Dp, mirror: Dp): ImageBitmap? =
+        runOff.takeIf { picture === photo && width == this.width && plate == this.plate && mirror == this.mirror }
+}
+
+/** How long a turn waits at most for the next card's photograph to be cut, after the card in front has had its time. */
+private const val NEXT_WAITS_AT_MOST_MS = 10_000L
+
+/** How long a banner card's photograph and run-off take to fade in once both are ready. */
+private const val PHOTO_IN_MS = 300
 
 /** How long a banner card stays in front before the next one turns in (`BannerDwell.seconds` on iPhone). */
 private const val DWELL_MS = 7_000L
@@ -343,11 +366,16 @@ private fun Banner(
     // The step runs in a scope of its own: the strip moving under it is one of the changes that start the count again,
     // and that must not stop the step itself.
     val stepping = rememberCoroutineScope()
+    // Which cards have their photograph and run-off in, or have none to wait for, by card.
+    val cardReady = remember(cards) { mutableStateMapOf<Int, Boolean>() }
     LaunchedEffect(ring, turns, pager) {
         if (!ring || !turns) return@LaunchedEffect
         snapshotFlow { pager.settledPage to pager.isScrollInProgress }.collectLatest { (at, moving) ->
             if (moving) return@collectLatest
             delay(DWELL_MS)
+            // Not onto a card whose photograph is still being cut, the first time round after a launch: it would turn in
+            // bare and fill in under the person's eyes. Waited for, not for ever.
+            withTimeoutOrNull(NEXT_WAITS_AT_MOST_MS) { snapshotFlow { cardReady[(at + 1) % cards.size] == true }.first { it } }
             stepping.launch { pager.animateScrollToPage(at + 1) }
         }
     }
@@ -374,13 +402,18 @@ private fun Banner(
             // Each card's photograph as baked for its run-off and reflection ([RunOff]), by card. The strip draws the
             // reflections from here, under the dots and the rows.
             val runOffs = remember(cards) { mutableStateMapOf<Int, ImageBitmap>() }
+            // Each card's photograph and run-off once made, by card, so a card that turns in again starts with them and
+            // does not cut and bake them again in front of the person (Chivan, 2026-11-04: "the photo loads in again
+            // every time"). The pager lets go of a card once it is out of view.
+            val held = remember(cards) { mutableMapOf<Int, HeldPhoto>() }
             // Each card's room, by card, for a card that stands on one: the strip turns it over under the card as its
             // reflection (`RoomView.fold` on iPhone).
             val rooms = remember(cards) { mutableStateMapOf<Int, PaintedRoom>() }
             // Scaled up about the card's foot while the page is pulled down past its top, so the picture zooms and the
             // page's ground does not show above it (`growsWithPull` on iPhone). The whole strip is scaled, because a
             // pager clips its pages to itself; the writing is scaled back (`keepsSize`), so only the picture grows.
-            HorizontalPager(pager, Modifier.fillMaxWidth().height(plate).growsWithPull(pull, platePx, TransformOrigin(0.5f, 1f))) { page ->
+            // The next card is made while the one before it is in front, so it turns in whole.
+            HorizontalPager(pager, Modifier.fillMaxWidth().height(plate).growsWithPull(pull, platePx, TransformOrigin(0.5f, 1f)), beyondViewportPageCount = 1) { page ->
                 val card = page % cards.size
                 // No cut is made until the heading has been measured, because the overhang it gives changes the frame.
                 BannerCardView(
@@ -392,6 +425,9 @@ private fun Banner(
                         scaleY = 1f / grown
                         transformOrigin = TransformOrigin(0.5f, 1f)
                     },
+                    held = held[card],
+                    onHeld = { held[card] = it },
+                    onWhole = { cardReady[card] = it },
                     onRunOff = { baked -> if (baked != null) runOffs[card] = baked else runOffs.remove(card) },
                     onRoom = { room, here -> if (here) rooms[card] = room else if (rooms[card] === room) rooms.remove(card) },
                     onDress = onDress, onReady = onReady, actions = actions,
@@ -448,6 +484,9 @@ private fun BannerCardView(
     plate: Dp,
     mirror: Dp,
     keepsSize: Modifier,
+    held: HeldPhoto?,
+    onHeld: (HeldPhoto) -> Unit,
+    onWhole: (Boolean) -> Unit,
     onRunOff: (ImageBitmap?) -> Unit,
     onRoom: (PaintedRoom, Boolean) -> Unit,
     onDress: (Any?) -> Unit,
@@ -463,7 +502,7 @@ private fun BannerCardView(
     // faces. This is what the iPhone's card asks for (`BackdropStore.portrait`).
     // Whether the photograph has been looked for, found or not: the front card is drawn once it has (`onReady`).
     var looked by remember(album?.key, scene) { mutableStateOf(false) }
-    val photo by produceState<Bitmap?>(null, album?.key, scene) {
+    val photo by produceState(held?.takeIf { it.scene == scene }?.photo, album?.key, scene) {
         val record = album?.takeIf { it.artist.isNotBlank() }
         if (record == null) {
             looked = true
@@ -474,15 +513,24 @@ private fun BannerCardView(
     }
     val wearing = photo ?: cover
     // The photograph blurred toward the card's foot and mirrored under it, baked once per photograph and size.
-    val runOff by produceState<ImageBitmap?>(null, photo, width, plate, mirror) {
+    val runOff by produceState(held?.bakedFor(photo, width, plate, mirror), photo, width, plate, mirror) {
         val picture = photo ?: return@produceState
+        held?.bakedFor(picture, width, plate, mirror)?.let { value = it; return@produceState }
         value = withContext(Dispatchers.Default) {
             RunOff.bake(picture, width.value, plate.value, mirror.value, BANNER_BLUR_FROM, RunOff.Reflection.Blurred)
         }
     }
+    LaunchedEffect(photo, runOff) {
+        val picture = photo
+        val baked = runOff
+        if (scene != null && picture != null && baked != null) onHeld(HeldPhoto(scene, picture, baked, width, plate, mirror))
+    }
     LaunchedEffect(runOff) { onRunOff(runOff) }
     LaunchedEffect(live, wearing) { if (live && wearing != null) onDress(wearing) }
-    LaunchedEffect(live, looked) { if (live && looked) onReady() }
+    // Ready once the photograph and its run-off are both in, so the front card comes in whole: the run-off is baked a
+    // fifth of a second after the photograph, and a card shown between the two has no blur or fade at its foot.
+    LaunchedEffect(live, looked, runOff) { if (live && looked && (photo == null || runOff != null)) onReady() }
+    LaunchedEffect(looked, photo, runOff) { onWhole(looked && (photo == null || runOff != null)) }
 
     val kicker = when (card) {
         is BannerCard.OfAlbum -> stringResource(kickerOf(card.kicker))
@@ -500,6 +548,11 @@ private fun BannerCardView(
     val colours = rememberRoomColours(if (roomed && framed == null) station?.let { StationLogo.of(it, logoStamp) } ?: cover else null, images)
     val seed = album?.key ?: station?.uuid ?: title
     val subtitle = album?.artist
+    // The photograph and its run-off come in together, faded in: drawn apart, the photograph shows for a fifth of a
+    // second with no blur or fade at the card's foot (Chivan, 2026-11-04: the front card at launch "lost its blur and
+    // popped it back in").
+    val whole = photo != null && runOff != null
+    val photoIn by animateFloatAsState(if (whole) 1f else 0f, tween(PHOTO_IN_MS), label = "photo")
 
     Box(
         Modifier
@@ -515,7 +568,7 @@ private fun BannerCardView(
     ) {
         when {
             roomed -> LiveRoom(framed?.look?.room ?: colours ?: RoomPalette.FALLBACK, seed, running = roomRuns, Modifier.fillMaxSize(), zeroNanos = roomZero, onRoom = onRoom)
-            photo != null -> {
+            whole -> Box(Modifier.fillMaxSize().graphicsLayer { alpha = photoIn }) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current).data(photo).build(),
                     contentDescription = null,
@@ -538,9 +591,9 @@ private fun BannerCardView(
             ),
         )
         // The blur toward the foot, over the sharp photograph: the plate's part of the baked run-off.
-        runOff?.let { baked ->
+        runOff?.takeIf { whole }?.let { baked ->
             Box(
-                Modifier.fillMaxSize().drawBehind {
+                Modifier.fillMaxSize().graphicsLayer { alpha = photoIn }.drawBehind {
                     val rows = (plate.value * RunOff.SCALE).roundToInt().coerceAtMost(baked.height)
                     drawImage(baked, srcSize = IntSize(baked.width, rows), dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()))
                 },

@@ -172,6 +172,9 @@ fun Root(services: Services, settings: PhoneSettings, signIn: SignIn, controller
     val reach by (LocalContext.current.applicationContext as com.rpm.player.phone.PhoneApplication).line.collectAsStateWithLifecycle()
     var opening by rememberSaveable { mutableStateOf(true) }
     var fading by remember { mutableStateOf(false) }
+    // Whether the shell has lifted its own wait cover, home's front card in: the opening waits for that and not only for
+    // the library, or it fades onto that cover and home comes in under the person's eyes.
+    var shellShown by remember { mutableStateOf(false) }
     Box(Modifier.fillMaxSize()) {
         when {
             session == null -> SignInScreen(signIn)
@@ -185,7 +188,7 @@ fun Root(services: Services, settings: PhoneSettings, signIn: SignIn, controller
                     is LibraryState.Failed -> WallStanding.Trouble
                     else -> WallStanding.Reading
                 }
-                Shell(services, settings, ready, controller, sittingFrom, wall)
+                Shell(services, settings, ready, controller, sittingFrom, wall, onShown = { shellShown = true })
             }
             // The words say "your library", which is wrong over somebody else's: the record alone says the app is waiting.
             shown is LibraryState.Loading -> Waiting(if (shown.shelf != Shelf.Own) null else stringResource(R.string.Rpm_Library_Reading))
@@ -200,7 +203,7 @@ fun Root(services: Services, settings: PhoneSettings, signIn: SignIn, controller
             showing = !reach.isOnline,
             detail = if (showing) stringResource(R.string.Rpm_Net_OfflineDownloads) else null,
         )
-        // The opening screen (Opening), over everything until the sign-in form or the library is up, then faded away.
+        // The opening screen (Opening), over everything until the sign-in form or home is up, then faded away.
         // Once per process: a later read (another collection, a retry) shows its own wait.
         if (opening) {
             val shownNow by animateFloatAsState(
@@ -211,7 +214,7 @@ fun Root(services: Services, settings: PhoneSettings, signIn: SignIn, controller
             )
             val reading = (shown as? LibraryState.Loading)?.takeIf { it.shelf == Shelf.Own && it.rows > 0 }
             Opening(
-                ready = session == null || shown is LibraryState.Ready || shown is LibraryState.Failed,
+                ready = session == null || shellShown,
                 reading = if (reading != null) stringResource(R.string.Rpm_Library_Reading) else null,
                 onSwept = { fading = true },
                 modifier = Modifier.fillMaxSize().graphicsLayer { alpha = shownNow },
@@ -241,7 +244,7 @@ private fun nothingRead(shelf: Shelf) = LibraryState.Ready(
  * The app opens on home, as on iPhone.
  */
 @Composable
-private fun Shell(services: Services, settings: PhoneSettings, ready: LibraryState.Ready, controller: Player?, sittingFrom: Int, wall: WallStanding) {
+private fun Shell(services: Services, settings: PhoneSettings, ready: LibraryState.Ready, controller: Player?, sittingFrom: Int, wall: WallStanding, onShown: () -> Unit) {
     val backdrop = rememberBackdrop()
     val session by services.auth.session.collectAsStateWithLifecycle()
     val density = LocalDensity.current
@@ -267,6 +270,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
         delay(COVER_FIRST_MS)
         withTimeoutOrNull(HOME_WAITS_AT_MOST_MS) { snapshotFlow { homeReady }.first { it } }
         covering = false
+        onShown()
     }
     // Whether a pull on a wall is reading the collection again.
     val refreshing by services.library.refreshing.collectAsStateWithLifecycle()
