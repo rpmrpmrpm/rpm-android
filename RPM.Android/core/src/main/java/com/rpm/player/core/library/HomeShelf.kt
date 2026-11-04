@@ -75,7 +75,11 @@ object HomeShelf {
         "LateNight", "Calm", "Energetic", "Danceable", "Focus", "Sleep",
     )
 
-    fun build(c: Collection, random: Random): Home {
+    /** How far back Quick selection looks first: what was played in the last 30 days leads it (Chivan, 2026-11-04). */
+    const val QUICK_RECENT_SECONDS = 30L * 24 * 60 * 60
+
+    /** @param now unix seconds, for what counts as played lately in Quick selection. */
+    fun build(c: Collection, random: Random, now: Long = System.currentTimeMillis() / 1000): Home {
         // Each album's totals are worked out once, by its key. A comparator that summed an album's tracks on
         // every comparison took most of a second per row on a TV box. An album itself as a map key hashes
         // every one of its tracks on each lookup.
@@ -112,7 +116,7 @@ object HomeShelf {
 
         val quick = when (c.shelf) {
             // The lists as the iPhone deals them: the first generated lists, in the order the collection holds them.
-            Shelf.Own -> quick(c, played, c.lists.filter { it.generated }.take(QUICK_LISTS))
+            Shelf.Own -> quick(c, played, c.lists.filter { it.generated }.take(QUICK_LISTS), lastPlayed, since = now - QUICK_RECENT_SECONDS)
             is Shelf.Borrowed -> recommendedQuick(c, madeForYou, shown = (suggested + added.take(ROW_LENGTH)).mapTo(HashSet()) { it.key }, draw)
         }
 
@@ -169,13 +173,34 @@ object HomeShelf {
         return cards
     }
 
-    /** [QUICK_PICKS] picks: a radio on the songs played most ([radioSeeds]) first, then the most played song,
-     * album and list dealt in turn. */
-    private fun quick(c: Collection, played: List<CloudAlbum>, lists: List<TrackList>): List<QuickPick> {
-        val most = MostPlayed.songs(c.tracksById.values, c.plays, Int.MAX_VALUE)
+    /**
+     * [QUICK_PICKS] picks: a radio on the songs played most ([radioSeeds]) first, then the most played song, album and
+     * list dealt in turn.
+     *
+     * **Played lately first.** The songs and records played since [since] lead, most played first, and the rest follow
+     * in the same order to fill what they leave. Ranked by all-time plays alone, the selection was the same records
+     * month after month, whatever was played that month (Chivan, 2026-11-04). The counts are running totals with the
+     * time of the last play, so "lately" is when a thing was last played, not how often it was played lately. The
+     * desktop's `QuickPicks.RecentFirst` and the iPhone's `HomeSongs.recentFirst` keep the same rule.
+     */
+    private fun quick(
+        c: Collection,
+        played: List<CloudAlbum>,
+        lists: List<TrackList>,
+        lastPlayed: Map<String, Long>,
+        since: Long,
+    ): List<QuickPick> {
+        val most = recentFirst(MostPlayed.songs(c.tracksById.values, c.plays, Int.MAX_VALUE)) { (c.plays[it.rpmId]?.lastPlayedAt ?: 0) >= since }
+        val albums = recentFirst(played) { (lastPlayed[it.key] ?: 0) >= since }
         val songs = most.map { QuickPick.Song(it, c.albumOf[it.rpmId]) }
         val radios = radioSeeds(most).map { QuickPick.Radio(it, c.albumOf[it.rpmId]) }
-        return (radios + deal(songs, played.map { QuickPick.OfAlbum(it) }, lists.map { QuickPick.OfList(it) })).take(QUICK_PICKS)
+        return (radios + deal(songs, albums.map { QuickPick.OfAlbum(it) }, lists.map { QuickPick.OfList(it) })).take(QUICK_PICKS)
+    }
+
+    /** [ranked] with the ones played [lately] moved ahead of the rest, each part in its own order. */
+    fun <T> recentFirst(ranked: List<T>, lately: (T) -> Boolean): List<T> {
+        val (recent, rest) = ranked.partition(lately)
+        return recent + rest
     }
 
     /** How many generated lists Quick selection deals from on the person's own shelf (`HomeSongs` on iPhone). */

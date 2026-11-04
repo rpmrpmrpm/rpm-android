@@ -46,6 +46,32 @@ class HomeShelfTest {
         assertEquals(listOf("C", "A"), home.listened.map { it.album })
     }
 
+    @Test fun quickSelectionPutsWhatWasPlayedInTheLastThirtyDaysFirst() {
+        val day = 24L * 60 * 60
+        val now = 100 * day
+        val tracks = listOf(track("old", "Old"), track("new", "New"), track("newer", "Newer"))
+        val home = HomeShelf.build(
+            collection(
+                tracks,
+                plays = listOf(
+                    // Played most of all, but not for two months.
+                    TrackPlaysRow("old", plays = 500, lastPlayedAt = now - 60 * day),
+                    TrackPlaysRow("new", plays = 3, lastPlayedAt = now - 2 * day),
+                    TrackPlaysRow("newer", plays = 7, lastPlayedAt = now - 29 * day),
+                ),
+            ),
+            Random(1),
+            now = now,
+        )
+        val songs = home.quick.filterIsInstance<QuickPick.Song>().map { it.track.rpmId }
+        val albums = home.quick.filterIsInstance<QuickPick.OfAlbum>().map { it.album.album }
+        assertEquals(listOf("newer", "new", "old"), songs)
+        assertEquals(listOf("Newer", "New", "Old"), albums)
+        assertEquals(listOf("newer", "new"), home.quick.filterIsInstance<QuickPick.Radio>().map { it.track.rpmId })
+        // The Most played row stays all-time.
+        assertEquals(listOf("Old", "Newer", "New"), home.played.map { it.album })
+    }
+
     @Test fun theBannerNeverShowsARecordTwice() {
         val tracks = (1..12).map { track("t$it", "Album $it", added = it.toLong()) }
         val plays = (1..12).map { TrackPlaysRow("t$it", plays = it, lastPlayedAt = it.toLong()) }
