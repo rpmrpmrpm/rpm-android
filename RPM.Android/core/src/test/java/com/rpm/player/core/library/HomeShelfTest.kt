@@ -46,30 +46,64 @@ class HomeShelfTest {
         assertEquals(listOf("C", "A"), home.listened.map { it.album })
     }
 
-    @Test fun quickSelectionPutsWhatWasPlayedInTheLastThirtyDaysFirst() {
-        val day = 24L * 60 * 60
-        val now = 100 * day
+    @Test fun quickSelectionIsWhatWasPlayedLastNewestFirst() {
         val tracks = listOf(track("old", "Old"), track("new", "New"), track("newer", "Newer"))
         val home = HomeShelf.build(
             collection(
                 tracks,
                 plays = listOf(
-                    // Played most of all, but not for two months.
-                    TrackPlaysRow("old", plays = 500, lastPlayedAt = now - 60 * day),
-                    TrackPlaysRow("new", plays = 3, lastPlayedAt = now - 2 * day),
-                    TrackPlaysRow("newer", plays = 7, lastPlayedAt = now - 29 * day),
+                    // Played most of all, but longest ago.
+                    TrackPlaysRow("old", plays = 500, lastPlayedAt = 100),
+                    TrackPlaysRow("new", plays = 3, lastPlayedAt = 900),
+                    TrackPlaysRow("newer", plays = 7, lastPlayedAt = 500),
                 ),
             ),
             Random(1),
-            now = now,
         )
         val songs = home.quick.filterIsInstance<QuickPick.Song>().map { it.track.rpmId }
         val albums = home.quick.filterIsInstance<QuickPick.OfAlbum>().map { it.album.album }
-        assertEquals(listOf("newer", "new", "old"), songs)
-        assertEquals(listOf("Newer", "New", "Old"), albums)
-        assertEquals(listOf("newer", "new"), home.quick.filterIsInstance<QuickPick.Radio>().map { it.track.rpmId })
-        // The Most played row stays all-time.
+        // The radios go on the two played last; their records are not shown again, so the song is the one played
+        // longest ago, and its record is taken by it too.
+        assertEquals(listOf("new", "newer"), home.quick.filterIsInstance<QuickPick.Radio>().map { it.track.rpmId })
+        assertEquals(listOf("old"), songs)
+        assertEquals(emptyList<String>(), albums)
+        // The Most played row stays most played.
         assertEquals(listOf("Old", "Newer", "New"), home.played.map { it.album })
+    }
+
+    @Test fun quickSelectionShowsEachRecordOnce() {
+        val tracks = listOf(track("a1", "A"), track("a2", "A"), track("b1", "B"), track("c1", "C"), track("d1", "D"))
+        val plays = listOf(
+            TrackPlaysRow("a1", plays = 1, lastPlayedAt = 900),
+            TrackPlaysRow("a2", plays = 1, lastPlayedAt = 800),
+            TrackPlaysRow("b1", plays = 1, lastPlayedAt = 700),
+            TrackPlaysRow("c1", plays = 1, lastPlayedAt = 600),
+            TrackPlaysRow("d1", plays = 1, lastPlayedAt = 500),
+        )
+        val home = HomeShelf.build(collection(tracks, plays), Random(1))
+        // Radios on a1 and b1: their records A and B are not shown again, as a song or as a record.
+        assertEquals(listOf("a1", "b1"), home.quick.filterIsInstance<QuickPick.Radio>().map { it.track.rpmId })
+        assertEquals(listOf("c1"), home.quick.filterIsInstance<QuickPick.Song>().map { it.track.rpmId })
+        assertEquals(listOf("D"), home.quick.filterIsInstance<QuickPick.OfAlbum>().map { it.album.album })
+    }
+
+    @Test fun quickSelectionKnowsOneRecordFiledInTwoFolders() {
+        // The same album in two folders, its name once in quotes: one record as far as the selection goes.
+        val riot = CloudTrack(rpmId = "riot", title = "Riot", artist = "Childish Gambino", album = "\"Awaken, My Love!\"", relativePath = "Childish Gambino/Awaken (copy)/05 Riot.m4a")
+        val redbone = CloudTrack(rpmId = "redbone", title = "Redbone", artist = "Childish Gambino", album = "Awaken, My Love!", relativePath = "Childish Gambino/Awaken, My Love!/06 Redbone.m4a")
+        val others = listOf(track("x1", "X"), track("y1", "Y"))
+        val plays = listOf(
+            TrackPlaysRow("x1", plays = 1, lastPlayedAt = 900),
+            TrackPlaysRow("y1", plays = 1, lastPlayedAt = 800),
+            TrackPlaysRow("redbone", plays = 1, lastPlayedAt = 700),
+            TrackPlaysRow("riot", plays = 1, lastPlayedAt = 600),
+        )
+        val home = HomeShelf.build(collection(others + riot + redbone, plays), Random(1))
+        val shown = home.quick.filterIsInstance<QuickPick.Song>().map { it.track.rpmId } +
+            home.quick.filterIsInstance<QuickPick.OfAlbum>().map { it.album.album }
+        // Redbone's record comes first; Riot, from the same album in the other folder, does not follow it.
+        assertTrue("redbone" in shown)
+        assertTrue("riot" !in shown)
     }
 
     @Test fun theBannerNeverShowsARecordTwice() {

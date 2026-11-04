@@ -75,11 +75,7 @@ object HomeShelf {
         "LateNight", "Calm", "Energetic", "Danceable", "Focus", "Sleep",
     )
 
-    /** How far back Quick selection looks first: what was played in the last 30 days leads it (Chivan, 2026-11-04). */
-    const val QUICK_RECENT_SECONDS = 30L * 24 * 60 * 60
-
-    /** @param now unix seconds, for what counts as played lately in Quick selection. */
-    fun build(c: Collection, random: Random, now: Long = System.currentTimeMillis() / 1000): Home {
+    fun build(c: Collection, random: Random): Home {
         // Each album's totals are worked out once, by its key. A comparator that summed an album's tracks on
         // every comparison took most of a second per row on a TV box. An album itself as a map key hashes
         // every one of its tracks on each lookup.
@@ -116,7 +112,7 @@ object HomeShelf {
 
         val quick = when (c.shelf) {
             // The lists as the iPhone deals them: the first generated lists, in the order the collection holds them.
-            Shelf.Own -> quick(c, played, c.lists.filter { it.generated }.take(QUICK_LISTS), lastPlayed, since = now - QUICK_RECENT_SECONDS)
+            Shelf.Own -> quick(c, listened, c.lists.filter { it.generated }.take(QUICK_LISTS))
             is Shelf.Borrowed -> recommendedQuick(c, madeForYou, shown = (suggested + added.take(ROW_LENGTH)).mapTo(HashSet()) { it.key }, draw)
         }
 
@@ -174,33 +170,47 @@ object HomeShelf {
     }
 
     /**
-     * [QUICK_PICKS] picks: a radio on the songs played most ([radioSeeds]) first, then the most played song, album and
-     * list dealt in turn.
+     * [QUICK_PICKS] picks: a radio on the songs played last ([radioSeeds]) first, then the song, record and list dealt in
+     * turn.
      *
-     * **Played lately first.** The songs and records played since [since] lead, most played first, and the rest follow
-     * in the same order to fill what they leave. Ranked by all-time plays alone, the selection was the same records
-     * month after month, whatever was played that month (Chivan, 2026-11-04). The counts are running totals with the
-     * time of the last play, so "lately" is when a thing was last played, not how often it was played lately. The
-     * desktop's `QuickPicks.RecentFirst` and the iPhone's `HomeSongs.recentFirst` keep the same rule.
+     * **What was played last, newest first** (Chivan, 2026-11-04), songs and records both. Ranked by plays, even with
+     * the last thirty days first, it was the same favourites month after month, because they were also what was played
+     * that month; the person wants what they are listening to now. The desktop's and the iPhone's Quick selection keep
+     * the same rule. Most played stays a row of its own.
+     *
+     * @param listened the records, played last first.
      */
-    private fun quick(
-        c: Collection,
-        played: List<CloudAlbum>,
-        lists: List<TrackList>,
-        lastPlayed: Map<String, Long>,
-        since: Long,
-    ): List<QuickPick> {
-        val most = recentFirst(MostPlayed.songs(c.tracksById.values, c.plays, Int.MAX_VALUE)) { (c.plays[it.rpmId]?.lastPlayedAt ?: 0) >= since }
-        val albums = recentFirst(played) { (lastPlayed[it.key] ?: 0) >= since }
-        val songs = most.map { QuickPick.Song(it, c.albumOf[it.rpmId]) }
-        val radios = radioSeeds(most).map { QuickPick.Radio(it, c.albumOf[it.rpmId]) }
-        return (radios + deal(songs, albums.map { QuickPick.OfAlbum(it) }, lists.map { QuickPick.OfList(it) })).take(QUICK_PICKS)
+    private fun quick(c: Collection, listened: List<CloudAlbum>, lists: List<TrackList>): List<QuickPick> {
+        val latest = MostPlayed.songs(c.tracksById.values, c.plays, Int.MAX_VALUE)
+            .sortedByDescending { c.plays[it.rpmId]?.lastPlayedAt ?: 0 }
+        val songs = latest.map { QuickPick.Song(it, c.albumOf[it.rpmId]) }
+        val radios = radioSeeds(latest).map { QuickPick.Radio(it, c.albumOf[it.rpmId]) }
+        // One record once (Chivan, 2026-11-04: "a lot of duplicate images from the same album"): a record a radio is
+        // on, or a song from it, or the record itself, and the next of that kind takes its place.
+        val records = radios.mapNotNullTo(HashSet()) { recordOf(it.track, it.album) }
+        val dealt = deal(songs, listened.map { QuickPick.OfAlbum(it) }, lists.map { QuickPick.OfList(it) }, records) { pick ->
+            when (pick) {
+                is QuickPick.Song -> recordOf(pick.track, pick.album)
+                is QuickPick.OfAlbum -> recordName(pick.album.artist, pick.album.album)
+                else -> null
+            }
+        }
+        return (radios + dealt).take(QUICK_PICKS)
     }
 
-    /** [ranked] with the ones played [lately] moved ahead of the rest, each part in its own order. */
-    fun <T> recentFirst(ranked: List<T>, lately: (T) -> Boolean): List<T> {
-        val (recent, rest) = ranked.partition(lately)
-        return recent + rest
+    /** Which record a song is from, by its artist and name ([recordName]); null for a song with no album named. */
+    private fun recordOf(track: CloudTrack, album: CloudAlbum?): String? =
+        if (album != null) recordName(album.artist, album.album)
+        else recordName(track.tags?.albumArtist?.takeIf { it.isNotBlank() } ?: track.artist, track.album)
+
+    /**
+     * A record by its artist and its name, folded ([Taste.fold]) and without a disc suffix, not by its key: the same
+     * album filed in two folders is two keys and one cover ("Awaken, My Love!" in quotes and without). Null when the
+     * name is blank, which matches nothing.
+     */
+    private fun recordName(artist: String?, album: String?): String? {
+        val name = Taste.fold(AlbumWall.normalizedAlbumName(album.orEmpty()))
+        return if (name.isEmpty()) null else Taste.fold(artist) + "|" + name
     }
 
     /** How many generated lists Quick selection deals from on the person's own shelf (`HomeSongs` on iPhone). */
@@ -278,15 +288,36 @@ object HomeShelf {
         return (dealt + others).take(ROW_LENGTH)
     }
 
-    /** [QUICK_PICKS] picks dealt in turn from [songs], [albums] and [picks], a kind that runs out skipped. */
-    private fun deal(songs: List<QuickPick>, albums: List<QuickPick>, picks: List<QuickPick>): List<QuickPick> {
+    /**
+     * [QUICK_PICKS] picks dealt in turn from [songs], [albums] and [picks], a kind that runs out skipped. A pick whose
+     * record ([recordOf]) is in [records] already is stepped past, and its kind gives its next one in its place; each
+     * record dealt joins [records].
+     */
+    private fun deal(
+        songs: List<QuickPick>,
+        albums: List<QuickPick>,
+        picks: List<QuickPick>,
+        records: MutableSet<String> = HashSet(),
+        recordOf: (QuickPick) -> String? = { null },
+    ): List<QuickPick> {
+        val sources = listOf(songs, albums, picks)
+        val at = IntArray(sources.size)
         val dealt = mutableListOf<QuickPick>()
-        var i = 0
-        while (dealt.size < QUICK_PICKS && (i < songs.size || i < albums.size || i < picks.size)) {
-            songs.getOrNull(i)?.let { if (dealt.size < QUICK_PICKS) dealt += it }
-            albums.getOrNull(i)?.let { if (dealt.size < QUICK_PICKS) dealt += it }
-            picks.getOrNull(i)?.let { if (dealt.size < QUICK_PICKS) dealt += it }
-            i++
+        while (dealt.size < QUICK_PICKS) {
+            var any = false
+            for (k in sources.indices) {
+                if (dealt.size >= QUICK_PICKS) break
+                val from = sources[k]
+                while (at[k] < from.size) {
+                    val pick = from[at[k]++]
+                    val record = recordOf(pick)
+                    if (record != null && !records.add(record)) continue
+                    dealt += pick
+                    any = true
+                    break
+                }
+            }
+            if (!any) break
         }
         return dealt
     }
