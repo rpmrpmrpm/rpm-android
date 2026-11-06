@@ -31,7 +31,7 @@ androidx-media3-session = { module = "androidx.media3:media3-session", version.r
 androidx-media3-datasource-okhttp = { module = "androidx.media3:media3-datasource-okhttp", version.ref = "media3" }
 androidx-media3-decoder = { module = "androidx.media3:media3-decoder", version.ref = "media3" }
 androidx-media3-exoplayer-hls = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "media3" }
-androidx-annotation = { module = "androidx.annotation:annotation", version = "1.9.1" }
+androidx-annotation = { module = "androidx.annotation:annotation", version = "1.11.0" }
 checker-qual = { module = "org.checkerframework:checker-qual", version = "3.49.3" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
