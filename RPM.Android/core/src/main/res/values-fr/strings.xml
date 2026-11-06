@@ -2584,6 +2584,9 @@
     <!-- Sound output message, a numbered step on macOS. Names macOS's own System Settings, Sound, Output, as macOS words them in each language. -->
     <string name="AudioOut_StepMacSound">Ouvrez Réglages Système, puis Son, et choisissez un appareil sous Sortie.</string>
 
+    <!-- Sound output message, a numbered step on macOS 12. Names System Preferences, Sound, Output, as macOS 12 words them in each language: macOS 13 renamed System Preferences to System Settings. -->
+    <string name="AudioOut_StepMacSoundPreferences">Ouvrez Préférences Système, puis Son, et choisissez un appareil sous Sortie.</string>
+
     <!-- Sound output message, a numbered step on a system other than Windows or macOS. -->
     <string name="AudioOut_StepOtherSound">Ouvrez les paramètres audio du système et vérifiez qu\'un périphérique de sortie est sélectionné.</string>
 
