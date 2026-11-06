@@ -6582,8 +6582,45 @@
     <string name="Wizard_ImportSlow">Hang tight! A big collection can take a while to import, so feel free to grab a coffee while rpm files it all away.</string>
 
     <!-- Web app sign-in card, in place of the sign-up link while sign-up is closed. -->
-    <string name="Web_BetaClosed">rpm is in a closed beta. Sign in if you have an account, or apply to join the beta.</string>
+    <string name="Web_BetaClosed">rpm is in a closed beta. You need the code from your welcome mail.</string>
 
     <!-- Web app sign-in card, a link to the beta form on the website. -->
     <string name="Web_BetaApply">Apply for the beta</string>
+
+    <!-- Web app library pane, when the account has no tracks yet. -->
+    <string name="Web_LibraryEmpty">Nothing here yet. Import your music and it shows up here.</string>
+
+    <!-- Web app import queue, on a file in a format the store cannot hold. -->
+    <string name="Web_ImportCannotStore">This file type can\'t be stored in the cloud.</string>
+
+    <!-- Web app import queue, status of a track while its audio is prepared for upload. -->
+    <string name="Web_ImportStagePreparing">Preparing</string>
+
+    <!-- Web app import queue, status of a track while it uploads. -->
+    <string name="Web_ImportStageUploading">Uploading</string>
+
+    <!-- Web app import queue, on a track whose audio the account already holds. -->
+    <string name="Web_ImportAlreadyThere">Already in your collection</string>
+
+    <!-- Web app import queue, on a track that has reached the cloud. -->
+    <string name="Web_ImportDone">Imported</string>
+
+    <!-- Web app import pane, when the queue is empty. -->
+    <string name="Web_ImportEmptyHint">Add files or a folder. They appear here so you can check them before they go to your collection.</string>
+
+    <!-- Web app import pane, button that opens the file picker. -->
+    <string name="Web_ImportAddFiles">Add files</string>
+
+    <!-- Web app import pane, button that opens the folder picker. -->
+    <string name="Web_ImportAddFolder">Add a folder</string>
+
+    <!-- Web app import pane, while an import is running. -->
+    <string name="Web_ImportKeepOpen">Keep this page open until the import has finished.</string>
+
+    <!-- Web app tag panel, placeholder of a field whose value differs between the ticked tracks. -->
+    <string name="Web_ImportMixed">Different values</string>
+    <string name="Web_CodeTitle">Your code</string>
+    <string name="Web_CodeRefused">That code doesn\'t work. If it matches your welcome mail, reply to that mail and we\'ll help.</string>
+    <string name="Web_CodeFailed">Your code could not be checked. Please try again.</string>
+    <string name="Web_ImportClearDone">Clear finished</string>
 </resources>
