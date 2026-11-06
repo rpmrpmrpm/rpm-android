@@ -6580,4 +6580,10 @@
 
     <!-- Setup wizard step 4, over the import's progress bar after ten seconds of importing. -->
     <string name="Wizard_ImportSlow">Patience ! Une grande collection peut prendre un moment à importer, alors prenez un café pendant que rpm range tout.</string>
+
+    <!-- Web app sign-in card, in place of the sign-up link while sign-up is closed. -->
+    <string name="Web_BetaClosed">rpm est en bêta fermée. Connectez-vous si vous avez un compte, ou demandez à rejoindre la bêta.</string>
+
+    <!-- Web app sign-in card, a link to the beta form on the website. -->
+    <string name="Web_BetaApply">Demander à rejoindre la bêta</string>
 </resources>
