@@ -4862,6 +4862,9 @@
     <!-- Credits section: the genre photographs and the generated playlists' photographs. -->
     <string name="Credits_Section_Photographs">摄影</string>
 
+    <!-- Credits section: recordings that ship with the app. -->
+    <string name="Credits_Section_Music">音乐</string>
+
     <!-- Credits section: the lexicons the app reads. -->
     <string name="Credits_Section_Words">词表</string>
 
@@ -5087,6 +5090,9 @@
     <!-- About screen: what Pexels is asked for. -->
     <string name="Credits_Pexels_Use">用于生成封面和流派页面的照片。</string>
 
+    <!-- Credits entry: what the Musopen recording is used for. -->
+    <string name="Credits_Musopen_Use">设置时可试听曲目中的《月光奏鸣曲》录音。</string>
+
     <!-- About screen: what Radio Browser is asked for. -->
     <string name="Credits_RadioBrowser_Use">网络电台目录。</string>
 
@@ -5281,6 +5287,15 @@
 
     <!-- Setup wizard step 2: the one source. Onboarding imports a folder of files and nothing else. -->
     <string name="Wizard_ChooseFolder">选择文件夹</string>
+
+    <!-- Setup wizard step 2: the tile beside Choose a folder. It imports three tracks that ship with the app. -->
+    <string name="Wizard_TryStarter">试试我们的曲目</string>
+
+    <!-- Setup wizard step 2: the line under Try our tracks. -->
+    <string name="Wizard_TryStarterHint">手边没有音乐？没问题！先用我们准备的三首曲目，看看 rpm 能做什么。</string>
+
+    <!-- Setup wizard step 2, review: shown where a chosen folder's path goes, when the source is the tracks that ship with the app. -->
+    <string name="Wizard_StarterSource">rpm 准备的三首曲目</string>
 
     <!-- Setup wizard step 2, destination grid: the folder a file lands in, relative to the collection. -->
     <string name="Wizard_PlanFolder">文件夹</string>

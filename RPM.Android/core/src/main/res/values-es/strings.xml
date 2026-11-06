@@ -4862,6 +4862,9 @@
     <!-- Credits section: the genre photographs and the generated playlists' photographs. -->
     <string name="Credits_Section_Photographs">Fotografías</string>
 
+    <!-- Credits section: recordings that ship with the app. -->
+    <string name="Credits_Section_Music">Música</string>
+
     <!-- Credits section: the lexicons the app reads. -->
     <string name="Credits_Section_Words">Listas de palabras</string>
 
@@ -5087,6 +5090,9 @@
     <!-- About screen: what Pexels is asked for. -->
     <string name="Credits_Pexels_Use">Fotografías para las portadas generadas y las páginas de géneros.</string>
 
+    <!-- Credits entry: what the Musopen recording is used for. -->
+    <string name="Credits_Musopen_Use">La grabación de la Sonata Claro de luna entre las pistas que puedes probar durante la configuración.</string>
+
     <!-- About screen: what Radio Browser is asked for. -->
     <string name="Credits_RadioBrowser_Use">El directorio de emisoras de radio por internet.</string>
 
@@ -5281,6 +5287,15 @@
 
     <!-- Setup wizard step 2: the one source. Onboarding imports a folder of files and nothing else. -->
     <string name="Wizard_ChooseFolder">Elegir una carpeta</string>
+
+    <!-- Setup wizard step 2: the tile beside Choose a folder. It imports three tracks that ship with the app. -->
+    <string name="Wizard_TryStarter">Probar nuestras pistas</string>
+
+    <!-- Setup wizard step 2: the line under Try our tracks. -->
+    <string name="Wizard_TryStarterHint">¿No tienes música a mano? ¡No pasa nada! Empieza con tres pistas nuestras y descubre lo que rpm puede hacer.</string>
+
+    <!-- Setup wizard step 2, review: shown where a chosen folder's path goes, when the source is the tracks that ship with the app. -->
+    <string name="Wizard_StarterSource">Tres pistas de rpm</string>
 
     <!-- Setup wizard step 2, destination grid: the folder a file lands in, relative to the collection. -->
     <string name="Wizard_PlanFolder">Carpeta</string>
