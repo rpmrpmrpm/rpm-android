@@ -6656,6 +6656,18 @@
 
     <!-- Import pane of the web app: tooltip on the mark beside a file that looks like a whole album. The web app does not split files. -->
     <string name="Web_ImportAlbumFileTip">Das sieht nach einem ganzen Album in einer Datei aus. Die Desktop-App kann es in Titel aufteilen.</string>
+
+    <!-- Web app, track and album editor: the desktop pushes its own tags to the cloud when it syncs. -->
+    <string name="Web_EditDesktopNote">Wenn rpm auf einem Computer diese Titel ebenfalls hat, ersetzen dessen Tags diese bei der nächsten Synchronisierung.</string>
+
+    <!-- Web app, track and album editor: the save failed. -->
+    <string name="Web_EditFailed">Die Änderungen konnten nicht gespeichert werden. Versuche es erneut.</string>
+
+    <!-- Web app, playlists: under the field that files a playlist in a folder. -->
+    <string name="Web_PlaylistFolderHint">Ordnername. Mit / legst du einen Ordner in einem Ordner an. Leer lassen für keinen Ordner.</string>
+
+    <!-- Web app, radio: on the play key of a saved station whose stream is not https, or is a format the browser has no player for. -->
+    <string name="Web_RadioNotHere">Ein Browser kann den Stream dieses Senders nicht abspielen. In der Desktop-App funktioniert er.</string>
     <string name="Web_ImportRipNote">Um CDs zu rippen und Schallplatten aufzunehmen, lade die Desktop-App herunter.</string>
 
     <!-- Import pane of the web app: tracks were being prepared when the page was last closed. The browser cannot reopen files by itself. -->
