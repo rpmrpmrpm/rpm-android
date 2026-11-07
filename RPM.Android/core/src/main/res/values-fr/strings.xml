@@ -472,10 +472,10 @@
     <string name="Details_TabWork">Œuvre</string>
 
     <!-- Dense form group heading: how loud the record is (loudness, true peak). -->
-    <string name="MassEdit_GroupLevel">Niveau</string>
+    <string name="MassEdit_GroupLevel">NIVEAU</string>
 
     <!-- Dense form group heading: the tempo and key fields, which the app measures itself. -->
-    <string name="MassEdit_GroupMeasured">Mesuré</string>
+    <string name="MassEdit_GroupMeasured">MESURÉ</string>
 
     <!-- Dense form group heading: what the measurement came out of (grid, confidences, which analyser). -->
     <string name="MassEdit_GroupReading">LECTURE</string>
@@ -6657,11 +6657,20 @@
     <!-- Import pane of the web app: tooltip on the mark beside a file that looks like a whole album. The web app does not split files. -->
     <string name="Web_ImportAlbumFileTip">Ce fichier ressemble à un album entier. L\'application de bureau peut le découper en morceaux.</string>
 
-    <!-- Web app, track and album editor: the desktop pushes its own tags to the cloud when it syncs. -->
-    <string name="Web_EditDesktopNote">Si rpm sur un ordinateur contient aussi ces morceaux, ses tags remplaceront ceux-ci à sa prochaine synchronisation.</string>
-
     <!-- Web app, track and album editor: the save failed. -->
     <string name="Web_EditFailed">Les modifications n\'ont pas pu être enregistrées. Réessayez.</string>
+
+    <!-- Web app, edit windows: shown while the tags of the tracks are read from the cloud. -->
+    <string name="Web_EditReading">Lecture des tags…</string>
+
+    <!-- Web app, edit windows: the tags could not be read from the cloud, so nothing can be edited. -->
+    <string name="Web_EditReadFailed">Les tags n\'ont pas pu être lus. Fermez la fenêtre et réessayez.</string>
+
+    <!-- Web app, track metadata from a release: shown while the filled-in tags are saved. -->
+    <string name="Web_EditSaving">Enregistrement…</string>
+
+    <!-- Web app, track details, Artwork tab: where a picture chosen here is saved. -->
+    <string name="Web_ArtHint">L\'image est enregistrée comme pochette de l\'album dans votre cloud, et ajoutée au fichier quand le morceau est téléchargé.</string>
 
     <!-- Web app, playlists: under the field that files a playlist in a folder. -->
     <string name="Web_PlaylistFolderHint">Nom du dossier. Utilisez / pour un dossier dans un dossier. Laissez vide pour aucun dossier.</string>

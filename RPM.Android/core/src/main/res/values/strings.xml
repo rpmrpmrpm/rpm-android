@@ -472,10 +472,10 @@
     <string name="Details_TabWork">Work</string>
 
     <!-- Dense form group heading: how loud the record is (loudness, true peak). -->
-    <string name="MassEdit_GroupLevel">Level</string>
+    <string name="MassEdit_GroupLevel">LEVEL</string>
 
     <!-- Dense form group heading: the tempo and key fields, which the app measures itself. -->
-    <string name="MassEdit_GroupMeasured">Measured</string>
+    <string name="MassEdit_GroupMeasured">MEASURED</string>
 
     <!-- Dense form group heading: what the measurement came out of (grid, confidences, which analyser). -->
     <string name="MassEdit_GroupReading">READING</string>
@@ -6657,11 +6657,20 @@
     <!-- Import pane of the web app: tooltip on the mark beside a file that looks like a whole album. The web app does not split files. -->
     <string name="Web_ImportAlbumFileTip">This looks like a whole album in one file. The desktop app can split it into tracks.</string>
 
-    <!-- Web app, track and album editor: the desktop pushes its own tags to the cloud when it syncs. -->
-    <string name="Web_EditDesktopNote">If rpm on a computer also holds these tracks, its tags replace these the next time it syncs.</string>
-
     <!-- Web app, track and album editor: the save failed. -->
     <string name="Web_EditFailed">The changes could not be saved. Try again.</string>
+
+    <!-- Web app, edit windows: shown while the tags of the tracks are read from the cloud. -->
+    <string name="Web_EditReading">Reading the tags…</string>
+
+    <!-- Web app, edit windows: the tags could not be read from the cloud, so nothing can be edited. -->
+    <string name="Web_EditReadFailed">The tags could not be read. Close the window and try again.</string>
+
+    <!-- Web app, track metadata from a release: shown while the filled-in tags are saved. -->
+    <string name="Web_EditSaving">Saving…</string>
+
+    <!-- Web app, track details, Artwork tab: where a picture chosen here is saved. -->
+    <string name="Web_ArtHint">The picture is saved as the album cover in your cloud, and added to the file when the track is downloaded.</string>
 
     <!-- Web app, playlists: under the field that files a playlist in a folder. -->
     <string name="Web_PlaylistFolderHint">Folder name. Use / for a folder inside a folder. Leave it empty for no folder.</string>
