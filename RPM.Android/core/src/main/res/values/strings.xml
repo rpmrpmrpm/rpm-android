@@ -4208,6 +4208,9 @@
     <!-- Recognize dialog, and the split window's status line after Recognize selected: the server refused the advanced layer mid-run, so the run carried on without it. -->
     <string name="Recognize_AdvancedRefused">Advanced recognition is for supporters. The rest of the run used basic recognition only.</string>
 
+    <!-- Recognize window: the advanced layer failed mid-run, so the run carried on without it. -->
+    <string name="Recognize_AdvancedDown">Advanced recognition is not available right now. The rest of the run used basic recognition only.</string>
+
     <!-- Recognize dialog, column header over each target track’s state. -->
     <string name="Recognize_ColStatus">Status</string>
 
@@ -6638,4 +6641,31 @@
     <string name="Web_CodeRefused">That code doesn\'t work. If it matches your welcome mail, reply to that mail and we\'ll help.</string>
     <string name="Web_CodeFailed">Your code could not be checked. Please try again.</string>
     <string name="Web_ImportClearDone">Clear finished</string>
+    <string name="Web_DesktopPitch">The desktop app adds your local library, recording and ripping.</string>
+    <string name="Web_DesktopDownload">Download rpm for %1$s</string>
+    <string name="Web_DesktopMac">Mac</string>
+    <string name="Web_DesktopWindows">Windows</string>
+    <string name="Web_DesktopOpen">Open rpm</string>
+    <string name="Web_DesktopHere">rpm is installed on this computer.</string>
+    <string name="Web_DesktopDidNotOpen">rpm did not open. It may not be installed yet.</string>
+    <string name="Web_DesktopFailed">The download could not start. Please try again.</string>
+    <string name="Web_DesktopAppleSilicon">Mac with Apple silicon</string>
+    <string name="Web_DesktopIntel">Mac with an Intel processor</string>
+    <string name="Web_DesktopIntelOld">Intel Mac with macOS 12 to 14</string>
+    <string name="Web_DeleteAsk">Delete %1$s from your cloud library? This cannot be undone.</string>
+
+    <!-- Import pane of the web app: tooltip on the mark beside a file that looks like a whole album. The web app does not split files. -->
+    <string name="Web_ImportAlbumFileTip">This looks like a whole album in one file. The desktop app can split it into tracks.</string>
+    <string name="Web_ImportRipNote">To rip your CDs and record your vinyl, download the desktop app.</string>
+
+    <!-- Import pane of the web app: tracks were being prepared when the page was last closed. The browser cannot reopen files by itself. -->
+    <string name="Web_ImportSavedNote">%1$s track(s) from your last visit are waiting. Add the same folder or files and your changes come back.</string>
+
+    <!-- Import pane of the web app: button that reopens the folder picked on the last visit, in browsers that can. -->
+    <string name="Web_ImportSavedReopen">Open the folder again</string>
+
+    <!-- Import pane of the web app: button that drops the tracks kept from the last visit. -->
+    <string name="Web_ImportSavedForget">Forget them</string>
+    <string name="Web_PlaylistsDesktopNote">Auto playlists, mood lists and smart playlists are made in the desktop app.</string>
+    <string name="Web_DeleteAccountFailed">The account could not be deleted. Please try again.</string>
 </resources>

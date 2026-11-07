@@ -4208,6 +4208,9 @@
     <!-- Recognize dialog, and the split window's status line after Recognize selected: the server refused the advanced layer mid-run, so the run carried on without it. -->
     <string name="Recognize_AdvancedRefused">El reconocimiento avanzado es para patrocinadores. El resto del proceso usó solo el reconocimiento básico.</string>
 
+    <!-- Recognize window: the advanced layer failed mid-run, so the run carried on without it. -->
+    <string name="Recognize_AdvancedDown">El reconocimiento avanzado no está disponible en este momento. El resto del proceso usó solo el reconocimiento básico.</string>
+
     <!-- Recognize dialog, column header over each target track’s state. -->
     <string name="Recognize_ColStatus">Estado</string>
 
@@ -6638,4 +6641,31 @@
     <string name="Web_CodeRefused">Ese código no funciona. Si coincide con tu correo de bienvenida, responde a ese correo y te ayudaremos.</string>
     <string name="Web_CodeFailed">No se pudo comprobar tu código. Inténtalo de nuevo.</string>
     <string name="Web_ImportClearDone">Quitar los terminados</string>
+    <string name="Web_DesktopPitch">La aplicación de escritorio añade tu biblioteca local, la grabación y la copia de CD.</string>
+    <string name="Web_DesktopDownload">Descargar rpm para %1$s</string>
+    <string name="Web_DesktopMac">Mac</string>
+    <string name="Web_DesktopWindows">Windows</string>
+    <string name="Web_DesktopOpen">Abrir rpm</string>
+    <string name="Web_DesktopHere">rpm está instalado en este ordenador.</string>
+    <string name="Web_DesktopDidNotOpen">rpm no se ha abierto. Puede que aún no esté instalado.</string>
+    <string name="Web_DesktopFailed">No se pudo iniciar la descarga. Inténtalo de nuevo.</string>
+    <string name="Web_DesktopAppleSilicon">Mac con chip de Apple</string>
+    <string name="Web_DesktopIntel">Mac con procesador Intel</string>
+    <string name="Web_DesktopIntelOld">Mac Intel con macOS 12 a 14</string>
+    <string name="Web_DeleteAsk">¿Eliminar %1$s de tu biblioteca en la nube? No se puede deshacer.</string>
+
+    <!-- Import pane of the web app: tooltip on the mark beside a file that looks like a whole album. The web app does not split files. -->
+    <string name="Web_ImportAlbumFileTip">Parece un álbum completo en un solo archivo. La aplicación de escritorio puede dividirlo en pistas.</string>
+    <string name="Web_ImportRipNote">Para copiar tus CD y grabar tus vinilos, descarga la aplicación de escritorio.</string>
+
+    <!-- Import pane of the web app: tracks were being prepared when the page was last closed. The browser cannot reopen files by itself. -->
+    <string name="Web_ImportSavedNote">%1$s pista(s) de tu última visita están esperando. Añade la misma carpeta o los mismos archivos y tus cambios volverán.</string>
+
+    <!-- Import pane of the web app: button that reopens the folder picked on the last visit, in browsers that can. -->
+    <string name="Web_ImportSavedReopen">Volver a abrir la carpeta</string>
+
+    <!-- Import pane of the web app: button that drops the tracks kept from the last visit. -->
+    <string name="Web_ImportSavedForget">Olvidarlas</string>
+    <string name="Web_PlaylistsDesktopNote">Las listas automáticas, las listas de ambiente y las listas inteligentes se crean en la aplicación de escritorio.</string>
+    <string name="Web_DeleteAccountFailed">No se pudo eliminar la cuenta. Inténtalo de nuevo.</string>
 </resources>

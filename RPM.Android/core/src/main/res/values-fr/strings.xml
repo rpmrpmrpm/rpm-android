@@ -4208,6 +4208,9 @@
     <!-- Recognize dialog, and the split window's status line after Recognize selected: the server refused the advanced layer mid-run, so the run carried on without it. -->
     <string name="Recognize_AdvancedRefused">La reconnaissance avancée est réservée aux soutiens. Le reste de l’analyse a utilisé la reconnaissance de base.</string>
 
+    <!-- Recognize window: the advanced layer failed mid-run, so the run carried on without it. -->
+    <string name="Recognize_AdvancedDown">La reconnaissance avancée n’est pas disponible pour le moment. Le reste de l’analyse a utilisé la reconnaissance de base.</string>
+
     <!-- Recognize dialog, column header over each target track’s state. -->
     <string name="Recognize_ColStatus">Statut</string>
 
@@ -6638,4 +6641,31 @@
     <string name="Web_CodeRefused">Ce code ne fonctionne pas. S\'il correspond à votre e-mail de bienvenue, répondez à cet e-mail et nous vous aiderons.</string>
     <string name="Web_CodeFailed">Votre code n\'a pas pu être vérifié. Veuillez réessayer.</string>
     <string name="Web_ImportClearDone">Effacer les terminés</string>
+    <string name="Web_DesktopPitch">L\'application de bureau ajoute votre bibliothèque locale, l\'enregistrement et l\'extraction de CD.</string>
+    <string name="Web_DesktopDownload">Télécharger rpm pour %1$s</string>
+    <string name="Web_DesktopMac">Mac</string>
+    <string name="Web_DesktopWindows">Windows</string>
+    <string name="Web_DesktopOpen">Ouvrir rpm</string>
+    <string name="Web_DesktopHere">rpm est installé sur cet ordinateur.</string>
+    <string name="Web_DesktopDidNotOpen">rpm ne s\'est pas ouvert. Il n\'est peut-être pas encore installé.</string>
+    <string name="Web_DesktopFailed">Le téléchargement n\'a pas pu démarrer. Veuillez réessayer.</string>
+    <string name="Web_DesktopAppleSilicon">Mac avec puce Apple</string>
+    <string name="Web_DesktopIntel">Mac avec processeur Intel</string>
+    <string name="Web_DesktopIntelOld">Mac Intel avec macOS 12 à 14</string>
+    <string name="Web_DeleteAsk">Supprimer %1$s de votre bibliothèque cloud ? Cette action est irréversible.</string>
+
+    <!-- Import pane of the web app: tooltip on the mark beside a file that looks like a whole album. The web app does not split files. -->
+    <string name="Web_ImportAlbumFileTip">Ce fichier ressemble à un album entier. L\'application de bureau peut le découper en morceaux.</string>
+    <string name="Web_ImportRipNote">Pour extraire vos CD et enregistrer vos vinyles, téléchargez l\'application de bureau.</string>
+
+    <!-- Import pane of the web app: tracks were being prepared when the page was last closed. The browser cannot reopen files by itself. -->
+    <string name="Web_ImportSavedNote">%1$s morceau(x) de votre dernière visite sont en attente. Ajoutez le même dossier ou les mêmes fichiers pour retrouver vos modifications.</string>
+
+    <!-- Import pane of the web app: button that reopens the folder picked on the last visit, in browsers that can. -->
+    <string name="Web_ImportSavedReopen">Rouvrir le dossier</string>
+
+    <!-- Import pane of the web app: button that drops the tracks kept from the last visit. -->
+    <string name="Web_ImportSavedForget">Les oublier</string>
+    <string name="Web_PlaylistsDesktopNote">Les playlists automatiques, les listes d\'ambiance et les playlists intelligentes sont créées dans l\'application de bureau.</string>
+    <string name="Web_DeleteAccountFailed">Le compte n\'a pas pu être supprimé. Veuillez réessayer.</string>
 </resources>

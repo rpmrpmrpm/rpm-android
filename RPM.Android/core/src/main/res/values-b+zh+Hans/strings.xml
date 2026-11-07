@@ -4208,6 +4208,9 @@
     <!-- Recognize dialog, and the split window's status line after Recognize selected: the server refused the advanced layer mid-run, so the run carried on without it. -->
     <string name="Recognize_AdvancedRefused">高级识别仅限支持者使用。本次其余曲目仅使用基础识别。</string>
 
+    <!-- Recognize window: the advanced layer failed mid-run, so the run carried on without it. -->
+    <string name="Recognize_AdvancedDown">高级识别暂时不可用。本次其余曲目仅使用基础识别。</string>
+
     <!-- Recognize dialog, column header over each target track’s state. -->
     <string name="Recognize_ColStatus">状态</string>
 
@@ -6638,4 +6641,31 @@
     <string name="Web_CodeRefused">此代码无效。如果它与欢迎邮件中的一致，请回复该邮件，我们会帮你解决。</string>
     <string name="Web_CodeFailed">无法验证你的代码，请重试。</string>
     <string name="Web_ImportClearDone">清除已完成</string>
+    <string name="Web_DesktopPitch">桌面版还提供本地音乐库、录音和 CD 抓轨。</string>
+    <string name="Web_DesktopDownload">下载 %1$s 版 rpm</string>
+    <string name="Web_DesktopMac">Mac</string>
+    <string name="Web_DesktopWindows">Windows</string>
+    <string name="Web_DesktopOpen">打开 rpm</string>
+    <string name="Web_DesktopHere">这台电脑已安装 rpm。</string>
+    <string name="Web_DesktopDidNotOpen">rpm 未能打开，可能尚未安装。</string>
+    <string name="Web_DesktopFailed">无法开始下载，请重试。</string>
+    <string name="Web_DesktopAppleSilicon">搭载 Apple 芯片的 Mac</string>
+    <string name="Web_DesktopIntel">搭载 Intel 处理器的 Mac</string>
+    <string name="Web_DesktopIntelOld">macOS 12 至 14 的 Intel Mac</string>
+    <string name="Web_DeleteAsk">要从云端音乐库删除“%1$s”吗？此操作无法撤销。</string>
+
+    <!-- Import pane of the web app: tooltip on the mark beside a file that looks like a whole album. The web app does not split files. -->
+    <string name="Web_ImportAlbumFileTip">这看起来是整张专辑的单个文件。桌面版可以将其拆分为曲目。</string>
+    <string name="Web_ImportRipNote">如需抓取 CD 和录制黑胶唱片，请下载桌面版。</string>
+
+    <!-- Import pane of the web app: tracks were being prepared when the page was last closed. The browser cannot reopen files by itself. -->
+    <string name="Web_ImportSavedNote">上次访问留下的 %1$s 首曲目正在等待。添加相同的文件夹或文件，你的更改就会恢复。</string>
+
+    <!-- Import pane of the web app: button that reopens the folder picked on the last visit, in browsers that can. -->
+    <string name="Web_ImportSavedReopen">重新打开文件夹</string>
+
+    <!-- Import pane of the web app: button that drops the tracks kept from the last visit. -->
+    <string name="Web_ImportSavedForget">不再保留</string>
+    <string name="Web_PlaylistsDesktopNote">自动播放列表、心情列表和智能播放列表由桌面版生成。</string>
+    <string name="Web_DeleteAccountFailed">无法删除账户，请重试。</string>
 </resources>
