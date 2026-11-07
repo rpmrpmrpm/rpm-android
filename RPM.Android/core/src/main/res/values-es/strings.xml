@@ -2467,6 +2467,9 @@
     <string name="Profile_WallDetail">Tu nombre visible y tu imagen son públicos.</string>
     <string name="Profile_DisplayName">Nombre visible</string>
     <string name="Profile_NameTaken">Ese nombre ya está en uso.</string>
+
+    <!-- Settings, profile: the display name typed is too short or too long. -->
+    <string name="Profile_NameInvalid">Un nombre visible tiene entre 2 y 40 caracteres.</string>
     <string name="Profile_NameSaved">Guardado.</string>
     <string name="Profile_ChoosePicture">Elegir imagen</string>
     <string name="Profile_RemovePicture">Quitar imagen</string>

@@ -2467,6 +2467,9 @@
     <string name="Profile_WallDetail">Dein Anzeigename und dein Bild sind öffentlich.</string>
     <string name="Profile_DisplayName">Anzeigename</string>
     <string name="Profile_NameTaken">Dieser Name ist vergeben.</string>
+
+    <!-- Settings, profile: the display name typed is too short or too long. -->
+    <string name="Profile_NameInvalid">Ein Anzeigename hat 2 bis 40 Zeichen.</string>
     <string name="Profile_NameSaved">Gespeichert.</string>
     <string name="Profile_ChoosePicture">Bild auswählen</string>
     <string name="Profile_RemovePicture">Bild entfernen</string>

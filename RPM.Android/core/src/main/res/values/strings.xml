@@ -2467,6 +2467,9 @@
     <string name="Profile_WallDetail">Your display name and picture are public.</string>
     <string name="Profile_DisplayName">Display name</string>
     <string name="Profile_NameTaken">That name is taken.</string>
+
+    <!-- Settings, profile: the display name typed is too short or too long. -->
+    <string name="Profile_NameInvalid">A display name has 2 to 40 characters.</string>
     <string name="Profile_NameSaved">Saved.</string>
     <string name="Profile_ChoosePicture">Choose picture</string>
     <string name="Profile_RemovePicture">Remove picture</string>

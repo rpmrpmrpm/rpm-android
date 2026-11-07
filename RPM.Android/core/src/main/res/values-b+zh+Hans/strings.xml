@@ -2467,6 +2467,9 @@
     <string name="Profile_WallDetail">你的显示名称和头像是公开的。</string>
     <string name="Profile_DisplayName">显示名称</string>
     <string name="Profile_NameTaken">该名称已被占用。</string>
+
+    <!-- Settings, profile: the display name typed is too short or too long. -->
+    <string name="Profile_NameInvalid">显示名称需为 2 到 40 个字符。</string>
     <string name="Profile_NameSaved">已保存。</string>
     <string name="Profile_ChoosePicture">选择图片</string>
     <string name="Profile_RemovePicture">移除图片</string>
