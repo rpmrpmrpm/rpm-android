@@ -6669,6 +6669,9 @@
     <!-- Web app, edit windows: the tags could not be read from the cloud, so nothing can be edited. -->
     <string name="Web_EditReadFailed">No se pudieron leer las etiquetas. Cierra la ventana e inténtalo de nuevo.</string>
 
+    <!-- Web app, track details, Sound tab: the shared analysis of the track could not be fetched from the cloud. -->
+    <string name="Web_AnalysisFailed">No se pudo cargar el análisis.</string>
+
     <!-- Web app, track metadata from a release: shown while the filled-in tags are saved. -->
     <string name="Web_EditSaving">Guardando…</string>
 
