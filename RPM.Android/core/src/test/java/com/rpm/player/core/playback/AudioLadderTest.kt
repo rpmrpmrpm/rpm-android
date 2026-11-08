@@ -20,6 +20,13 @@ class AudioLadderTest {
     }
 
     @Test
+    fun aPlayerWithNoSettingAsksForTheOriginalForASupporterOrTester() {
+        assertEquals(AudioLadder.ORIGINAL, AudioLadder.RateOffer.forPlan(isSupporter = true))
+        assertEquals(AudioLadder.ORIGINAL, AudioLadder.RateOffer.forPlan(isSupporter = null))
+        assertEquals(128, AudioLadder.RateOffer.forPlan(isSupporter = false))
+    }
+
+    @Test
     fun aFreeAccountSettlesOnItsOneRung() {
         assertEquals(128, free.settles(onWifi = 0, onCellular = 320, reach = wifi))
         assertEquals(128, free.settles(onWifi = 0, onCellular = 320, reach = cellular))

@@ -65,14 +65,19 @@ object AudioLadder {
             val UNREAD = WHOLE
 
             fun of(isSupporter: Boolean): RateOffer = if (isSupporter) WHOLE else FREE
+
+            /** The rate a player with no setting of its own asks for (the TV): the original for a supporter or a
+             * closed beta tester, both marked supporters on the quota, the one rung a free account is served, and the
+             * original while the plan is not known, because the store caps what it serves either way. */
+            fun forPlan(isSupporter: Boolean?): Int = (isSupporter?.let { of(it) } ?: UNREAD).settles(ORIGINAL)
         }
     }
 }
 
 /**
- * The rate the player asks the store for, written by the app's settings on the main thread and read on a loader
- * thread as a track is opened ([TrackSources]). The phone writes it from its two settings and the network
- * (`settleTheRate` on iPhone). The TV never writes it, so it keeps the 320 it always asked for.
+ * The rate the player asks the store for, written by the app on the main thread and read on a loader thread as a
+ * track is opened ([TrackSources]). The phone writes it from its two settings and the network (`settleTheRate` on
+ * iPhone). The TV writes it from the account's plan alone (TvApplication.settleTheRate).
  */
 class StreamRate(kilobits: Int) {
     @Volatile var kilobits: Int = kilobits
