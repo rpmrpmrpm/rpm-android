@@ -6698,4 +6698,7 @@
 
     <!-- Web app, Import pane and setup: shown under Try our tracks when the three tracks that ship with the app could not be fetched. -->
     <string name="Web_StarterFailed">Nos morceaux n’ont pas pu être téléchargés. Réessayez.</string>
+
+    <!-- Web app, Settings, Sound: under Streaming quality, what the choices do. -->
+    <string name="Web_QualityDetail">L’original est exactement tel qu’il a été envoyé. Un débit plus faible consomme moins de données.</string>
 </resources>
