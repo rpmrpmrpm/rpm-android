@@ -6644,6 +6644,21 @@
     <string name="Web_CodeRefused">Ce code ne fonctionne pas. S\'il correspond à votre e-mail de bienvenue, répondez à cet e-mail et nous vous aiderons.</string>
     <string name="Web_CodeFailed">Votre code n\'a pas pu être vérifié. Veuillez réessayer.</string>
     <string name="Web_ImportClearDone">Effacer les terminés</string>
+
+    <!-- Web app import pane: caption under the animation while an import is running. The web app uploads the files to the cloud. -->
+    <string name="Web_ImportingUpload">Envoi des fichiers sélectionnés vers votre collection</string>
+
+    <!-- Web app: title of the dialog shown when an import has finished and every track in the import list is imported. -->
+    <string name="Web_ImportAllDoneTitle">Importation terminée</string>
+
+    <!-- Web app: body of the dialog shown when an import has finished and every track in the import list is imported. -->
+    <string name="Web_ImportAllDoneBody">Toutes les pistes sont importées. Voulez-vous fermer le panneau d\'importation ?</string>
+
+    <!-- Web app, import finished dialog: primary button. Closes the import pane. -->
+    <string name="Web_ImportAllDoneClose">Fermer</string>
+
+    <!-- Web app, import finished dialog: secondary button. Keeps the import pane open. -->
+    <string name="Web_ImportAllDoneStay">Rester</string>
     <string name="Web_DesktopPitch">L\'application de bureau ajoute votre bibliothèque locale, l\'enregistrement et l\'extraction de CD.</string>
     <string name="Web_DesktopDownload">Télécharger rpm pour %1$s</string>
     <string name="Web_DesktopMac">Mac</string>
