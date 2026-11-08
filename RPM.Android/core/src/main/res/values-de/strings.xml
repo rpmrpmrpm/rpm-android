@@ -6695,4 +6695,7 @@
     <string name="Web_ImportSavedForget">Verwerfen</string>
     <string name="Web_PlaylistsDesktopNote">Automatische Playlists, Stimmungslisten und intelligente Playlists entstehen in der Desktop-App.</string>
     <string name="Web_DeleteAccountFailed">Das Konto konnte nicht gelöscht werden. Bitte versuche es noch einmal.</string>
+
+    <!-- Web app, Import pane and setup: shown under Try our tracks when the three tracks that ship with the app could not be fetched. -->
+    <string name="Web_StarterFailed">Unsere Titel konnten nicht heruntergeladen werden. Versuche es noch einmal.</string>
 </resources>

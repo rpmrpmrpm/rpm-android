@@ -6695,4 +6695,7 @@
     <string name="Web_ImportSavedForget">Forget them</string>
     <string name="Web_PlaylistsDesktopNote">Auto playlists, mood lists and smart playlists are made in the desktop app.</string>
     <string name="Web_DeleteAccountFailed">The account could not be deleted. Please try again.</string>
+
+    <!-- Web app, Import pane and setup: shown under Try our tracks when the three tracks that ship with the app could not be fetched. -->
+    <string name="Web_StarterFailed">Our tracks could not be downloaded. Try again.</string>
 </resources>

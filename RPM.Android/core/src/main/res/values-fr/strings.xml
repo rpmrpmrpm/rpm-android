@@ -6695,4 +6695,7 @@
     <string name="Web_ImportSavedForget">Les oublier</string>
     <string name="Web_PlaylistsDesktopNote">Les playlists automatiques, les listes d\'ambiance et les playlists intelligentes sont créées dans l\'application de bureau.</string>
     <string name="Web_DeleteAccountFailed">Le compte n\'a pas pu être supprimé. Veuillez réessayer.</string>
+
+    <!-- Web app, Import pane and setup: shown under Try our tracks when the three tracks that ship with the app could not be fetched. -->
+    <string name="Web_StarterFailed">Nos morceaux n’ont pas pu être téléchargés. Réessayez.</string>
 </resources>

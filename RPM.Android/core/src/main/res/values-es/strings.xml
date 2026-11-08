@@ -6695,4 +6695,7 @@
     <string name="Web_ImportSavedForget">Olvidarlas</string>
     <string name="Web_PlaylistsDesktopNote">Las listas automáticas, las listas de ambiente y las listas inteligentes se crean en la aplicación de escritorio.</string>
     <string name="Web_DeleteAccountFailed">No se pudo eliminar la cuenta. Inténtalo de nuevo.</string>
+
+    <!-- Web app, Import pane and setup: shown under Try our tracks when the three tracks that ship with the app could not be fetched. -->
+    <string name="Web_StarterFailed">No se pudieron descargar nuestras pistas. Inténtalo de nuevo.</string>
 </resources>
