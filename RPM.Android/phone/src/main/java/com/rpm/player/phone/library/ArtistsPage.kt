@@ -1,5 +1,6 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.phone.design.rememberPicture
 import com.rpm.player.phone.design.UnderHeader
 import android.os.Build
 import androidx.activity.compose.BackHandler
@@ -312,7 +313,7 @@ internal fun ArtistBox(artist: ArtistWallItem, width: Dp, collection: Collection
     ) {
         when {
             photo != null -> AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current).data(photo).build(),
+                model = rememberPicture(photo, width, width * BOX_SHAPE),
                 contentDescription = null,
                 imageLoader = images,
                 contentScale = ContentScale.Crop,

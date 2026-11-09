@@ -1,5 +1,32 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.phone.ui.Halo
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import coil3.request.SuccessResult
+import coil3.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
+import coil3.request.allowHardware
+import coil3.toBitmap
+import com.rpm.player.core.library.DiscArt
+import com.rpm.player.phone.ui.RecordDisc
+import com.rpm.player.phone.ui.ScannedDisc
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import com.rpm.player.phone.design.GlassKey
+import com.rpm.player.phone.ui.rememberLead
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -160,8 +187,6 @@ fun AlbumPage(
     val subject = remember(album.key) { AlbumSubject(album.artist, album.album, album.tracks.size) }
     var article by remember(subject) { mutableStateOf(dossiers.cached(subject)?.article) }
     LaunchedEffect(subject) { dossiers.read(subject) {}?.let { article = it.article } }
-    var reading by remember(subject) { mutableStateOf(false) }
-    BackHandler(enabled = reading) { reading = false }
     var writing by remember(album.key) { mutableStateOf(false) }
     // The Similar albums row, worked out off the main thread: it walks every track on the shelf. It is worked out
     // again for another record or a shelf with records added or gone, and kept with the record it was made for.
@@ -175,20 +200,19 @@ fun AlbumPage(
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val edge = (maxWidth.value * COVER_FRACTION).coerceIn(160f, 360f).roundToInt().dp
+        // The cover's colour leads the ground, with the cover faint over it, as on the artist page ([rememberLead]).
+        val led = rememberLead(cover, images)
         Box(Modifier.fillMaxSize().backdropSource(page)) {
-            ArtGround(cover, images)
+            ArtGround(led?.first, images, lead = led?.second)
             // The list scrolls up behind the status bar. Content that scrolls up there fades into the background.
             LazyColumn(state = list, modifier = Modifier.fillMaxSize().dissolvesAtTop(top) { list.scrolled() }) {
                 item(key = "header") {
                     Header(
-                        album, cover, images, edge, top, onPlayAll, onShuffle,
-                        marked = marked,
-                        onMark = onMark,
+                        album, cover, collection.disc(album), images, edge, top, onPlayAll, onShuffle,
                         artists = artists,
                         onArtist = onArtist,
                         rating = wall?.takeIf { it.ratingCount > 0 }?.let { it.average to it.ratingCount },
                         article = article,
-                        onRead = { reading = true },
                         download = download,
                         anyPlayable = album.tracks.any(canPlay),
                     )
@@ -226,10 +250,20 @@ fun AlbumPage(
         Box(Modifier.padding(top = top - BACK_ROW).height(BACK_ROW).padding(start = 20.dp), contentAlignment = Alignment.Center) {
             BackKey(page, onBack)
         }
-        // Both sheets cover the tab bar and the mini player, as the iPhone's do.
-        article?.takeIf { reading }?.let {
-            OverChrome { AboutSheet(stringResource(R.string.TrackInfo_AboutAlbum), album.album, it, page, bottomRoom, onClose = { reading = false }) }
+        // The mark on the record, across from the back key and in the same glass. It goes to the shared wall, so a
+        // record loved on the phone is loved on the computer.
+        onMark?.let { mark ->
+            Box(
+                Modifier.align(Alignment.TopEnd).padding(top = top - BACK_ROW).height(BACK_ROW).padding(end = 20.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                val label = stringResource(if (marked) R.string.Album_UnsetFavorite else R.string.Album_SetFavorite)
+                GlassKey(page, { mark(!marked) }, Modifier.semantics { contentDescription = label }) {
+                    BasicText(Glyph.heart, style = (if (marked) icon(15f) else iconOutline(15f)).copy(color = Ink.white(0xE6)))
+                }
+            }
         }
+        // The review sheet covers the tab bar and the mini player, as the iPhone's does.
         if (writing && wall != null) OverChrome {
             WriteReviewSheet(
                 album.album,
@@ -249,28 +283,27 @@ fun AlbumPage(
 private fun Header(
     album: CloudAlbum,
     cover: Cover?,
+    disc: DiscArt?,
     images: ImageLoader,
     edge: Dp,
     top: Dp,
     onPlayAll: () -> Unit,
     onShuffle: () -> Unit,
-    marked: Boolean,
-    onMark: ((Boolean) -> Unit)?,
     artists: List<ArtistWallItem>,
     onArtist: (ArtistWallItem) -> Unit,
     rating: Pair<Double, Int>?,
     article: EncyclopediaArticle?,
-    onRead: () -> Unit,
     download: DownloadKey?,
     anyPlayable: Boolean,
 ) {
     Column(
-        Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 14.dp),
+        // The space under the keys sets the track list apart from the header.
+        Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 30.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(top))
-        SleeveSquare(cover, edge, images, radius = 4.dp, glyphSize = 52f, bordered = false)
+        CaseAndDisc(album, cover, disc, images, edge)
         Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             BasicText(album.album, maxLines = 3, style = displayBold(24f).copy(color = Color.White, textAlign = TextAlign.Center))
             ArtistLine(album.artist, artists, onArtist)
@@ -278,8 +311,15 @@ private fun Header(
         // How much record there is, as a chip because it describes the record above it, and what it is made of under
         // it, quieter, because that describes the file and not the music.
         Column(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            val year = remember(album) { album.tracks.mapNotNull { it.tags?.year?.takeIf { y -> y > 0 } }.minOrNull() }
+            val counted = count(album)
             BasicText(
-                count(album),
+                buildAnnotatedString {
+                    if (year != null) {
+                        withStyle(SpanStyle(color = Ink.white(0x8A))) { append(year.toString() + YEAR_GAP) }
+                    }
+                    append(counted)
+                },
                 Modifier
                     .clip(RoundedCornerShape(percent = 50))
                     .background(Ink.white(0x1F))
@@ -302,25 +342,37 @@ private fun Header(
                 )
             }
         }
-        // Above the keys, so it is read before the record is played.
-        if (article != null) AboutText(article, onOpen = onRead, Modifier.padding(top = 4.dp))
-        // The play key, and beside it a shuffle key for the same record, and the mark on it.
-        Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GlassButton(onClick = onPlayAll, modifier = Modifier.weight(1f).alpha(if (anyPlayable) 1f else 0.4f), weight = Weight.Primary, enabled = anyPlayable, height = 50.dp, radius = 14.dp) { style ->
-                BasicText(Glyph.play, style = icon(15f).copy(color = style.color))
-                Spacer(Modifier.width(10.dp))
-                BasicText(stringResource(R.string.AlbumGrid_PlayAll), style = display(17f).copy(color = style.color))
+        // The text and the keys in a column of their own, so the text brings the space above it with it when it arrives
+        // late ([ArrivingAbout]): in the header's own spacing, that space would appear in one step.
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            // Above the keys, so it is read before the record is played. The space above it and under it are the same.
+            ArrivingAbout(article) {
+                CentredAboutText(it, Modifier.padding(top = 6.dp, bottom = 12.dp), lead = stringResource(R.string.TrackInfo_AboutAlbum), capitalKeys = true)
             }
-            GlassButton(onClick = onShuffle, modifier = Modifier.width(56.dp).alpha(if (anyPlayable) 1f else 0.4f), enabled = anyPlayable, stretches = false, height = 50.dp, radius = 14.dp, inset = 0.dp) { style ->
-                BasicText(Glyph.shuffle, style = icon(17f).copy(color = style.color))
-            }
-            // The mark on the record goes to the shared wall, so a record loved on the phone is loved on the computer.
-            onMark?.let { mark ->
-                GlassButton(onClick = { mark(!marked) }, modifier = Modifier.width(56.dp), stretches = false, height = 50.dp, radius = 14.dp, inset = 0.dp) { style ->
-                    BasicText(Glyph.heart, style = (if (marked) icon(17f) else iconOutline(17f)).copy(color = style.color))
+            // Shuffle, Play and the download, as the artist page's keys: Play a round glass key in the middle, the two
+            // beside it their marks alone. Without a download key its place is kept, so Play stays in the middle.
+            Row(
+                Modifier.fillMaxWidth().padding(top = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(KEYS_APART, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SideKey(Glyph.shuffle, stringResource(R.string.AlbumMenu_Shuffle), onShuffle, enabled = anyPlayable)
+                val play = stringResource(R.string.AlbumGrid_PlayAll)
+                GlassButton(
+                    onClick = onPlayAll,
+                    modifier = Modifier.size(KEY_HEIGHT).alpha(if (anyPlayable) 1f else 0.4f).semantics { contentDescription = play },
+                    weight = Weight.Primary,
+                    enabled = anyPlayable,
+                    stretches = false,
+                    height = KEY_HEIGHT,
+                    radius = KEY_HEIGHT / 2,
+                    inset = 0.dp,
+                ) { style ->
+                    // The triangle's weight is left of its middle, so it is moved right a little to look centred.
+                    BasicText(Glyph.play, Modifier.offset(x = 2.dp), style = icon(18f).copy(color = style.color))
                 }
+                if (download != null) DownloadButton(download, bare = true) else Spacer(Modifier.size(SIDE_KEY_WIDTH, KEY_HEIGHT))
             }
-            if (download != null) DownloadButton(download)
         }
         // Only while it is true: the list is then in the order the server sent, and is not shown as the running order.
         if (album.tracks.none { (it.tags?.trackNumber ?: 0) > 0 }) {
@@ -419,6 +471,104 @@ private fun count(album: CloudAlbum): String {
     val runtime = if (hours >= 1) stringResource(R.string.Stats_HoursMinutes, hours, (seconds % 3600) / 60) else stringResource(R.string.Stats_Minutes, seconds / 60)
     return "$songs · $runtime"
 }
+
+/**
+ * The sleeve, as the case the record is kept in. A tap takes the disc out: it slides out from behind the sleeve while the
+ * sleeve moves aside to make room, turns slowly for a while, and slides back in ([CASE_OUT_MS], [CASE_HOLD_MS]: eight
+ * seconds in all). A tap while it is out puts it back at once.
+ *
+ * The disc is the record's own when the desktop photographed it ([ScannedDisc]); otherwise it is a CD printed with the
+ * sleeve ([ScannedDisc.printed]). It is read when the page opens, so it is ready for the first tap, and it is drawn only
+ * while it is out, so a sleeve at rest costs nothing.
+ *
+ * The two move only on their layers: the header's layout does not change, so nothing under it moves.
+ */
+@Composable
+private fun CaseAndDisc(album: CloudAlbum, cover: Cover?, disc: DiscArt?, images: ImageLoader, edge: Dp) {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val diameter = edge * DISC_SHARE
+    val pixels = with(density) { diameter.roundToPx() }
+    val scanned by produceState<ScannedDisc?>(null, album.key, disc, cover, pixels) {
+        value = disc?.let { ScannedDisc.load(context, it, images, pixels) }
+            ?: cover?.let { sleeve ->
+                val request = ImageRequest.Builder(context).data(sleeve).size(pixels).allowHardware(false).build()
+                (images.execute(request) as? SuccessResult)?.image?.toBitmap()?.asImageBitmap()?.let(ScannedDisc::printed)
+            }
+    }
+    val out = remember(album.key) { Animatable(0f) }
+    var showing by remember(album.key) { mutableStateOf<Job?>(null) }
+
+    // As tall as the sleeve, whatever is out: the disc and its shadow are drawn past this box, not measured into it, so
+    // nothing under the sleeve moves while the disc comes and goes.
+    BoxWithConstraints(Modifier.fillMaxWidth().height(edge), contentAlignment = Alignment.Center) {
+        // How far each goes when the disc is out: the sleeve aside and the disc past it, so the two sit in the middle
+        // together, and neither passes the page's edge.
+        val room = maxWidth / 2 - CASE_EDGE
+        // The pair is centred, so what limits it is that the two side by side fit between the margins.
+        val disc0 = minOf(edge * DISC_OUT, room * 2 - diameter / 2 - edge / 2).coerceAtLeast(0.dp)
+        val aside = ((disc0 + diameter / 2 - edge / 2) / 2).coerceAtLeast(0.dp)
+        val shift = with(density) { aside.toPx() }
+        val slide = with(density) { disc0.toPx() }
+
+        if (out.value > 0f) {
+            scanned?.let {
+                RecordDisc(
+                    diameter,
+                    Modifier
+                        .graphicsLayer { translationX = (slide - shift) * out.value }
+                        .wrapContentSize(unbounded = true),
+                    halo = Halo.Close,
+                    disc = it,
+                    revolution = CASE_TURN,
+                )
+            }
+        }
+        Box(
+            Modifier
+                .graphicsLayer { translationX = -shift * out.value }
+                .clickable(remember { MutableInteractionSource() }, indication = null, enabled = scanned != null, role = Role.Button) {
+                    val running = showing
+                    if (running?.isActive == true && out.targetValue > 0f) {
+                        running.cancel()
+                        return@clickable
+                    }
+                    showing = scope.launch {
+                        try {
+                            out.animateTo(1f, tween(CASE_OUT_MS, easing = FastOutSlowInEasing))
+                            delay(CASE_HOLD_MS)
+                        } finally {
+                            withContext(NonCancellable) { out.animateTo(0f, tween(CASE_OUT_MS, easing = FastOutSlowInEasing)) }
+                        }
+                    }
+                },
+        ) {
+            SleeveSquare(cover, edge, images, radius = 4.dp, glyphSize = 52f, bordered = false)
+        }
+    }
+}
+
+/** The disc against the sleeve: a CD in its case is a little smaller than the case. */
+private const val DISC_SHARE = 0.94f
+
+/** How far the disc comes out at most, as a share of the sleeve. */
+private const val DISC_OUT = 0.55f
+
+/** The space kept between the moved sleeve or disc and the page's edge. */
+private val CASE_EDGE = 8.dp
+
+/** How long the disc takes to slide out, and to slide back in. */
+private const val CASE_OUT_MS = 900
+
+/** How long the disc stays out, turning, between: with the two slides, eight seconds. */
+private const val CASE_HOLD_MS = 6_200L
+
+/** One slow turn of the disc while it is out, in seconds. */
+private const val CASE_TURN = 6.0
+
+/** Between the year and the count in the pill: a dash with space round it. */
+private const val YEAR_GAP = " \u2013 "
 
 /** The heading for one disc of a set. A single-disc record never shows one. */
 @Composable

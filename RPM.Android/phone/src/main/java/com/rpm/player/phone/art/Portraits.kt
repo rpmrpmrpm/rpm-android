@@ -65,6 +65,20 @@ class Portraits(private val context: Context, private val images: ImageLoader, p
     }
 
     /**
+     * The photograph [portrait] would give for [artist] in [scene], if it is already cut and kept: for a page shown again,
+     * to draw it from its first frame. Null when it is not kept, or when the store is busy this moment; [portrait] then
+     * answers as usual. It never waits, so the main thread may ask.
+     */
+    fun held(artist: String, scene: ArtScene): Bitmap? {
+        if (artist.isBlank() || !scene.isLaidOut || !lock.tryLock()) return null
+        return try {
+            settled[Ask(artist.lowercase(), scene)]?.let { (url, fit) -> cuts[Cut(url, scene, fit)] }
+        } finally {
+            lock.unlock()
+        }
+    }
+
+    /**
      * The artist's photograph cropped for [scene]. Returns null if the artist has no photograph, or none could be read.
      */
     suspend fun portrait(artist: String, album: String, scene: ArtScene): Bitmap? {

@@ -29,6 +29,24 @@ class Logos(private val context: Context, private val images: ImageLoader, priva
     private val lock = Mutex()
     private val marks = LinkedHashMap<String, Plane>()
 
+    /** The logos as last fitted, by artist and size, so a page shown again has its logo from its first frame ([held]). */
+    private val fitted = LinkedHashMap<Fitted, Bitmap>()
+
+    private data class Fitted(val artist: String, val cap: Int, val room: Int)
+
+    /**
+     * The logo [logo] last gave for [artist] at this size, if it is kept. Null when it is not, or when the store is busy
+     * this moment; [logo] then answers as usual. It never waits, so the main thread may ask.
+     */
+    fun held(artist: String, cap: Int, room: Int): Bitmap? {
+        if (!lock.tryLock()) return null
+        return try {
+            fitted[Fitted(artist.lowercase(), cap, room)]
+        } finally {
+            lock.unlock()
+        }
+    }
+
     /**
      * The artist's logo, at most [cap] pixels tall and [room] pixels wide, drawn at one image pixel per
      * screen pixel. Returns null if the catalogues have no logo for the artist, or if it cannot be read.
@@ -46,9 +64,16 @@ class Logos(private val context: Context, private val images: ImageLoader, priva
             }
             trimmed
         }
-        return withContext(Dispatchers.Default) {
+        val drawn = withContext(Dispatchers.Default) {
             bitmap(Lettering.fitted(mark, Lettering.height(mark.width, mark.height, cap, room)))
         }
+        lock.withLock {
+            val key = Fitted(artist.lowercase(), cap, room)
+            fitted.remove(key)
+            fitted[key] = drawn
+            while (fitted.size > KEEP) fitted.remove(fitted.keys.first())
+        }
+        return drawn
     }
 
     /** The logo at its own size, as premultiplied RGBA. */

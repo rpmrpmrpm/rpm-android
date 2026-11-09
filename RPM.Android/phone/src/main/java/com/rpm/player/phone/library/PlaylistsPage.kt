@@ -1,5 +1,6 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.phone.design.rememberPicture
 import com.rpm.player.phone.design.UnderHeader
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -384,7 +385,7 @@ fun PlaylistSleeve(picture: Any?, glyph: String, edge: Dp, corner: Dp, mark: Flo
             picture != null -> {
                 if (framed == null) BasicText(glyph, style = icon(mark).copy(color = Ink.white(0x3A)))
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current).data(picture).build(),
+                    model = rememberPicture(picture, edge),
                     contentDescription = null,
                     imageLoader = images,
                     contentScale = ContentScale.Crop,

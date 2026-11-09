@@ -1,5 +1,6 @@
 package com.rpm.player.phone.home
 
+import com.rpm.player.phone.design.rememberPicture
 import com.rpm.player.phone.design.frostsAtTop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -568,9 +569,9 @@ private fun BannerCardView(
     ) {
         when {
             roomed -> LiveRoom(framed?.look?.room ?: colours ?: RoomPalette.FALLBACK, seed, running = roomRuns, Modifier.fillMaxSize(), zeroNanos = roomZero, onRoom = onRoom)
-            whole -> Box(Modifier.fillMaxSize().graphicsLayer { alpha = photoIn }) {
+            whole -> BoxWithConstraints(Modifier.fillMaxSize().graphicsLayer { alpha = photoIn }) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current).data(photo).build(),
+                    model = rememberPicture(photo, maxWidth, maxHeight),
                     contentDescription = null,
                     imageLoader = images,
                     contentScale = ContentScale.Crop,
@@ -709,7 +710,7 @@ private fun BannerSleeve(cover: Any?, station: RadioStation?, list: Boolean, fra
             BasicText(if (list) Glyph.playlists else Glyph.record, style = icon(34f).copy(color = Ink.white(0x3A)))
             if (cover != null) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current).data(cover).build(),
+                    model = rememberPicture(cover, BANNER_SLEEVE),
                     contentDescription = null,
                     imageLoader = images,
                     contentScale = ContentScale.Crop,
@@ -849,7 +850,7 @@ private fun QuickLine(pick: QuickPick, collection: Collection, images: ImageLoad
             BasicText(glyph, style = icon(15f).copy(color = Ink.white(0x3A)))
             if (picture != null) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current).data(picture).build(),
+                    model = rememberPicture(picture, QUICK_ART),
                     contentDescription = null,
                     imageLoader = images,
                     contentScale = if (pick is QuickPick.OfStation) ContentScale.Fit else ContentScale.Crop,

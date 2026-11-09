@@ -504,6 +504,12 @@
 
     <!-- Empty state on the album wall and the album list when a search matches nothing. -->
     <string name="Library_NoSearchResults">Sin resultados</string>
+
+    <!-- Library search results (phone): at the right of a group's heading (Artists, Albums, Tracks, Playlists, Genres) that has more than five results. Shows all of that group. -->
+    <string name="Library_SearchViewMore">Ver más</string>
+
+    <!-- Library search results (phone): the same key once the group shows all its results. Shows the first five again. -->
+    <string name="Library_SearchViewLess">Ver menos</string>
     <string name="Library_Syncing">Actualizando el índice de la colección…</string>
 
     <!-- Status line after a library sync moved one hand-copied file into the inbox folder. {0} is the inbox folder name, which is not translated. -->
@@ -780,6 +786,12 @@
     <!-- Settings > Collection: progress readout under the fingerprinting toggle. {0} done, {1} total. -->
     <string name="Settings_FingerprintProgress">%1$s de %2$s pistas procesadas.</string>
     <string name="Settings_Background">Fondo</string>
+
+    <!-- Settings > Profile (phone), Background card: switch that keeps photo backgrounds darker on artist, album and playlist pages. -->
+    <string name="Settings_NightMode">Modo noche</string>
+
+    <!-- Settings > Profile (phone): hint under the Night mode switch. -->
+    <string name="Settings_NightModeHint">Mantiene oscuras las fotos detrás de las páginas de artista, álbum y lista. Más suave para tus ojos en la oscuridad.</string>
 
     <!-- Hint under the Background heading in Display settings, above the row of backdrop tiles. -->
     <string name="Settings_BackgroundHint">Elige uno de los fondos de rpm o usa una imagen tuya.</string>
@@ -5522,8 +5534,11 @@
     <!-- Empty state of the iPhone downloads list. -->
     <string name="Rpm_Downloads_Empty">Aún no hay descargas. Abre un álbum y toca el botón de descarga para escucharlo sin conexión a Internet.</string>
 
-    <!-- Album and artist pages, phone: small glass button at the end of the shortened Wikipedia text. Opens the full text in a sheet. -->
+    <!-- Album and artist pages, phone: at the end of the shortened Wikipedia text. Unfolds the first paragraph in place, under the text. -->
     <string name="Rpm_About_ReadMore">Leer más</string>
+
+    <!-- Album and artist pages, phone: at the end of the unfolded Wikipedia paragraph, in the same style as Read more. Folds it back to three lines. -->
+    <string name="Rpm_About_ReadLess">Leer menos</string>
 
     <!-- Shown in place of a .NET exception message wherever a step fails (sign-in, cloud, casting, import). No network, or the server name could not be found. -->
     <string name="Fault_Offline">Sin conexión a Internet.</string>
@@ -6193,6 +6208,15 @@
 
     <!-- iPhone album page: the date under a review that was rewritten after it was first posted. {0} is the date, for example "2 days ago". -->
     <string name="Rpm_Album_Edited">%1$s (editada)</string>
+
+    <!-- Up next drawer (phone): heading over the songs the person added with Play next or Add to queue. -->
+    <string name="Rpm_Queue_YourQueue">Tu cola</string>
+
+    <!-- Up next drawer (phone): heading over the songs a mixtape added, songs like the one it started from. -->
+    <string name="Rpm_Queue_Mixtape">Mixtape</string>
+
+    <!-- Up next drawer (phone): switch. On, an album, playlist or single that ends goes on as a mixtape of similar songs (the same setting as Tv_SettingsMixtapeAfter). -->
+    <string name="Rpm_Queue_AutoMixtape">Mixtape automática</string>
 
     <!-- Title of the iPhone dialog shown when a tap would replace a queue the user changed (added, moved or removed songs). -->
     <string name="Rpm_Queue_DiscardTitle">¿Descartar tu cola?</string>

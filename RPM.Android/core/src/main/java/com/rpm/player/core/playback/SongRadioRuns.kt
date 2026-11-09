@@ -158,11 +158,13 @@ class SongRadioRuns(
 
         internal fun originOf(name: String): String = name.substringBefore('#')
 
-        /** Where the TV keeps the mixtape-after-a-record setting ([carryOn]): its settings file and key. On unless
-         * the person turns it off. */
+        /** Where the TV and the phone keep the mixtape-after-a-record setting ([carryOn]): its settings file and key.
+         * On the TV it is on unless the person turns it off ([MIXTAPE_AFTER_DEFAULT]); on the phone it is off unless
+         * they turn it on in the up next drawer ([MIXTAPE_AFTER_PHONE]). */
         const val SETTINGS_FILE = "rpm.settings"
         const val MIXTAPE_AFTER = "mixtape.after"
         const val MIXTAPE_AFTER_DEFAULT = true
+        const val MIXTAPE_AFTER_PHONE = false
 
         private fun radioOf(item: MediaItem): String? = item.mediaMetadata.extras?.getString(EXTRA_RADIO)
     }

@@ -216,15 +216,16 @@ class PlaybackService : MediaSessionService() {
 
         // A song radio's item becoming the current one queues the songs after it, here so it goes on with the app
         // gone. It picks from the collection on screen.
-        // With the setting on, a list that ends goes on as a mixtape of songs like it. Only the TV has the setting so
-        // far, so a phone, which has no way to turn it off, leaves it off.
+        // With the setting on, a list that ends goes on as a mixtape of songs like it. The TV's player settings and the
+        // phone's up next drawer both switch it. It is on unless turned off on the TV, and off unless turned on on the
+        // phone, which went without it before it had a switch.
         val settings = getSharedPreferences(SongRadioRuns.SETTINGS_FILE, MODE_PRIVATE)
         val onTv = packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
         SongRadioRuns(
             player,
             scope,
             collection = { (services.library.state.value as? com.rpm.player.core.library.LibraryState.Ready)?.collection },
-            mixtapeAfter = { onTv && settings.getBoolean(SongRadioRuns.MIXTAPE_AFTER, SongRadioRuns.MIXTAPE_AFTER_DEFAULT) },
+            mixtapeAfter = { settings.getBoolean(SongRadioRuns.MIXTAPE_AFTER, if (onTv) SongRadioRuns.MIXTAPE_AFTER_DEFAULT else SongRadioRuns.MIXTAPE_AFTER_PHONE) },
         ).attach()
 
         // A dropped station is tuned in again.

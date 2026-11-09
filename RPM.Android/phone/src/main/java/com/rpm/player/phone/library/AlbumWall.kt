@@ -1,5 +1,6 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.phone.design.rememberPicture
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -152,7 +153,7 @@ fun SleeveSquare(cover: Cover?, edge: Dp, images: ImageLoader, radius: Dp, glyph
         BasicText(Glyph.record, style = icon(glyphSize).copy(color = Ink.white(0x3A)))
         if (cover != null) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current).data(cover).build(),
+                model = rememberPicture(cover, edge),
                 contentDescription = null,
                 imageLoader = images,
                 contentScale = ContentScale.Crop,

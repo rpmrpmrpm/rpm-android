@@ -274,6 +274,18 @@ class PhoneSettings(context: Context) {
     }
 
     /**
+     * Night mode (`look.night`, as on iPhone): pages that stand on a photograph are drawn darker. Off at first. Every
+     * ground reads it through [com.rpm.player.phone.ui.LocalNightMode], so a change shows at once.
+     */
+    var nightMode by mutableStateOf(prefs.getBoolean(KEY_NIGHT, false))
+        private set
+
+    fun changeNightMode(on: Boolean) {
+        nightMode = on
+        prefs.edit().putBoolean(KEY_NIGHT, on).apply()
+    }
+
+    /**
      * Whether this launch may stand on the gold pressing (the iPhone's `SupporterGround.isGold`). Read once, before the
      * first frame. A quota read later only leaves a note for the next launch ([rememberSupporter]), so the picture
      * never turns gold while somebody is looking at it. Only a sign-in, where nothing of the account is on screen yet,
@@ -301,6 +313,7 @@ class PhoneSettings(context: Context) {
         const val KEY_RATE_CELLULAR = "rate.cellular"
         const val KEY_RATE_DOWNLOAD = "rate.download"
         const val KEY_BACKDROP = "backdrop.picture"
+        const val KEY_NIGHT = "look.night"
         const val KEY_GOLD = "supporter.gold"
         const val KEY_ORDER = "library.order"
         const val KEY_LIBRARY_MODE = "library.mode"

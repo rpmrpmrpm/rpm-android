@@ -1,11 +1,15 @@
 package com.rpm.player.phone.design
 
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.remember
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -34,21 +38,23 @@ import kotlin.math.sqrt
  *
  * @param sigma the standard deviation of the blur at the size the picture is drawn, as the other blurs state
  * theirs (see [radiusFor]).
+ * @param colorFilter applied as the blurred picture is drawn, for a ground that changes its colours (see [ArtGround]).
  */
 @Composable
-fun BlurredPicture(picture: Any, images: ImageLoader, sigma: Dp, modifier: Modifier = Modifier) {
+fun BlurredPicture(picture: Any, images: ImageLoader, sigma: Dp, modifier: Modifier = Modifier, colorFilter: ColorFilter? = null) {
     val sigmaPx = with(LocalDensity.current) { sigma.toPx() }
-    AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(picture)
-            .transformations(Blur(sigmaPx))
-            .build(),
-        contentDescription = null,
-        imageLoader = images,
-        // The transformation has already cropped to the drawn shape.
-        contentScale = ContentScale.FillBounds,
-        modifier = modifier,
-    )
+    // Measured first, so the request has its size and a blur already made is drawn on the first frame ([rememberPicture]).
+    BoxWithConstraints(modifier) {
+        AsyncImage(
+            model = rememberPicture(picture, maxWidth, maxHeight, remember(sigmaPx) { { transformations(Blur(sigmaPx)) } }),
+            contentDescription = null,
+            imageLoader = images,
+            // The transformation has already cropped to the drawn shape.
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize(),
+            colorFilter = colorFilter,
+        )
+    }
 }
 
 /** Crops to the requested shape, shrinks to [EDGE] on the longer side and blurs by [sigma], given at the requested size. */

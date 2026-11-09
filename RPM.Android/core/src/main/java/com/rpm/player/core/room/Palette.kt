@@ -196,8 +196,9 @@ object CoverColor {
     }
 
     /** Everything the player paints from one cover: the room, the hue the record is pressed in, and
-     * the cover's dominant colour, which the sleeve's frame is drawn in (null for no usable colour). */
-    data class Reading(val room: RoomPalette, val vinyl: Rgb?, val dominant: Rgb?)
+     * the cover's dominant colour, which the sleeve's frame is drawn in (null for no usable colour).
+     * [glow] is its best vivid colour, or null where it has none: an artist's page is led by it ([GroundLead]). */
+    data class Reading(val room: RoomPalette, val vinyl: Rgb?, val dominant: Rgb?, val glow: Rgb? = null)
 
     /** The room palette and the record's hue for a cover, read off one 48 × 48 square the way the iOS
      * app's `Thumbnail.colours` and the desktop's `VinylPressing.PaletteFromArt` do: the dominant
@@ -222,6 +223,7 @@ object CoverColor {
             room = RoomPalette.from(tint = tint, glow = glow, shade = vivid.getOrNull(1)),
             vinyl = VinylHue.choose(glow, tint),
             dominant = tint,
+            glow = glow,
         )
     }
 

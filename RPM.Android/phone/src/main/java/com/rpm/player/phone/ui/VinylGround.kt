@@ -61,6 +61,10 @@ import kotlin.math.roundToInt
  * screen cropped the picture to its own box, the background would move between screens of different heights.
  * The picture fills the window. It is centred across the window and hangs from the top, wherever the
  * container is.
+ *
+ * **Clipped to its container.** The picture is drawn at the window's size, so without the clip a page that is still
+ * sliding in from the side paints its ground over the whole screen, and the page it slides over vanishes in one frame;
+ * a page sliding out hides the one it uncovers until it has gone, which then pops in.
  */
 @Composable
 fun VinylGround(modifier: Modifier = Modifier) {
@@ -75,6 +79,7 @@ fun VinylGround(modifier: Modifier = Modifier) {
     Box(
         modifier
             .fillMaxSize()
+            .clipToBounds()
             .onGloballyPositioned { here = it.positionInRoot() }
             .drawBehind {
                 val picture = plate

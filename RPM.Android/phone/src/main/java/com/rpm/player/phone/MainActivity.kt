@@ -23,6 +23,7 @@ import com.rpm.player.core.services
 import com.rpm.player.phone.shell.Root
 import com.rpm.player.phone.ui.Ground
 import com.rpm.player.phone.ui.LocalGround
+import com.rpm.player.phone.ui.LocalNightMode
 import androidx.compose.runtime.CompositionLocalProvider
 
 class MainActivity : ComponentActivity() {
@@ -49,9 +50,12 @@ class MainActivity : ComponentActivity() {
         // music app. Without this a paused app's keys move the ringer.
         volumeControlStream = AudioManager.STREAM_MUSIC
         setContent {
-            // The backdrop every page's ground draws, chosen in the profile. Read here, once for the whole app, so a
-            // choice shows on every page at once.
-            CompositionLocalProvider(LocalGround provides Ground.standing(app.settings.backdrop, app.settings.isGold)) {
+            // The backdrop every page's ground draws, and night mode, both chosen in the profile. Read here, once for
+            // the whole app, so a choice shows on every page at once.
+            CompositionLocalProvider(
+                LocalGround provides Ground.standing(app.settings.backdrop, app.settings.isGold),
+                LocalNightMode provides app.settings.nightMode,
+            ) {
                 Root(services, app.settings, app.signIn, controller.value, sittingFrom.intValue)
             }
         }

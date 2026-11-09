@@ -50,11 +50,27 @@ object RunOff {
     /**
      * Bakes [photo] for a card [width] by [plate] dp with a mirror [depth] dp deep under it. Call it off the main thread.
      * The result's rows from the top to [plate] × [SCALE] go over the card, and the rest under it.
+     *
+     * [darkened] bakes the face darkened by [HELD] and under the wash at its foot, as home's banner is. An artist's band
+     * is baked without them outside night mode ([LocalNightMode]).
+     *
+     * [scale] is the bitmap's pixels to the dp, [SCALE] unless the caller says otherwise. An artist's room, which moves,
+     * is baked again for every picture the room paints, at the room's own tenth of the pixels (the artist page's
+     * `BandGround`).
      */
-    fun bake(photo: Bitmap, width: Float, plate: Float, depth: Float, blurFrom: Float, reflection: Reflection): ImageBitmap {
-        val w = (width * SCALE).roundToInt().coerceAtLeast(1)
-        val p = (plate * SCALE).roundToInt().coerceAtLeast(2)
-        val d = (depth * SCALE).roundToInt().coerceAtLeast(0)
+    fun bake(
+        photo: Bitmap,
+        width: Float,
+        plate: Float,
+        depth: Float,
+        blurFrom: Float,
+        reflection: Reflection,
+        darkened: Boolean = true,
+        scale: Float = SCALE,
+    ): ImageBitmap {
+        val w = (width * scale).roundToInt().coerceAtLeast(1)
+        val p = (plate * scale).roundToInt().coerceAtLeast(2)
+        val d = (depth * scale).roundToInt().coerceAtLeast(0)
         val face = Bitmap.createBitmap(w, p, Bitmap.Config.ARGB_8888)
         Canvas(face).apply {
             // The part of the photograph that ContentScale.Crop shows in the plate.
@@ -64,17 +80,19 @@ object RunOff {
             val left = (photo.width - cropW) / 2
             val top = (photo.height - cropH) / 2
             drawBitmap(photo, Rect(left, top, left + cropW, top + cropH), Rect(0, 0, w, p), Paint(Paint.FILTER_BITMAP_FLAG))
-            drawColor(android.graphics.Color.argb((HELD * 255).roundToInt(), 0, 0, 0))
-            val wash = Paint().apply {
-                shader = LinearGradient(0f, 0f, 0f, p.toFloat(), FOOT_COLOURS, FOOT_STOPS, Shader.TileMode.CLAMP)
+            if (darkened) {
+                drawColor(android.graphics.Color.argb((HELD * 255).roundToInt(), 0, 0, 0))
+                val wash = Paint().apply {
+                    shader = LinearGradient(0f, 0f, 0f, p.toFloat(), FOOT_COLOURS, FOOT_STOPS, Shader.TileMode.CLAMP)
+                }
+                drawRect(0f, 0f, w.toFloat(), p.toFloat(), wash)
             }
-            drawRect(0f, 0f, w.toFloat(), p.toFloat(), wash)
         }
         val sharp = IntArray(w * p)
         face.getPixels(sharp, 0, w, 0, 0, w, p)
         face.recycle()
-        val soft = sharp.copyOf().also { gaussian(it, w, p, 10f * SCALE) }
-        val softer = sharp.copyOf().also { gaussian(it, w, p, 32f * SCALE) }
+        val soft = sharp.copyOf().also { gaussian(it, w, p, 10f * scale) }
+        val softer = sharp.copyOf().also { gaussian(it, w, p, 32f * scale) }
 
         val out = IntArray(w * (p + d))
         // The card: the two blurs let in over their stretches, as alpha over the sharp photograph drawn under it.

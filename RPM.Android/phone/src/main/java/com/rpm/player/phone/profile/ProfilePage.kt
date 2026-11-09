@@ -139,6 +139,8 @@ fun ProfilePage(
     ground: Ground,
     isGold: Boolean,
     onGround: (Ground) -> Unit,
+    nightMode: Boolean,
+    onNightMode: (Boolean) -> Unit,
     version: String,
     onClearCache: () -> Unit,
     onSignOut: () -> Unit,
@@ -177,7 +179,7 @@ fun ProfilePage(
                 cards.Storage(quota)
                 cards.Downloads(downloaded, onDownloads)
                 if (quota != null) cards.Plan(quota)
-                cards.Backdrops(ground, isGold, onGround)
+                cards.Backdrops(ground, isGold, onGround, nightMode, onNightMode)
                 cards.Playback(onWifi, onCellular, onDownload, onRates, reachSavesData)
                 cards.Loudness(levelling, levelsClassical, onLevelling, onLevelsClassical)
                 cards.Device(cached, onClearCache)
@@ -339,7 +341,7 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
     /** The five built-in backdrops, as a row of the real pictures. The supporter's is shown to everybody and is not
      * greyed out, so people can see it; a tap on it without support opens the page that explains it. */
     @Composable
-    fun Backdrops(standing: Ground, isGold: Boolean, onGround: (Ground) -> Unit) {
+    fun Backdrops(standing: Ground, isGold: Boolean, onGround: (Ground) -> Unit, nightMode: Boolean, onNightMode: (Boolean) -> Unit) {
         val haptics = LocalHapticFeedback.current
         Card(Glyph.picture, stringResource(R.string.Settings_Background)) {
             Row(
@@ -356,6 +358,18 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
                     }
                 }
             }
+            // Under the backdrops: it changes the other kind of background, the photograph a page stands on.
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Switch) { onNightMode(!nightMode) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BasicText(stringResource(R.string.Settings_NightMode), Modifier.weight(1f), style = display(13f).copy(color = Ink.white(0xB3)))
+                Spacer(Modifier.width(10.dp))
+                Switch(nightMode)
+            }
+            BasicText(stringResource(R.string.Settings_NightModeHint), style = display(11f).copy(color = Ink.white(0x88)))
         }
     }
 

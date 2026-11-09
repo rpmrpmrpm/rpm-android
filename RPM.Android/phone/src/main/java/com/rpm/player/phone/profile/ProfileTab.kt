@@ -73,6 +73,8 @@ fun ProfileTab(
         ground = Ground.standing(settings.backdrop, settings.isGold),
         isGold = settings.isGold,
         onGround = { settings.changeBackdrop(it.id) },
+        nightMode = settings.nightMode,
+        onNightMode = settings::changeNightMode,
         version = account.version,
         onClearCache = { scope.launch { account.clearCache() } },
         onSignOut = { services.scope.launch { account.signOut(controller) } },

@@ -1,5 +1,6 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.phone.design.rememberPicture
 import com.rpm.player.phone.design.UnderHeader
 import android.graphics.Paint
 import androidx.activity.compose.BackHandler
@@ -231,11 +232,11 @@ private fun genreColour(genre: String): Color =
  * three by four by `scripts/gen_genre_photos_phone.py`.
  */
 @Composable
-private fun GenrePicture(genre: String, images: ImageLoader, modifier: Modifier) {
+internal fun GenrePicture(genre: String, images: ImageLoader, modifier: Modifier) {
     val colour = remember(genre) { genreColour(genre) }
-    Box(modifier.background(colour)) {
+    BoxWithConstraints(modifier.background(colour)) {
         AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current).data("file:///android_asset/genre-photos/${GenreMarks.photoName(genre)}.jpg").build(),
+            model = rememberPicture("file:///android_asset/genre-photos/${GenreMarks.photoName(genre)}.jpg", maxWidth, maxHeight),
             contentDescription = null,
             imageLoader = images,
             contentScale = ContentScale.Crop,

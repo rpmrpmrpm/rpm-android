@@ -1,5 +1,7 @@
 package com.rpm.player.phone.design
 
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -47,18 +49,27 @@ object RpmFont {
 @Composable
 fun pt(size: Float): TextUnit = with(LocalDensity.current) { size.dp.toSp() }
 
+/**
+ * A soft outline drawn round every piece of text on a page that stands on a photograph: a shadow with no offset,
+ * feathered, so text stays readable where the picture under it is bright. The artist page provides it for everything
+ * on it; elsewhere it is none. Every style below takes it, so a row or a tile drawn on that page has it too.
+ */
+val LocalTextFeather = staticCompositionLocalOf<Shadow?> { null }
+
 /** `.system(size:weight:)`: the platform's own font, Roboto here, where the iPhone uses SF Pro. */
 @Composable
 fun system(size: Float, weight: FontWeight = FontWeight.Normal): TextStyle =
-    TextStyle(fontSize = pt(size), fontWeight = weight)
+    TextStyle(fontSize = pt(size), fontWeight = weight, shadow = LocalTextFeather.current)
 
 /** `RPMFont.display`: Cabin Medium. */
 @Composable
-fun display(size: Float): TextStyle = TextStyle(fontFamily = RpmFont.cabin, fontWeight = FontWeight.Medium, fontSize = pt(size))
+fun display(size: Float): TextStyle =
+    TextStyle(fontFamily = RpmFont.cabin, fontWeight = FontWeight.Medium, fontSize = pt(size), shadow = LocalTextFeather.current)
 
 /** `RPMFont.displayBold`: Cabin Bold. */
 @Composable
-fun displayBold(size: Float): TextStyle = TextStyle(fontFamily = RpmFont.cabin, fontWeight = FontWeight.Bold, fontSize = pt(size))
+fun displayBold(size: Float): TextStyle =
+    TextStyle(fontFamily = RpmFont.cabin, fontWeight = FontWeight.Bold, fontSize = pt(size), shadow = LocalTextFeather.current)
 
 /** `RPMFont.header`: Thiamine RPM, with no added letter spacing, as on iPhone. */
 @Composable
@@ -66,11 +77,11 @@ fun header(size: Float = 96f): TextStyle = TextStyle(fontFamily = RpmFont.thiami
 
 /** `RPMFont.icon`: a Font Awesome solid glyph. */
 @Composable
-fun icon(size: Float): TextStyle = TextStyle(fontFamily = RpmFont.solid, fontSize = pt(size))
+fun icon(size: Float): TextStyle = TextStyle(fontFamily = RpmFont.solid, fontSize = pt(size), shadow = LocalTextFeather.current)
 
 /** `RPMFont.iconOutline`: a Font Awesome regular glyph. */
 @Composable
-fun iconOutline(size: Float): TextStyle = TextStyle(fontFamily = RpmFont.regular, fontSize = pt(size))
+fun iconOutline(size: Float): TextStyle = TextStyle(fontFamily = RpmFont.regular, fontSize = pt(size), shadow = LocalTextFeather.current)
 
 /** `RPMFont.brand`: a Font Awesome brand mark. */
 @Composable

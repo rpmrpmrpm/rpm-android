@@ -1,5 +1,17 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.core.library.CollectionSearch
+import com.rpm.player.core.library.listName
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import com.rpm.player.phone.design.UnderHeader
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateDpAsState
@@ -152,7 +164,7 @@ private val OFFERED = listOf(
  * @param reading the collection's reading: whether a pull's read is running, and whose collection it is.
  */
 @Composable
-fun LibraryPage(
+private fun AlbumsPage(
     ready: LibraryState.Ready,
     images: ImageLoader,
     settings: PhoneSettings,
@@ -173,28 +185,14 @@ fun LibraryPage(
     onRetry: () -> Unit = {},
     reading: WallReading,
 ) {
-    when (settings.libraryMode) {
-        LibraryMode.Playlists -> {
-            PlaylistsPage(ready, images, settings, onMode = settings::changeLibraryMode, bottomRoom = bottomRoom, queue = queue, onOpenQueue = onOpenQueue, marked = marked, onOpenMarked = onOpenMarked, onOpen = onOpenList, onMake = onMakePlaylist, onReread = reading.onReread)
-            return
-        }
-        LibraryMode.Artists -> {
-            ArtistsPage(ready, images, artwork, settings, bottomRoom = bottomRoom, onOpen = onOpenArtist, reading = reading)
-            return
-        }
-        LibraryMode.Genres -> {
-            GenresPage(ready, images, settings, bottomRoom = bottomRoom, onOpen = onOpenGenre, reading = reading)
-            return
-        }
-        LibraryMode.Albums -> Unit
-    }
     val ground = rememberBackdrop()
     val page = rememberBackdrop()
     var sorting by remember { mutableStateOf(false) }
     // The size under the fingers during a pinch. It is stored only when the pinch ends.
     var pinching by remember { mutableStateOf<Double?>(null) }
     val order = settings.libraryOrder
-    val mode = settings.libraryMode
+    // This page is the albums view. It is still drawn while it fades out after another view was chosen.
+    val mode = LibraryMode.Albums
     // Hidden until the search key is pressed, as on iPhone. The words are cleared when the search is closed.
     // Opening it again starts a new search.
     var searching by rememberSaveable { mutableStateOf(false) }
@@ -222,6 +220,7 @@ fun LibraryPage(
     // library off the main thread. It is keyed on the wall as well as the words, so a library that arrives during
     // a search is searched again. A new keystroke cancels the search under way. It stops at the next record. So
     // only the answer to the current words is shown.
+    val resources = LocalContext.current.resources
     LaunchedEffect(asked, ordered) {
         val wall = ordered ?: return@LaunchedEffect
         if (asked.isBlank()) {
@@ -229,13 +228,32 @@ fun LibraryPage(
             return@LaunchedEffect
         }
         delay(SEARCH_PAUSE_MS)
-        val found = withContext(Dispatchers.Default) { SearchAnswer(asked, SongSearch.records(wall, asked), SongSearch.through(wall, asked)) }
+        // Every kind of thing the collection holds, so a name is found whichever view it lives in. The playlists are
+        // searched by the names they are shown by.
+        val found = withContext(Dispatchers.Default) {
+            val lists = ready.collection.lists.map { it to listName(it.name, resources) }
+            SearchAnswer(
+                asked,
+                SongSearch.records(wall, asked),
+                SongSearch.through(wall, asked),
+                artists = CollectionSearch.artists(ready.walls.artists, asked),
+                playlists = CollectionSearch.playlists(lists, asked),
+                genres = CollectionSearch.genres(ready.walls.genres, asked),
+            )
+        }
         answer = found
     }
 
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(page)) {
             UnderHeader(ground, ground = { VinylGround() }, header = { Column(Modifier.statusBarsPadding()) {
+                // While the search is open the heading and the views fade away, and the search box rises into their
+                // place. They come back only when the search is closed with its cross (or the back gesture).
+                AnimatedVisibility(
+                    !searching,
+                    enter = expandVertically(SEARCH_SLIDE_SIZE, expandFrom = Alignment.Top) + fadeIn(SEARCH_FADE),
+                    exit = shrinkVertically(SEARCH_SLIDE_SIZE, shrinkTowards = Alignment.Top) + fadeOut(SEARCH_FADE),
+                ) {
                 Box(Modifier.padding(start = 20.dp, end = 16.dp, bottom = 10.dp)) {
                     PageHeading(stringResource(R.string.Settings_Library), lent(reading.lender, counts(ready.albums))) {
                         KeyGroup(ground) {
@@ -243,6 +261,7 @@ fun LibraryPage(
                             HeaderKey(Glyph.sort) { sorting = true }
                         }
                     }
+                }
                 }
                 // It slides out from under the header over 0.22 s, easing out, and the tabs and the wall move down with
                 // it in the same time, as on iPhone (`.move(edge: .top)` with `.opacity` under `easeOut(duration: 0.22)`).
@@ -253,7 +272,13 @@ fun LibraryPage(
                 ) {
                     SearchRow(asked, { asked = it }, stringResource(R.string.Lookup_SearchButton), focus, raise, onRaised = { raise = false }, ground, onClose = ::closeSearch)
                 }
-                ModeTabs(mode, onMode = settings::changeLibraryMode, backdrop = ground)
+                AnimatedVisibility(
+                    !searching,
+                    enter = expandVertically(SEARCH_SLIDE_SIZE, expandFrom = Alignment.Top) + fadeIn(SEARCH_FADE),
+                    exit = shrinkVertically(SEARCH_SLIDE_SIZE, shrinkTowards = Alignment.Top) + fadeOut(SEARCH_FADE),
+                ) {
+                    ModeTabs(mode, onMode = settings::changeLibraryMode, backdrop = ground)
+                }
             } }) { top ->
                 // Kept above the keyboard while it is open, so the answers stay in view. The wall runs up under the header
                 // and fades out over it; everything else starts below it.
@@ -261,7 +286,12 @@ fun LibraryPage(
                     val below = Modifier.fillMaxSize().padding(top = top)
                     when {
                         mode != LibraryMode.Albums -> Unit
-                        searching && asked.isNotEmpty() -> Box(below) { SearchResults(asked, answer, ready.collection, images, playing, bottomRoom, onOpen, onPlaySong) }
+                        searching && asked.isNotEmpty() -> Box(below) {
+                            SearchResults(
+                                asked, answer, ready.collection, images, artwork, playing, bottomRoom,
+                                SearchActions(onOpen, onPlaySong, onOpenArtist, onOpenList, onOpenGenre),
+                            )
+                        }
                         standing == WallStanding.Reading -> Box(below) { Reading() }
                         standing == WallStanding.Trouble -> Box(below) { Failed(onRetry) }
                         ready.albums.isEmpty() -> Box(below) { Empty(reading.lender != null) }
@@ -320,12 +350,66 @@ internal fun HeaderKey(glyph: String, onClick: () -> Unit) {
 }
 
 /**
+ * The library tab: one of its four views (records, artists, playlists, genres), as chosen in the row under the header
+ * ([ModeTabs]). A new view fades in over the one it replaces ([MODE_FADE_MS]), and the row's pill slides and its keys
+ * open and close across the change ([ModeTabsMotion]), as the iPhone's views do.
+ *
+ * The parameters are the albums view's ([AlbumsPage]) and what the other views need from the same place.
+ */
+@Composable
+fun LibraryPage(
+    ready: LibraryState.Ready,
+    images: ImageLoader,
+    settings: PhoneSettings,
+    bottomRoom: Dp,
+    artwork: Artwork,
+    onOpen: (CloudAlbum) -> Unit,
+    onOpenList: (TrackList) -> Unit,
+    onOpenArtist: (ArtistWallItem) -> Unit,
+    onOpenGenre: (GenreWallItem) -> Unit,
+    queue: QueueRead,
+    onOpenQueue: () -> Unit,
+    marked: List<CloudTrack>?,
+    onOpenMarked: () -> Unit,
+    playing: String?,
+    onPlaySong: (SongSearch.SongHit) -> Unit,
+    onMakePlaylist: suspend (name: String, folder: List<String>, tracks: List<CloudTrack>) -> String?,
+    standing: WallStanding = WallStanding.Showing,
+    onRetry: () -> Unit = {},
+    reading: WallReading,
+) {
+    val motion = remember { ModeTabsMotion(settings.libraryMode) }
+    CompositionLocalProvider(LocalModeTabs provides motion) {
+        Crossfade(settings.libraryMode, animationSpec = tween(MODE_FADE_MS), label = "library view") { mode ->
+            when (mode) {
+                LibraryMode.Playlists -> PlaylistsPage(ready, images, settings, onMode = settings::changeLibraryMode, bottomRoom = bottomRoom, queue = queue, onOpenQueue = onOpenQueue, marked = marked, onOpenMarked = onOpenMarked, onOpen = onOpenList, onMake = onMakePlaylist, onReread = reading.onReread)
+                LibraryMode.Artists -> ArtistsPage(ready, images, artwork, settings, bottomRoom = bottomRoom, onOpen = onOpenArtist, reading = reading)
+                LibraryMode.Genres -> GenresPage(ready, images, settings, bottomRoom = bottomRoom, onOpen = onOpenGenre, reading = reading)
+                LibraryMode.Albums -> AlbumsPage(
+                    ready, images, settings, bottomRoom, artwork, onOpen, onOpenList, onOpenArtist, onOpenGenre, queue,
+                    onOpenQueue, marked, onOpenMarked, playing, onPlaySong, onMakePlaylist, standing, onRetry, reading,
+                )
+            }
+        }
+    }
+}
+
+/** How long one view of the library takes to fade into another. */
+private const val MODE_FADE_MS = 250
+
+/**
  * The row of views under the header. It matches the iPhone's `LibraryModeTabs`. It is the tab capsule at a
  * smaller size. Only the chosen view shows its name beside its icon, so that all four views fit in every
- * language. The pill slides between the views with the same spring as the tab bar.
+ * language. The pill slides between the views with the same spring as the tab bar, the chosen key opens to show its
+ * name as it fades in, and the one left closes as its name fades out.
+ *
+ * **Each view draws its own row, so the motion is kept outside them** ([LocalModeTabs]). The row of the view that
+ * comes in starts where the last one was, and both rows show the same moment while the views fade into one another.
  */
 @Composable
 internal fun ModeTabs(mode: LibraryMode, onMode: (LibraryMode) -> Unit, backdrop: Backdrop) {
+    val motion = LocalModeTabs.current ?: remember { ModeTabsMotion(mode) }
+    LaunchedEffect(mode) { motion.go(mode) }
     val capsule = RoundedCornerShape(percent = 50)
     val unlit = 52.dp
     // A tick under the thumb as the view changes (`Haptics.pick()` on iPhone).
@@ -339,16 +423,17 @@ internal fun ModeTabs(mode: LibraryMode, onMode: (LibraryMode) -> Unit, backdrop
             .padding(3.dp),
     ) {
         val lit = maxWidth - unlit * (LibraryMode.entries.size - 1)
-        val pill by animateDpAsState(unlit * mode.ordinal, spring(dampingRatio = 0.8f, stiffness = 322f), label = "pill")
-        Box(Modifier.offset(x = pill).width(lit).height(32.dp).clip(capsule).background(Ink.white(0x24)))
+        Box(Modifier.offset(x = unlit * motion.pill.value).width(lit).height(32.dp).clip(capsule).background(Ink.white(0x24)))
         Row {
             for (choice in LibraryMode.entries) {
                 val chosen = choice == mode
-                val width by animateDpAsState(if (chosen) lit else unlit, spring(dampingRatio = 0.8f, stiffness = 322f), label = "tab")
+                // How far this key is open: 1 for the chosen view, 0 for the others, and between while they change.
+                val open = motion.open[choice.ordinal].value
                 Row(
                     Modifier
-                        .width(width)
+                        .width(unlit + (lit - unlit) * open)
                         .height(32.dp)
+                        .clipToBounds()
                         .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Tab) {
                             if (!chosen) haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                             onMode(choice)
@@ -356,22 +441,54 @@ internal fun ModeTabs(mode: LibraryMode, onMode: (LibraryMode) -> Unit, backdrop
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    val ink = if (chosen) Color.White else Ink.white(0x99)
+                    val ink = lerp(Ink.white(0x99), Color.White, open)
                     when (choice) {
                         LibraryMode.Albums -> BasicText(Glyph.record, style = icon(14f).copy(color = ink))
                         LibraryMode.Artists -> MarkView(ArtistMark, ink, Modifier.size(14.dp))
                         LibraryMode.Playlists -> BasicText(Glyph.playlists, style = icon(14f).copy(color = ink))
                         LibraryMode.Genres -> BasicText(Glyph.genres, style = icon(14f).copy(color = ink))
                     }
-                    if (chosen) {
-                        Spacer(Modifier.width(6.dp))
-                        BasicText(stringResource(choice.label), maxLines = 1, style = system(12f, FontWeight.SemiBold).copy(color = Color.White))
+                    if (open > 0.02f) {
+                        Spacer(Modifier.width(6.dp * open))
+                        BasicText(
+                            stringResource(choice.label),
+                            Modifier.graphicsLayer { alpha = open * open },
+                            maxLines = 1,
+                            softWrap = false,
+                            style = system(12f, FontWeight.SemiBold).copy(color = Color.White),
+                        )
                     }
                 }
             }
         }
     }
 }
+
+/**
+ * Where the row of views stands while it moves: the pill's place, in keys from the left, and how far each key is open.
+ * The library page keeps one for all its views ([LibraryPage]), because each view draws its own row, and a row that
+ * started fresh with each view would appear already finished.
+ */
+internal class ModeTabsMotion(mode: LibraryMode) {
+    val pill = Animatable(mode.ordinal.toFloat())
+    val open = LibraryMode.entries.map { Animatable(if (it == mode) 1f else 0f) }
+
+    /** Moves the row to [to]: the pill slides, that key opens, the others close. A later move takes over at once. */
+    suspend fun go(to: LibraryMode) = coroutineScope {
+        launch { pill.animateTo(to.ordinal.toFloat(), MOVE) }
+        for (choice in LibraryMode.entries) {
+            launch { open[choice.ordinal].animateTo(if (choice == to) 1f else 0f, MOVE) }
+        }
+    }
+
+    private companion object {
+        /** The tab bar's spring. */
+        val MOVE = spring<Float>(dampingRatio = 0.8f, stiffness = 322f)
+    }
+}
+
+/** The row's motion for the views of the library page that is on screen. Null outside it: a row then keeps its own. */
+internal val LocalModeTabs = staticCompositionLocalOf<ModeTabsMotion?> { null }
 
 /**
  * The state of the wall, when it is not simply showing records: the iPhone's `ReadStanding`. **An empty list can mean

@@ -1,5 +1,7 @@
 package com.rpm.player.phone.ui
 
+import android.util.LruCache
+import com.rpm.player.core.room.GroundLead
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +40,34 @@ fun rememberAccent(picture: Any?, images: ImageLoader): Rgb? {
     }
     return accent
 }
+
+/**
+ * [picture] with the colour that leads a page standing on it ([GroundLead]), once that colour is read: null until then,
+ * so the picture and its colour reach the page together and come in as one fade. The colour is null for a picture with
+ * none to give. Read off the main thread from the 48 pixel square, once per picture.
+ */
+@Composable
+fun rememberLead(picture: Any?, images: ImageLoader): Pair<Any, Rgb?>? {
+    val context = LocalContext.current
+    // A picture read before is answered at once, so a page shown again is drawn on its colour from the first frame.
+    var read by remember(picture) { mutableStateOf(picture?.let { p -> LEADS.get(p)?.let { p to it.colour } }) }
+    if (picture != null && read == null) LaunchedEffect(picture) {
+        val colour = withContext(Dispatchers.Default) {
+            val request = ImageRequest.Builder(context).data(picture).size(48).allowHardware(false).build()
+            val bitmap = (images.execute(request) as? SuccessResult)?.image?.toBitmap()
+            bitmap?.let { CoverColor.read(it) }?.let { GroundLead.of(it.glow, it.dominant) }
+        }
+        LEADS.put(picture, Led(colour))
+        read = picture to colour
+    }
+    return read
+}
+
+/** A leading colour as read, which may be none: a cache cannot hold a null. */
+private class Led(val colour: Rgb?)
+
+/** The leading colours read so far, by picture, for the life of the app. */
+private val LEADS = LruCache<Any, Led>(64)
 
 /** The same accent read once, for a caller that must have it before it changes what it draws (the stage's record). */
 suspend fun accentOf(context: Context, picture: Any, images: ImageLoader): Rgb? = withContext(Dispatchers.Default) {

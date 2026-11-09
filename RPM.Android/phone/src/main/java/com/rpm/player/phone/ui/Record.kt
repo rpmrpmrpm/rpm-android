@@ -215,8 +215,12 @@ object VinylPressing {
 
 // ── the record ──
 
-/** The shadow a record casts. The phone's shadow is round and concentric, and reaches 8% past the edge. */
-enum class Halo { Round }
+/**
+ * The shadow a record casts, round and concentric. [Round] is the player's, reaching 8% past the edge. [Close] reaches
+ * 2.5% past it, for a disc that comes out of its sleeve on the record's page: a wider shadow would show past the
+ * sleeve above and below it.
+ */
+enum class Halo(val spread: Float) { Round(1.16f), Close(1.05f) }
 
 /**
  * The turning record. It matches the iPhone's `RecordDisc` (RPMSharedUI/RecordDisc.swift) in every figure.
@@ -241,6 +245,7 @@ fun RecordDisc(
     hue: Int? = VinylPressing.HOUSE_HUE,
     label: ImageBitmap? = null,
     disc: ScannedDisc? = null,
+    revolution: Double = REVOLUTION,
 ) {
     val context = LocalContext.current
     val pressed by produceState<ImageBitmap?>(null, hue) { value = VinylPressing.press(context, hue) }
@@ -255,7 +260,7 @@ fun RecordDisc(
     Box(modifier.size(diameter * HALO_SCALE), contentAlignment = Alignment.Center) {
         Canvas(Modifier.size(diameter * HALO_SCALE)) {
             val d = diameter.toPx()
-            val angle = if (spinning) angle(after = (now.longValue - started).coerceAtLeast(0) / 1e9) else 0.0
+            val angle = if (spinning) angle(after = (now.longValue - started).coerceAtLeast(0) / 1e9, revolution) else 0.0
             // A CD does not wobble: the orbit imitates an off-centre pressing, which a moulded disc does not have.
             val orbit = if (disc?.coversRecord == true) 0f else d * WOBBLE
             val wobble = Offset((orbit * cos(Math.toRadians(angle))).toFloat(), (orbit * sin(Math.toRadians(angle))).toFloat())
@@ -268,11 +273,14 @@ private fun DrawScope.drawRecord(d: Float, angle: Float, pressed: ImageBitmap?, 
     val c = center
 
     // The halo. It is a separate shape, not part of the record, so it does not turn with it.
-    val spread = when (halo) { Halo.Round -> HALO_SCALE }
+    val spread = halo.spread
+    // The shadow starts at the disc's edge and is gone at the halo's. The player's keeps its own figures.
+    val edge = if (halo == Halo.Round) 0.86f else 1f / spread
+    val half = if (halo == Halo.Round) 0.94f else (edge + 1f) / 2f
     drawCircle(
         Brush.radialGradient(
-            0.86f to Color.Black.copy(alpha = 0xB3 / 255f),
-            0.94f to Color.Black.copy(alpha = 0x59 / 255f),
+            edge to Color.Black.copy(alpha = 0xB3 / 255f),
+            half to Color.Black.copy(alpha = 0x59 / 255f),
             1f to Color.Transparent,
             center = c,
             radius = d * spread / 2,
@@ -371,6 +379,12 @@ class ScannedDisc private constructor(val picture: ImageBitmap, val coversRecord
                 ScannedDisc(bitmap.asImageBitmap(), covers)
             }
         }
+
+        /**
+         * A CD printed with [artwork] across its whole face, for a record with no photograph of its own disc: the
+         * artwork cut to the disc's circle under the CD's rim and hub ([CdDress]), as the desktop dresses a whole CD.
+         */
+        fun printed(artwork: ImageBitmap): ScannedDisc = ScannedDisc(artwork, coversRecord = true)
     }
 }
 
@@ -425,7 +439,7 @@ private const val SPINDLE_EDGE = 4.8f / 200f
  * The angle of the record after [after] seconds from rest. It ramps up to full speed with a smoothstep curve.
  * The result depends only on the clock, not on how many frames were drawn.
  */
-internal fun angle(after: Double): Double {
+internal fun angle(after: Double, revolution: Double = REVOLUTION): Double {
     if (after <= 0) return 0.0
     val turned = if (after >= SPIN_UP) {
         SPIN_UP / 2 + (after - SPIN_UP)
@@ -433,5 +447,5 @@ internal fun angle(after: Double): Double {
         val u = after / SPIN_UP
         SPIN_UP * (u * u * u - u * u * u * u / 2)
     }
-    return (turned / REVOLUTION * 360) % 360
+    return (turned / revolution * 360) % 360
 }

@@ -1,5 +1,8 @@
 package com.rpm.player.phone.downloads
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -61,7 +64,7 @@ class DownloadKey(
  * asks first, because a removed album has to be downloaded again to play offline.
  */
 @Composable
-fun DownloadButton(key: DownloadKey, modifier: Modifier = Modifier) {
+fun DownloadButton(key: DownloadKey, modifier: Modifier = Modifier, bare: Boolean = false) {
     var asking by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
     val standing = key.standing
@@ -76,26 +79,40 @@ fun DownloadButton(key: DownloadKey, modifier: Modifier = Modifier) {
         is Standing.Stuck -> stringResource(R.string.Rpm_Download_Stuck)
     }
 
-    GlassButton(
-        onClick = {
-            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            when (standing) {
-                null, is Standing.Stuck -> key.onDownload()
-                is Standing.Downloading, Standing.OnPhone -> asking = true
-            }
-        },
-        modifier = modifier.width(56.dp).semantics { contentDescription = label },
-        stretches = false,
-        height = 50.dp,
-        radius = 14.dp,
-        inset = 0.dp,
-    ) { style ->
+    val press = {
+        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         when (standing) {
-            null -> BasicText(Glyph.download, style = icon(17f).copy(color = style.color))
+            null, is Standing.Stuck -> key.onDownload()
+            is Standing.Downloading, Standing.OnPhone -> asking = true
+        }
+    }
+    val face: @Composable (Color) -> Unit = { ink ->
+        when (standing) {
+            null -> BasicText(Glyph.download, style = icon(17f).copy(color = ink))
             is Standing.Downloading -> Ring(standing.fraction.toFloat(), standing.preparing)
-            Standing.OnPhone -> BasicText(Glyph.downloaded, style = icon(17f).copy(color = style.color))
+            Standing.OnPhone -> BasicText(Glyph.downloaded, style = icon(17f).copy(color = ink))
             is Standing.Stuck -> BasicText(Glyph.stuck, style = icon(17f).copy(color = Ink.white(0xB3)))
         }
+    }
+
+    if (bare) {
+        // Its mark alone, in a box as tall as the Play key beside it, which is the part that answers a tap.
+        Box(
+            modifier
+                .size(56.dp, 50.dp)
+                .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = press)
+                .semantics { contentDescription = label },
+            contentAlignment = Alignment.Center,
+        ) { face(Ink.white(0xF0)) }
+    } else {
+        GlassButton(
+            onClick = press,
+            modifier = modifier.width(56.dp).semantics { contentDescription = label },
+            stretches = false,
+            height = 50.dp,
+            radius = 14.dp,
+            inset = 0.dp,
+        ) { style -> face(style.color) }
     }
 
     if (asking) {

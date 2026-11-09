@@ -1,5 +1,7 @@
 package com.rpm.player.phone.player
 
+import com.rpm.player.core.playback.EXTRA_RADIO
+import com.rpm.player.core.playback.EXTRA_UP_NEXT
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -17,9 +19,17 @@ import com.rpm.player.core.playback.TrackRef
 
 /**
  * One entry of the queue as a page shows it: the song as the library knows it, or as the queue entry
- * describes it when the library does not have the song. It also carries the cover art of the entry.
+ * describes it when the library does not have the song. It also carries the cover art of the entry, and the
+ * [part] of the queue it belongs to.
  */
-class QueueEntry(val mediaId: String, val track: CloudTrack, val cover: Cover?)
+class QueueEntry(val mediaId: String, val track: CloudTrack, val cover: Cover?, val part: QueuePart = QueuePart.List)
+
+/**
+ * Which part of the queue an entry is in, as its queue item says: the record or list that was played, the songs the
+ * person added to it ([EXTRA_UP_NEXT]), or the songs a mixtape added ([EXTRA_RADIO]). The up next drawer puts a heading
+ * where each of the last two begins.
+ */
+enum class QueuePart { List, Yours, Mixtape }
 
 /**
  * The queue as the controller holds it, and the index of the entry that is playing. The index is null if no entry is
@@ -71,5 +81,10 @@ private fun entryOf(item: MediaItem, collection: Collection): QueueEntry {
         tags = CloudTrackTags(durationSeconds = (metadata.durationMs ?: 0L) / 1000.0),
     )
     val cover = ref?.let { r -> metadata.extras?.getStringArray(EXTRA_COVER_KEYS)?.takeIf { it.isNotEmpty() }?.let { Cover(r.shelf, it.toList(), stamp = 0) } }
-    return QueueEntry(item.mediaId, track, cover)
+    val part = when {
+        metadata.extras?.getString(EXTRA_RADIO) != null -> QueuePart.Mixtape
+        metadata.extras?.getBoolean(EXTRA_UP_NEXT) == true -> QueuePart.Yours
+        else -> QueuePart.List
+    }
+    return QueueEntry(item.mediaId, track, cover, part)
 }
