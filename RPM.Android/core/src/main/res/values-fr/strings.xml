@@ -6798,6 +6798,12 @@
     <!-- Import from another app: button for an import that has not finished. {0} is the source, for example MusicBee. -->
     <string name="Migration_ContinueImport">Reprendre l\'import depuis %1$s</string>
 
+    <!-- Import from another app, list of apps: button beside 'Continue import from ...' that forgets that unfinished import. -->
+    <string name="Migration_Forget">Oublier</string>
+
+    <!-- Import from another app, list of apps: tooltip of the Forget button. -->
+    <string name="Migration_ForgetHint">Oublie cette importation inachevée et sa connexion enregistrée. Ce qui a été importé reste dans rpm.</string>
+
     <!-- Import from another app: how to get MusicBee's library file. MusicBee's menu names are in English in the app; keep them as they are. -->
     <string name="Migration_HowMusicBee">Dans MusicBee, ouvrez Edit &gt; Preferences &gt; Library et activez « Save a copy of the library tags as an iTunes formatted XML file ». Fermez MusicBee, puis choisissez le fichier « iTunes Music Library.xml » dans le dossier de bibliothèque de MusicBee.</string>
 
