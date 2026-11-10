@@ -7094,4 +7094,76 @@
 
     <!-- Import from another app: report line for one playlist. -->
     <string name="Migration_ReportPlaylistsOne">1 lista añadida</string>
+
+    <!-- Setup and Library settings: a NAS offered as the place for the library. {0} is the NAS name. -->
+    <string name="Nas_Location">%1$s (NAS)</string>
+
+    <!-- Setup: second line of a NAS row. {0} is the NAS name. -->
+    <string name="Nas_LocationHint">Tu música se guarda en %1$s. Se puede escuchar en casa aunque este ordenador esté apagado.</string>
+
+    <!-- Setup: button on a NAS row. -->
+    <string name="Nas_Choose">Elegir</string>
+
+    <!-- Setup: a NAS whose rpm package speaks an older or newer protocol. {0} is the NAS name. -->
+    <string name="Nas_NeedsUpdate">%1$s necesita una versión más reciente del paquete de rpm.</string>
+
+    <!-- Title of the NAS sign-in window. {0} is the NAS name. -->
+    <string name="Nas_LoginTitle">Iniciar sesión en %1$s</string>
+
+    <!-- NAS sign-in window: line under the title. -->
+    <string name="Nas_LoginBody">Usa el nombre de usuario y la contraseña de tu cuenta en el NAS. rpm los guarda en este ordenador.</string>
+
+    <!-- NAS sign-in window: label of the list of libraries on the NAS. -->
+    <string name="Nas_Library">Biblioteca</string>
+
+    <!-- NAS sign-in window: the choice that makes a new library. {0} is the folder name it gets. -->
+    <string name="Nas_NewLibrary">Nueva biblioteca (%1$s)</string>
+
+    <!-- NAS sign-in window: the NAS refused the login. -->
+    <string name="Nas_LoginWrong">El nombre de usuario o la contraseña no son correctos.</string>
+
+    <!-- NAS sign-in window and Library settings: the NAS did not answer. {0} is the NAS name. -->
+    <string name="Nas_Unreachable">%1$s no está disponible. Comprueba que esté encendido y en la misma red.</string>
+
+    <!-- NAS sign-in window: mounting worked but the library did not open. {0} is the NAS name. -->
+    <string name="Nas_OpenFailed">No se pudo abrir la biblioteca de %1$s.</string>
+
+    <!-- NAS sign-in window and Library settings: status while rpm mounts the NAS. {0} is the NAS name. -->
+    <string name="Nas_Connecting">Conectando con %1$s</string>
+
+    <!-- Library settings: button that copies the collection to a NAS. {0} is the NAS name. -->
+    <string name="Nas_Move">Mover la colección a %1$s</string>
+
+    <!-- Library settings: button for a library that is already on the NAS, which claims it without copying. {0} is the NAS name. -->
+    <string name="Nas_Use">Usar %1$s</string>
+
+    <!-- Library settings: line under the move button. {0} is the NAS name. -->
+    <string name="Nas_MoveBody">rpm copia cada archivo a %1$s y comprueba cada copia. Tu música en este ordenador no se cambia ni se borra.</string>
+
+    <!-- Library settings: progress of the move to a NAS. -->
+    <string name="Nas_MoveProgress">%1$s de %2$s archivos copiados</string>
+
+    <!-- Library settings: the move finished. {0} is the NAS name, {1} the old folder. -->
+    <string name="Nas_MoveDone">Tu colección está en %1$s. La copia de este ordenador sigue en %2$s.</string>
+
+    <!-- Library settings: the move to a NAS was interrupted. -->
+    <string name="Nas_MoveStopped">El traslado se detuvo. No se cambió nada. Vuelve a intentarlo para continuar.</string>
+
+    <!-- Library settings: the collection does not fit on the NAS. {0} is the NAS name, {1} a size. -->
+    <string name="Nas_MoveNoRoom">%1$s necesita %2$s más de espacio libre.</string>
+
+    <!-- Library settings: the library is on the NAS but not in the package's folder. {0} is the NAS name. -->
+    <string name="Nas_UseElsewhere">Elige como carpeta del paquete de rpm en %1$s la carpeta que contiene esta biblioteca.</string>
+
+    <!-- Library settings and import: space used on the NAS. {0} and {1} are sizes. -->
+    <string name="Nas_Space">%1$s de %2$s usados</string>
+
+    <!-- Import: the NAS is over 90 percent of its limit. {0} and {1} are sizes. -->
+    <string name="Nas_SpaceAlmostFull">%1$s de %2$s usados (casi lleno)</string>
+
+    <!-- Import: refused because the NAS limit or disk would be passed. {0} is the NAS name, {1} and {2} sizes. -->
+    <string name="Nas_SpaceFull">No importado: %1$s está lleno (%2$s de %3$s usados).</string>
+
+    <!-- Problem screen at launch: the library is on a NAS that could not be mounted. {0} is the NAS name. -->
+    <string name="Nas_NotAvailable">%1$s no está disponible. Tu biblioteca está en él.</string>
 </resources>
