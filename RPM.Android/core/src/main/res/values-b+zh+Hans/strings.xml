@@ -7220,4 +7220,7 @@
 
     <!-- Tooltip on actions that would change files (Apply naming, Split album, Delete) in a library whose files are kept as they are. -->
     <string name="Kept_Unavailable">此文件夹中的文件保持原样</string>
+
+    <!-- Setup, last step: shown instead of the album count when the library is a folder of music the person already had. -->
+    <string name="Wizard_DoneAdopted">打开资料库时，rpm 会在后台读取你的音乐。大型收藏可能需要几分钟。</string>
 </resources>

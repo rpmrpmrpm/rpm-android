@@ -7220,4 +7220,7 @@
 
     <!-- Tooltip on actions that would change files (Apply naming, Split album, Delete) in a library whose files are kept as they are. -->
     <string name="Kept_Unavailable">Les fichiers de ce dossier sont gardés tels quels</string>
+
+    <!-- Setup, last step: shown instead of the album count when the library is a folder of music the person already had. -->
+    <string name="Wizard_DoneAdopted">rpm lit votre musique en arrière-plan à l\'ouverture de la bibliothèque. Une grande collection peut prendre quelques minutes.</string>
 </resources>
