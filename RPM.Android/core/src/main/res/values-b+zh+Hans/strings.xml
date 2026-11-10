@@ -7057,12 +7057,6 @@
     <string name="Migration_ReasonReadFailed">无法读取</string>
 
     <!-- Import from another app: why a track was not imported. -->
-    <string name="Migration_ReasonDiskFull">磁盘已满</string>
-
-    <!-- Import from another app: why a track was not imported. -->
-    <string name="Migration_ReasonCloudFull">云存储已满</string>
-
-    <!-- Import from another app: why a track was not imported. -->
     <string name="Migration_ReasonCouldNotCopy">无法复制</string>
 
     <!-- Import from another app: why a track was not imported (cloud-only import, the cloud refused the file). The upload's own reason follows in brackets. -->

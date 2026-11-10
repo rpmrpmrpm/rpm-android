@@ -7057,12 +7057,6 @@
     <string name="Migration_ReasonReadFailed">No se pudo leer</string>
 
     <!-- Import from another app: why a track was not imported. -->
-    <string name="Migration_ReasonDiskFull">El disco está lleno</string>
-
-    <!-- Import from another app: why a track was not imported. -->
-    <string name="Migration_ReasonCloudFull">Almacenamiento en la nube lleno</string>
-
-    <!-- Import from another app: why a track was not imported. -->
     <string name="Migration_ReasonCouldNotCopy">No se pudo copiar</string>
 
     <!-- Import from another app: why a track was not imported (cloud-only import, the cloud refused the file). The upload's own reason follows in brackets. -->

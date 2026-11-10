@@ -7057,12 +7057,6 @@
     <string name="Migration_ReasonReadFailed">Lecture impossible</string>
 
     <!-- Import from another app: why a track was not imported. -->
-    <string name="Migration_ReasonDiskFull">Le disque est plein</string>
-
-    <!-- Import from another app: why a track was not imported. -->
-    <string name="Migration_ReasonCloudFull">Stockage cloud plein</string>
-
-    <!-- Import from another app: why a track was not imported. -->
     <string name="Migration_ReasonCouldNotCopy">Copie impossible</string>
 
     <!-- Import from another app: why a track was not imported (cloud-only import, the cloud refused the file). The upload's own reason follows in brackets. -->
