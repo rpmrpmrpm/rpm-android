@@ -6876,6 +6876,18 @@
     <!-- Import from another app: summary line. {0} is a number. -->
     <string name="Migration_SummarySkipped">%1$s Elemente werden nicht importiert (Streams, Videos, Podcasts oder Dateien, die nicht auf diesem Computer liegen)</string>
 
+    <!-- Import from another app, summary: an import of the same library did not finish. {0} tracks are through, of {1}. The person chooses Continue import or Start over. -->
+    <string name="Migration_UnfinishedNote">Ein früherer Import dieser Mediathek wurde bei %1$s von %2$s Titeln angehalten.</string>
+
+    <!-- Import from another app, summary: button that continues an earlier import of the same library where it stopped. -->
+    <string name="Migration_ContinueStopped">Import fortsetzen</string>
+
+    <!-- Import from another app, summary: button that checks every track of the library again instead of continuing. -->
+    <string name="Migration_StartOver">Neu beginnen</string>
+
+    <!-- Import from another app, summary: tooltip of the Start over button. -->
+    <string name="Migration_StartOverHint">Prüft jeden Titel erneut. Titel, die schon in rpm sind, werden nicht doppelt importiert.</string>
+
     <!-- Import from another app: shown on the summary and while importing from a library file. {0} is MusicBee or iTunes. -->
     <string name="Migration_KeepsOriginalsFile">rpm kopiert Ihre Musik und lässt die Originale, wo sie sind. In Ihrer %1$s-Mediathek wird nichts geändert oder entfernt.</string>
 
@@ -6945,6 +6957,9 @@
     <!-- Import from another app: estimate. {0} is a duration such as 2 h 10 min. -->
     <string name="Migration_ProgressTimeLeft">Noch etwa %1$s</string>
 
+    <!-- Import from another app, progress: the estimated time left is under one minute. -->
+    <string name="Migration_ProgressUnderAMinute">Weniger als eine Minute übrig</string>
+
     <!-- Import from another app: button. -->
     <string name="Migration_Pause">Pausieren</string>
 
@@ -7001,6 +7016,9 @@
 
     <!-- Import from another app: report line for one playlist. {0} is its name, {1} a number. -->
     <string name="Migration_ReportPlaylistUnmatched">%1$s: %2$s Einträge nicht gefunden</string>
+
+    <!-- Import from another app, report: a playlist ({0} is its name) with one entry that matched no track. -->
+    <string name="Migration_ReportPlaylistUnmatchedOne">%1$s: 1 Eintrag nicht gefunden</string>
 
     <!-- Import from another app: report line. {0} is a playlist name. -->
     <string name="Migration_ReportSmart">%1$s (intelligente Playlist, jetzt eine normale Liste)</string>
