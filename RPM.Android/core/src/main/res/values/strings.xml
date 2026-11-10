@@ -6752,4 +6752,283 @@
 
     <!-- Web app, Settings, Sound: under Streaming quality, what the choices do. -->
     <string name="Web_QualityDetail">The original is exactly as it was uploaded. A lower bitrate uses less data.</string>
+
+    <!-- Add music window: the tile that imports a library from another music app. -->
+    <string name="AddMusic_OtherApp">From another app</string>
+
+    <!-- Add music window: the line under 'From another app', naming the apps it can import from. -->
+    <string name="AddMusic_OtherAppHint">MusicBee, iTunes, Jellyfin, Plex, Navidrome</string>
+
+    <!-- Title of the window that imports a library from another music app. -->
+    <string name="Migration_Title">Import from another app</string>
+
+    <!-- Import from another app: heading above the list of apps. -->
+    <string name="Migration_ChooseKicker">Where is your music now?</string>
+
+    <!-- Import from another app: the MusicBee choice. A product name. -->
+    <string name="Migration_SourceMusicBee">MusicBee</string>
+
+    <!-- Import from another app: the iTunes / Apple Music choice. -->
+    <string name="Migration_SourceITunes">iTunes or Apple Music</string>
+
+    <!-- Import from another app: the Jellyfin choice. A product name. -->
+    <string name="Migration_SourceJellyfin">Jellyfin</string>
+
+    <!-- Import from another app: the Plex choice. A product name. -->
+    <string name="Migration_SourcePlex">Plex</string>
+
+    <!-- Import from another app: the Navidrome / Subsonic server choice. -->
+    <string name="Migration_SourceNavidrome">Navidrome or Subsonic</string>
+
+    <!-- Import from another app: the choice for .m3u/.pls playlist files. Also the name shown for this source in the report. -->
+    <string name="Migration_SourcePlaylistFiles">Playlist files</string>
+
+    <!-- Import from another app: line under MusicBee and iTunes. -->
+    <string name="Migration_HintFile">Uses the library file it saves</string>
+
+    <!-- Import from another app: line under Jellyfin, Plex and Navidrome. -->
+    <string name="Migration_HintServer">Signs in to your server</string>
+
+    <!-- Import from another app: line under Playlist files. -->
+    <string name="Migration_HintPlaylistFiles">.m3u, .m3u8 and .pls from any player</string>
+
+    <!-- Import from another app: button for an import that has not finished. {0} is the source, for example MusicBee. -->
+    <string name="Migration_ContinueImport">Continue import from %1$s</string>
+
+    <!-- Import from another app: how to get MusicBee's library file. MusicBee's menu names are in English in the app; keep them as they are. -->
+    <string name="Migration_HowMusicBee">In MusicBee, open Edit &gt; Preferences &gt; Library and turn on \"Save a copy of the library tags as an iTunes formatted XML file\". Close MusicBee, then choose the file \"iTunes Music Library.xml\" in MusicBee\'s library folder.</string>
+
+    <!-- Import from another app: how to get the iTunes / Apple Music library file. -->
+    <string name="Migration_HowITunes">In Apple Music, choose File &gt; Library &gt; Export Library. In iTunes for Windows, choose Edit &gt; Preferences &gt; Advanced and turn on \"Share iTunes Library XML with other applications\". Then choose the library file.</string>
+
+    <!-- Import from another app: explanation for playlist files. -->
+    <string name="Migration_HowPlaylistFiles">Choose one or more playlist files. The music they list must be on this computer.</string>
+
+    <!-- Import from another app: button that opens a file picker for the library file. -->
+    <string name="Migration_ChooseFile">Choose file</string>
+
+    <!-- Import from another app: button that opens a file picker for playlist files. -->
+    <string name="Migration_ChoosePlaylists">Choose playlists</string>
+
+    <!-- Import from another app: label of the media server address box. -->
+    <string name="Migration_ServerAddress">Server address</string>
+
+    <!-- Import from another app: label of the user name box. -->
+    <string name="Migration_UserName">User name</string>
+
+    <!-- Import from another app: label of the password box. -->
+    <string name="Migration_Password">Password</string>
+
+    <!-- Import from another app: button that signs in to the media server. -->
+    <string name="Migration_SignIn">Sign in</string>
+
+    <!-- Import from another app: Jellyfin's code sign-in. Quick Connect is Jellyfin's name for it. -->
+    <string name="Migration_QuickConnect">Use Quick Connect</string>
+
+    <!-- Import from another app: shown while waiting for a Jellyfin Quick Connect approval. {0} is the six-digit code. -->
+    <string name="Migration_QuickConnectCode">Enter this code in another Jellyfin app, under Settings &gt; Quick Connect: %1$s</string>
+
+    <!-- Import from another app: button that opens Plex's sign-in page in the browser. -->
+    <string name="Migration_PlexSignIn">Sign in with Plex</string>
+
+    <!-- Import from another app: shown while waiting for the Plex sign-in in the browser. -->
+    <string name="Migration_PlexWaiting">Sign in to Plex in your browser. This window continues when you are done.</string>
+
+    <!-- Import from another app: label of the Plex server list. -->
+    <string name="Migration_PlexServer">Server</string>
+
+    <!-- Import from another app: error when the Plex account has no server that answers. -->
+    <string name="Migration_PlexNoServer">No Plex server could be reached from here.</string>
+
+    <!-- Import from another app: error after a refused sign-in. -->
+    <string name="Migration_SignInFailed">The server did not accept the user name or password.</string>
+
+    <!-- Import from another app: error when the server does not answer. -->
+    <string name="Migration_ServerUnreachable">The server could not be reached. Check the address.</string>
+
+    <!-- Import from another app, web app only: a page on https cannot reach a server on plain http. -->
+    <string name="Migration_ServerBlocked">Your browser cannot reach this server. Use its https address, or import with rpm on your computer.</string>
+
+    <!-- Import from another app: error when the chosen file is not an iTunes library XML. -->
+    <string name="Migration_FileUnreadable">This file could not be read as a library file.</string>
+
+    <!-- Import from another app, web app only: button to pick the folder that holds the music the library file lists. -->
+    <string name="Migration_ChooseMusicFolder">Choose the music folder</string>
+
+    <!-- Import from another app, web app only: why the music folder is needed. -->
+    <string name="Migration_MusicFolderHint">The browser cannot open the paths in the library file. Choose the folder that holds the music, and rpm finds each track in it.</string>
+
+    <!-- Import from another app: shown while the source library is read. {0} is a number. -->
+    <string name="Migration_Reading">Reading the library (%1$s tracks found)</string>
+
+    <!-- Import from another app: heading of the summary. -->
+    <string name="Migration_SummaryKicker">What was found</string>
+
+    <!-- Import from another app: summary line. {0} is a number, {1} a size such as 212 GB. -->
+    <string name="Migration_SummaryTracks">%1$s tracks (%2$s)</string>
+
+    <!-- Import from another app: summary line. {0} is a number. -->
+    <string name="Migration_SummaryPlaylists">%1$s playlists</string>
+
+    <!-- Import from another app: summary line, an estimate. {0} is a number. -->
+    <string name="Migration_SummaryAlready">About %1$s already in rpm</string>
+
+    <!-- Import from another app: summary line. {0} is a number. -->
+    <string name="Migration_SummarySkipped">%1$s items are not imported (streams, videos, podcasts, or files that are not on this computer)</string>
+
+    <!-- Import from another app: shown on the summary and while importing from a library file. {0} is MusicBee or iTunes. -->
+    <string name="Migration_KeepsOriginalsFile">rpm copies your music and leaves the originals where they are. Nothing in your %1$s library is changed or removed.</string>
+
+    <!-- Import from another app: shown on the summary and while importing from a media server. {0} is Jellyfin, Plex or the server's name. -->
+    <string name="Migration_KeepsOriginalsServer">rpm only reads from your %1$s server. Nothing on it is changed or removed.</string>
+
+    <!-- Import from another app: shown on the summary and while importing playlist files. -->
+    <string name="Migration_KeepsOriginalsPlaylists">rpm copies the music and leaves the originals and the playlist files where they are.</string>
+
+    <!-- Import from another app: heading above the choice of this computer or the cloud. -->
+    <string name="Migration_WhereKicker">Where to</string>
+
+    <!-- Import from another app: destination choice. -->
+    <string name="Migration_ToThisComputer">This computer</string>
+
+    <!-- Import from another app: line under 'This computer'. -->
+    <string name="Migration_ToThisComputerHint">Files are saved in your rpm library folder</string>
+
+    <!-- Import from another app: destination choice. -->
+    <string name="Migration_ToCloud">Cloud only</string>
+
+    <!-- Import from another app: line under 'Cloud only'. -->
+    <string name="Migration_ToCloudHint">Files go to your rpm cloud and are not kept on this computer</string>
+
+    <!-- Import from another app: space line. {0} and {1} are sizes such as 12 GB. -->
+    <string name="Migration_SpaceDisk">Needs about %1$s. %2$s free on this disk.</string>
+
+    <!-- Import from another app: shown instead of the Start button when the disk is too small. {0} and {1} are sizes. -->
+    <string name="Migration_SpaceDiskShort">Not enough space on this disk: needs about %1$s, %2$s free.</string>
+
+    <!-- Import from another app: space line for a cloud import. {0} and {1} are sizes. -->
+    <string name="Migration_SpaceCloud">Needs about %1$s. %2$s free in your cloud storage.</string>
+
+    <!-- Import from another app: space line when the cloud storage is too small. {0} and {1} are sizes. -->
+    <string name="Migration_SpaceCloudShort">Needs about %1$s, and your cloud storage has %2$s free. Albums are imported until the space is used.</string>
+
+    <!-- Import from another app: shown under 'Cloud only' when not signed in. -->
+    <string name="Migration_CloudSignInNeeded">Sign in to your rpm account to import to the cloud.</string>
+
+    <!-- Import from another app: button on the summary. -->
+    <string name="Migration_Start">Start import</string>
+
+    <!-- Import from another app: progress stage. -->
+    <string name="Migration_StageReading">Reading the library</string>
+
+    <!-- Import from another app: progress stage. -->
+    <string name="Migration_StageTracks">Importing tracks</string>
+
+    <!-- Import from another app: progress stage. -->
+    <string name="Migration_StagePlaylists">Adding playlists</string>
+
+    <!-- Import from another app: progress stage. -->
+    <string name="Migration_StageFinishing">Finishing</string>
+
+    <!-- Import from another app: progress line. {0} and {1} are numbers, {2} and {3} sizes such as 14.2 GB. -->
+    <string name="Migration_ProgressTracks">%1$s of %2$s tracks, %3$s of %4$s</string>
+
+    <!-- Import from another app: progress counts. Numbers. -->
+    <string name="Migration_ProgressCounts">Imported: %1$s. Already in rpm: %2$s. Not imported: %3$s.</string>
+
+    <!-- Import from another app: the album being imported. {0} is an album name. -->
+    <string name="Migration_ProgressAlbum">Now: %1$s</string>
+
+    <!-- Import from another app: estimate. {0} is a duration such as 2 h 10 min. -->
+    <string name="Migration_ProgressTimeLeft">About %1$s left</string>
+
+    <!-- Import from another app: button. -->
+    <string name="Migration_Pause">Pause</string>
+
+    <!-- Import from another app: button. -->
+    <string name="Migration_Continue">Continue</string>
+
+    <!-- Import from another app: button that closes the window while the import goes on. -->
+    <string name="Migration_Hide">Hide</string>
+
+    <!-- Import from another app: state after Pause. -->
+    <string name="Migration_Paused">Paused</string>
+
+    <!-- Import from another app: why the import stopped. -->
+    <string name="Migration_StoppedSignIn">Stopped: the server asks you to sign in again.</string>
+
+    <!-- Import from another app: why the import stopped. -->
+    <string name="Migration_StoppedDiskFull">Stopped: the disk is full.</string>
+
+    <!-- Import from another app: why the import stopped. -->
+    <string name="Migration_StoppedCloudFull">Stopped: your cloud storage is full.</string>
+
+    <!-- Status line while an import runs with its window hidden. {0} is the source, {1} and {2} numbers. -->
+    <string name="Migration_Status">Importing from %1$s: %2$s of %3$s</string>
+
+    <!-- Import from another app: button back to the previous step. -->
+    <string name="Migration_Back">Back</string>
+
+    <!-- Import from another app: button. -->
+    <string name="Migration_Close">Close</string>
+
+    <!-- Import from another app: heading of the report. {0} is the source. -->
+    <string name="Migration_ReportTitle">Import from %1$s finished</string>
+
+    <!-- Import from another app: report line. Numbers. -->
+    <string name="Migration_ReportCounts">%1$s tracks. %2$s imported, %3$s already in rpm, %4$s not imported.</string>
+
+    <!-- Import from another app: heading of the list of tracks that were not imported. -->
+    <string name="Migration_ReportNotImported">Not imported</string>
+
+    <!-- Import from another app: heading of the list of lossless files whose songs rpm has in a lossy format. -->
+    <string name="Migration_ReportLowerQuality">rpm has a lower quality copy</string>
+
+    <!-- Import from another app: explanation under the lower quality list. -->
+    <string name="Migration_ReportLowerQualityHint">rpm already had these songs in a lossy format. The lossless files are listed so you can import them yourself.</string>
+
+    <!-- Import from another app: report line. {0} is a number. -->
+    <string name="Migration_ReportPlaylists">%1$s playlists added</string>
+
+    <!-- Import from another app: report line for one playlist. {0} is its name, {1} a number. -->
+    <string name="Migration_ReportPlaylistUnmatched">%1$s: %2$s entries not found</string>
+
+    <!-- Import from another app: report line. {0} is a playlist name. -->
+    <string name="Migration_ReportSmart">%1$s (a smart playlist, now a plain list)</string>
+
+    <!-- Import from another app: heading of the items the source listed that are not music files. -->
+    <string name="Migration_ReportSkipped">Not imported from the start</string>
+
+    <!-- Import from another app: button that tries the tracks that were not imported again. -->
+    <string name="Migration_TryAgain">Try again</string>
+
+    <!-- Import from another app: why a track was not imported. -->
+    <string name="Migration_ReasonFileNotFound">File not found</string>
+
+    <!-- Import from another app: why a track was not imported. -->
+    <string name="Migration_ReasonReadFailed">Could not be read</string>
+
+    <!-- Import from another app: why a track was not imported. -->
+    <string name="Migration_ReasonDiskFull">The disk is full</string>
+
+    <!-- Import from another app: why a track was not imported. -->
+    <string name="Migration_ReasonCloudFull">Cloud storage full</string>
+
+    <!-- Import from another app: why a track was not imported. -->
+    <string name="Migration_ReasonCouldNotCopy">Could not be copied</string>
+
+    <!-- Import from another app: why a track was not imported. -->
+    <string name="Migration_ReasonRemoved">Removed from rpm during the import</string>
+
+    <!-- Import from another app: note on a track rpm already had in a lossy format. -->
+    <string name="Migration_ReasonLowerQualityInRpm">rpm has a lower quality copy</string>
+
+    <!-- Import from another app: why an item of the source was not imported. -->
+    <string name="Migration_SkipNotAFile">Not a file (a stream or a web address)</string>
+
+    <!-- Import from another app: why an item of the source was not imported (for example a track only in Apple Music's cloud). -->
+    <string name="Migration_SkipNotOnThisComputer">Not on this computer</string>
+
+    <!-- Import from another app: why an item of the source was not imported. -->
+    <string name="Migration_SkipNotMusic">Not music (a podcast, audiobook or video)</string>
 </resources>
