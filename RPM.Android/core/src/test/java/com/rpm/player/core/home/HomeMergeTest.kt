@@ -16,7 +16,7 @@ class HomeMergeTest {
     @Test
     fun `a track in the cloud and on a computer is one track, the cloud's row`() {
         val cloud = listOf(CloudTrack(rpmId = "1", title = "Cloud title"))
-        val merged = HomeMerge.merge(cloud, listOf(HeldCatalog("PC", "v", mapOf("1" to peer("1"), "2" to peer("2")))))
+        val merged = HomeMerge.merge(cloud, listOf(HeldCatalog("PC", "v", mapOf("1" to peer("1"), "2" to peer("2")), fromNas = false)))
         assertEquals(listOf("1", "2"), merged.map { it.rpmId })
         assertSame(cloud[0], merged[0])
         assertEquals("T2", merged[1].title)
@@ -26,7 +26,7 @@ class HomeMergeTest {
     fun `a track on two computers is taken once`() {
         val merged = HomeMerge.merge(
             emptyList(),
-            listOf(HeldCatalog("A", "v", mapOf("9" to peer("9"))), HeldCatalog("B", "v", mapOf("9" to peer("9")))),
+            listOf(HeldCatalog("A", "v", mapOf("9" to peer("9")), fromNas = false), HeldCatalog("B", "v", mapOf("9" to peer("9")), fromNas = false)),
         )
         assertEquals(1, merged.size)
     }

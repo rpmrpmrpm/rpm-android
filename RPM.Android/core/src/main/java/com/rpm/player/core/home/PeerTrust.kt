@@ -23,19 +23,20 @@ import javax.net.ssl.X509ExtendedTrustManager
  */
 class PeerTrust {
 
-    /** Address (an IPv4 literal) to the key its computer advertised. */
+    /** Address (an IPv4 literal) and port, as `address:port`, to the key advertised there. The port is part of
+     * the pin because a NAS serves each of its libraries with its own key on its own port, all at one address. */
     private val pins = ConcurrentHashMap<String, ByteArray>()
 
-    fun pin(address: String, publicKey: ByteArray) {
-        pins[address] = publicKey
+    fun pin(address: String, port: Int, publicKey: ByteArray) {
+        pins["$address:$port"] = publicKey
     }
 
     private val system: X509ExtendedTrustManager = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
         .apply { init(null as KeyStore?) }
         .trustManagers.filterIsInstance<X509ExtendedTrustManager>().first()
 
-    private fun pinned(chain: Array<out X509Certificate>, address: String?): Boolean {
-        val key = address?.let(pins::get) ?: return false
+    private fun pinned(chain: Array<out X509Certificate>, address: String?, port: Int): Boolean {
+        val key = address?.let { pins["$it:$port"] } ?: return false
         if (chain.isEmpty() || !chain[0].publicKey.encoded.contentEquals(key)) {
             throw CertificateException("the computer at $address did not present the key it advertised")
         }
@@ -44,11 +45,11 @@ class PeerTrust {
 
     private val trust = object : X509ExtendedTrustManager() {
         override fun checkServerTrusted(chain: Array<out X509Certificate>, authType: String, socket: Socket) {
-            if (!pinned(chain, socket.inetAddress?.hostAddress)) system.checkServerTrusted(chain, authType, socket)
+            if (!pinned(chain, socket.inetAddress?.hostAddress, socket.port)) system.checkServerTrusted(chain, authType, socket)
         }
 
         override fun checkServerTrusted(chain: Array<out X509Certificate>, authType: String, engine: SSLEngine) {
-            if (!pinned(chain, engine.peerHost)) system.checkServerTrusted(chain, authType, engine)
+            if (!pinned(chain, engine.peerHost, engine.peerPort)) system.checkServerTrusted(chain, authType, engine)
         }
 
         override fun checkServerTrusted(chain: Array<out X509Certificate>, authType: String) =
@@ -69,7 +70,7 @@ class PeerTrust {
     /** A pinned address is the computer whose key was just checked; its certificate names the device
      * id, not the address. */
     private val names = HostnameVerifier { host, session ->
-        pins.containsKey(host) || HttpsURLConnection.getDefaultHostnameVerifier().verify(host, session)
+        pins.keys.any { it.startsWith("$host:") } || HttpsURLConnection.getDefaultHostnameVerifier().verify(host, session)
     }
 
     /** [base] with this trust. */

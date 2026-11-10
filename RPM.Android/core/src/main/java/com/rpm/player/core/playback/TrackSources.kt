@@ -11,6 +11,7 @@ import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.TransferListener
 import androidx.media3.decoder.ffmpeg.FfmpegLibrary
 import com.rpm.player.core.home.Computers
+import com.rpm.player.core.home.HeldCatalog
 import com.rpm.player.core.home.HomeCatalogs
 import com.rpm.player.core.home.PeerRefused
 import com.rpm.player.core.home.PeerTrack
@@ -108,7 +109,7 @@ class TrackSources(
     private fun choose(ref: TrackRef): TrackSource {
         if (ref.shelf != Shelf.Own) return TrackSource.Cloud
         copies.fileOf(ref.rpmId)?.let { return TrackSource.Local(it) }
-        return catalogs.here.value.values.firstOrNull { catalog ->
+        return HeldCatalog.nasFirst(catalogs.here.value.values).firstOrNull { catalog ->
             catalog.tracks[ref.rpmId]?.let { playsHere(it, extension) } == true && computers.usable(catalog.computer) != null
         }?.let { TrackSource.Computer(it.computer) } ?: TrackSource.Cloud
     }

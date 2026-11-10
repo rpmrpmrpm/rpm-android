@@ -18,6 +18,9 @@ object PeerWire {
      * version 2 the six digits never cross the network (see [PairingCode]); a request without it is answered 426. */
     const val PAIRING = 2
     const val SERVICE_TYPE = "_rpm._tcp."
+
+    /** The service type a NAS announces, for itself and for each library on it. */
+    const val NAS_SERVICE_TYPE = "_rpm-nas._tcp."
     const val SESSION_PURPOSE = "rpm-share-session"
 
     /** Where a computer serves a track's bytes. A ticket is made over this route and the track's id. */
@@ -197,5 +200,21 @@ data class PeerTrack(
     val inCloud: Boolean = false,
 )
 
+/** A NAS that also serves a computer's library, as that computer's catalogue names it. */
 @Serializable
-data class PeerCatalog(val version: String = "", val name: String = "", val tracks: List<PeerTrack> = emptyList())
+data class PeerHost(
+    val deviceId: String = "",
+    /** SubjectPublicKeyInfo DER, base64url. The NAS is used only with this key. */
+    val publicKey: String = "",
+    val name: String = "",
+    val libraryId: String = "",
+)
+
+/** A computer's catalogue. [hosts] is empty from an older build and for a library that is not on a NAS. */
+@Serializable
+data class PeerCatalog(
+    val version: String = "",
+    val name: String = "",
+    val tracks: List<PeerTrack> = emptyList(),
+    val hosts: List<PeerHost> = emptyList(),
+)

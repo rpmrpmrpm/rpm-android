@@ -23,6 +23,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.json.decodeFromStream
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -66,6 +68,8 @@ class Computers(
     /** Built off the main thread as the app starts (Services.peerHttp), and first used when a request is made. */
     private val http: Lazy<OkHttpClient>,
     val discovery: Discovery,
+    /** The libraries on a NAS, from `_rpm-nas._tcp`. Used only when a paired computer names them. */
+    val nasDiscovery: Discovery,
     private val auth: AuthClient,
     private val scope: CoroutineScope,
     private val clock: () -> Long,
@@ -76,6 +80,46 @@ class Computers(
 
     private val _paired = MutableStateFlow(readPaired())
     val paired: StateFlow<List<PairedComputer>> = _paired.asStateFlow()
+
+    private val vouchedFile = File(context.noBackupFilesDir, "nas-hosts.json")
+    private val _vouched = MutableStateFlow(readVouched())
+
+    /** The NAS machines each paired computer's catalogue names, by that computer's key. */
+    val vouched: StateFlow<Map<String, List<PeerHost>>> = _vouched.asStateFlow()
+
+    /** The NAS libraries to use now: named by a paired computer and on the network with the named key. */
+    val trustedNas: StateFlow<Map<String, FoundComputer>> =
+        combine(_vouched, _paired, nasDiscovery.found, nasDiscovery.libraryIds) { vouched, paired, found, ids ->
+            trustedNas(vouched, paired, found, ids)
+        }.stateIn(scope, SharingStarted.Eagerly, emptyMap())
+
+    /** Replaces the NAS machines [owner] names with the list from its latest catalogue. */
+    @Synchronized
+    fun learnHosts(owner: String, hosts: List<PeerHost>) {
+        val key = owner.uppercase()
+        if ((_vouched.value[key] ?: emptyList()) == hosts) return
+        val next = if (hosts.isEmpty()) _vouched.value - key else _vouched.value + (key to hosts)
+        _vouched.value = next
+        try {
+            val temp = File(vouchedFile.parentFile, vouchedFile.name + ".tmp")
+            temp.writeText(WireJson.encodeToString(MapSerializer(String.serializer(), ListSerializer(PeerHost.serializer())), next))
+            if (!temp.renameTo(vouchedFile)) {
+                vouchedFile.delete()
+                temp.renameTo(vouchedFile)
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun readVouched(): Map<String, List<PeerHost>> = try {
+        if (vouchedFile.exists()) {
+            WireJson.decodeFromString(MapSerializer(String.serializer(), ListSerializer(PeerHost.serializer())), vouchedFile.readText())
+        } else {
+            emptyMap()
+        }
+    } catch (_: Exception) {
+        emptyMap()
+    }
 
     /** Every computer that is on the network or paired, with paired computers first, then sorted by name. */
     val list: StateFlow<List<ComputerView>> = combine(_paired, discovery.found) { paired, found ->
@@ -396,15 +440,14 @@ class Computers(
     /** Marks [key] as away after a failure. It is tried again after [AWAY_MS], or as soon as it is found on
      * the network at another address or port (which means its server restarted). */
     fun markAway(key: String) {
-        val base = discovery.found.value[key]?.base ?: return
+        val base = (discovery.found.value[key] ?: trustedNas.value[key])?.base ?: return
         failures[key] = Failure(clock(), base)
     }
 
     /** The computer to read from now: it is paired, found on the network, and has not failed recently at the
      * address where it is found. */
     fun usable(key: String): FoundComputer? {
-        if (!isPaired(key)) return null
-        val found = discovery.found.value[key] ?: return null
+        val found = (if (isPaired(key)) discovery.found.value[key] else trustedNas.value[key]) ?: return null
         val failed = failures[key] ?: return found
         if (failed.base != found.base || clock() - failed.atMs > AWAY_MS) {
             failures.remove(key)
@@ -434,8 +477,35 @@ class Computers(
             }
         }
 
-    private companion object {
-        val JSON = "application/json".toMediaType()
-        const val AWAY_MS = 120_000L
+    companion object {
+        private val JSON = "application/json".toMediaType()
+        private const val AWAY_MS = 120_000L
+
+        /**
+         * The NAS libraries to use: a host counts only when the computer that named it is still paired, and the
+         * announcement on the network has the device id, key and library id that computer named. No code is
+         * asked: the trust comes from the computer the TV paired with.
+         */
+        fun trustedNas(
+            vouched: Map<String, List<PeerHost>>,
+            paired: List<PairedComputer>,
+            found: Map<String, FoundComputer>,
+            libraryIds: Map<String, String>,
+        ): Map<String, FoundComputer> {
+            val owners = paired.map { it.deviceId.uppercase() }.toSet()
+            val trusted = HashMap<String, FoundComputer>()
+            for ((owner, hosts) in vouched) {
+                if (owner.uppercase() !in owners) continue
+                for (host in hosts) {
+                    val key = host.deviceId.uppercase()
+                    val seen = found[key] ?: continue
+                    val named = PeerWire.fromBase64Url(host.publicKey) ?: continue
+                    if (!named.contentEquals(seen.publicKey)) continue
+                    if (!libraryIds[key].equals(host.libraryId, ignoreCase = true)) continue
+                    trusted[key] = seen
+                }
+            }
+            return trusted
+        }
     }
 }

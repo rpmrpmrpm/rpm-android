@@ -31,6 +31,7 @@ import com.rpm.player.core.home.Computers
 import com.rpm.player.core.home.Discovery
 import com.rpm.player.core.home.HomeCatalogs
 import com.rpm.player.core.home.PeerTrust
+import com.rpm.player.core.home.PeerWire
 import com.rpm.player.core.library.Artwork
 import com.rpm.player.core.library.CoverFetcher
 import com.rpm.player.core.library.CoverKeyer
@@ -134,7 +135,8 @@ class Services(
     val computers = Computers(
         context = context,
         http = peerClient,
-        discovery = Discovery(context, trust, scope).apply { start() },
+        discovery = Discovery(context, trust, scope, PeerWire.SERVICE_TYPE, role = null).apply { start() },
+        nasDiscovery = Discovery(context, trust, scope, PeerWire.NAS_SERVICE_TYPE, role = "library").apply { start() },
         auth = auth,
         scope = scope,
         clock = clock,

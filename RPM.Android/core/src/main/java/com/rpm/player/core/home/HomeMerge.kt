@@ -18,7 +18,8 @@ object HomeMerge {
         cloud.mapTo(seen) { it.rpmId }
         val merged = ArrayList<CloudTrack>(cloud.size)
         merged += cloud
-        for (catalog in catalogs) {
+        // A NAS first, so a track on a NAS and a computer is shown from the NAS's catalogue.
+        for (catalog in HeldCatalog.nasFirst(catalogs)) {
             for (track in catalog.tracks.values) {
                 if (seen.add(track.rpmId)) merged += asCloudTrack(track)
             }

@@ -38,11 +38,21 @@ data class FoundComputer(
  * Computers that share their library on the network, found from `_rpm._tcp` beacons, as `PeerBeacon` reads
  * them. `v` must be 4, `k` is the key (base64url SubjectPublicKeyInfo), and `id` must be the id that the key
  * gives, otherwise the beacon is dropped. A computer's port changes whenever its server restarts, so a new
- * connection must use the latest resolved address. Each address is pinned to its key.
+ * connection must use the latest resolved address.
+ *
+ * The same class finds the libraries on a NAS, from `_rpm-nas._tcp` beacons: [serviceType] chooses which, and only
+ * beacons whose `r` is [role] are kept (none for a computer, `library` for a NAS library). Each address and port
+ * is pinned to its key.
  *
  * Android 9's `NsdManager` resolves one service at a time, so resolves are queued.
  */
-class Discovery(context: Context, private val trust: PeerTrust, private val scope: CoroutineScope) {
+class Discovery(
+    context: Context,
+    private val trust: PeerTrust,
+    private val scope: CoroutineScope,
+    private val serviceType: String,
+    private val role: String?,
+) {
 
     private val nsd = context.getSystemService(NsdManager::class.java)
     private val queue = Channel<NsdServiceInfo>(Channel.UNLIMITED)
@@ -50,6 +60,11 @@ class Discovery(context: Context, private val trust: PeerTrust, private val scop
 
     /** By upper-case device id. */
     val found: StateFlow<Map<String, FoundComputer>> = _found.asStateFlow()
+
+    private val _libraryIds = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /** The library id of each NAS library found, by key. Empty when browsing for computers. */
+    val libraryIds: StateFlow<Map<String, String>> = _libraryIds.asStateFlow()
 
     /** Service name to device id, so that a lost service can be removed. */
     private val names = java.util.concurrent.ConcurrentHashMap<String, String>()
@@ -62,6 +77,7 @@ class Discovery(context: Context, private val trust: PeerTrust, private val scop
         override fun onServiceLost(info: NsdServiceInfo) {
             val id = names.remove(info.serviceName) ?: return
             _found.update { it - id }
+            _libraryIds.update { it - id }
         }
 
         override fun onDiscoveryStarted(serviceType: String) {}
@@ -71,17 +87,19 @@ class Discovery(context: Context, private val trust: PeerTrust, private val scop
     }
 
     fun start() {
-        nsd.discoverServices(PeerWire.SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, browsing)
+        nsd.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, browsing)
         scope.launch(Dispatchers.IO) {
-            for (info in queue) resolve(info)?.let { (name, computer) ->
-                trust.pin(computer.address, computer.publicKey)
+            for (info in queue) resolve(info)?.let { (name, found) ->
+                val (computer, libraryId) = found
+                trust.pin(computer.address, computer.port, computer.publicKey)
                 names[name] = computer.key
                 _found.update { it + (computer.key to computer) }
+                if (libraryId != null) _libraryIds.update { it + (computer.key to libraryId) }
             }
         }
     }
 
-    private suspend fun resolve(info: NsdServiceInfo): Pair<String, FoundComputer>? {
+    private suspend fun resolve(info: NsdServiceInfo): Pair<String, Pair<FoundComputer, String?>>? {
         val resolved = suspendCancellableCoroutine<NsdServiceInfo?> { done ->
             @Suppress("DEPRECATION")
             nsd.resolveService(info, object : NsdManager.ResolveListener {
@@ -94,10 +112,12 @@ class Discovery(context: Context, private val trust: PeerTrust, private val scop
         val key = PeerWire.fromBase64Url(text["k"]) ?: return null
         val id = text["id"]?.trim().orEmpty()
         if (!id.equals(PeerWire.idFor(key), ignoreCase = true)) return null
+        if (text["r"]?.trim()?.takeIf { it.isNotEmpty() } != role) return null
         @Suppress("DEPRECATION")
         val address = (resolved.host as? Inet4Address)?.hostAddress ?: return null
         // The beacon names no person and no account, only the machine.
         val name = text["n"]?.takeIf { it.isNotBlank() } ?: id
-        return info.serviceName to FoundComputer(id, name, address, resolved.port, key)
+        val libraryId = text["l"]?.trim()?.takeIf { it.isNotEmpty() }
+        return info.serviceName to (FoundComputer(id, name, address, resolved.port, key) to libraryId)
     }
 }
