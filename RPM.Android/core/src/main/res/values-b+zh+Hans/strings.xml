@@ -7029,6 +7029,9 @@
     <!-- Import from another app: heading of the items the source listed that are not music files. -->
     <string name="Migration_ReportSkipped">一开始就未导入</string>
 
+    <!-- Import from another app, report (web): under a list that shows its first lines, how many more there are. -->
+    <string name="Migration_ReportMore">还有 %1$s 项。</string>
+
     <!-- Import from another app: button that tries the tracks that were not imported again. -->
     <string name="Migration_TryAgain">重试</string>
 
