@@ -311,8 +311,8 @@ private fun Credit(article: EncyclopediaArticle, modifier: Modifier, arrangement
 /** Between the two links of the credit: a middle dot with space round it. */
 private const val CREDIT_GAP = "  \u00B7  "
 
-/** Between the lead-in words and the text: a dash with space round it. */
-private const val LEAD_GAP = " \u2013 "
+/** Between the lead-in words and the text: a colon. No dashes in text the user reads. */
+private const val LEAD_GAP = ": "
 
 /** The first [length] characters of a text drawn in [style]: the lead-in words before the text. */
 private data class Dimmed(val length: Int, val style: SpanStyle)

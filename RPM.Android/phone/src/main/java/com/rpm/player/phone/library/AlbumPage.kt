@@ -567,8 +567,9 @@ private const val CASE_HOLD_MS = 6_200L
 /** One slow turn of the disc while it is out, in seconds. */
 private const val CASE_TURN = 6.0
 
-/** Between the year and the count in the pill: a dash with space round it. */
-private const val YEAR_GAP = " \u2013 "
+/** Between the year and the count in the pill: a middle dot with space round it, the separator the
+ *  count lines use. No dashes in text the user reads. */
+private const val YEAR_GAP = " \u00b7 "
 
 /** The heading for one disc of a set. A single-disc record never shows one. */
 @Composable
