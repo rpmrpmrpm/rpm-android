@@ -6757,7 +6757,7 @@
     <string name="AddMusic_OtherApp">From another app</string>
 
     <!-- Add music window: the line under 'From another app', naming the apps it can import from. -->
-    <string name="AddMusic_OtherAppHint">MusicBee, iTunes, Jellyfin, Plex, Navidrome</string>
+    <string name="AddMusic_OtherAppHint">MusicBee, iTunes, Plex and more</string>
 
     <!-- Title of the window that imports a library from another music app. -->
     <string name="Migration_Title">Import from another app</string>
@@ -7031,4 +7031,13 @@
 
     <!-- Import from another app: why an item of the source was not imported. -->
     <string name="Migration_SkipNotMusic">Not music (a podcast, audiobook or video)</string>
+
+    <!-- Import from another app: summary line for one track. {0} is a size. -->
+    <string name="Migration_SummaryTracksOne">1 track (%1$s)</string>
+
+    <!-- Import from another app: summary line for one playlist. -->
+    <string name="Migration_SummaryPlaylistsOne">1 playlist</string>
+
+    <!-- Import from another app: report line for one playlist. -->
+    <string name="Migration_ReportPlaylistsOne">1 playlist added</string>
 </resources>
