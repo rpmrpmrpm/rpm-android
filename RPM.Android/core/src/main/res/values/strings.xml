@@ -6969,6 +6969,9 @@
     <!-- Import from another app: why a cloud-only import stopped. -->
     <string name="Migration_StoppedCloudOff">Stopped: you are signed out, or cloud storage is turned off.</string>
 
+    <!-- Import from another app: the import stopped because of an unexpected error. Continue starts it again where it stopped. -->
+    <string name="Migration_StoppedError">Stopped because of an error. Continue to try again.</string>
+
     <!-- Status line while an import runs with its window hidden. {0} is the source, {1} and {2} numbers. -->
     <string name="Migration_Status">Importing from %1$s: %2$s of %3$s</string>
 

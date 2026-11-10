@@ -6969,6 +6969,9 @@
     <!-- Import from another app: why a cloud-only import stopped. -->
     <string name="Migration_StoppedCloudOff">已停止：你已退出登录，或云存储已关闭。</string>
 
+    <!-- Import from another app: the import stopped because of an unexpected error. Continue starts it again where it stopped. -->
+    <string name="Migration_StoppedError">因出错而停止。继续即可重试。</string>
+
     <!-- Status line while an import runs with its window hidden. {0} is the source, {1} and {2} numbers. -->
     <string name="Migration_Status">正在从 %1$s 导入：%3$s 首中的第 %2$s 首</string>
 
