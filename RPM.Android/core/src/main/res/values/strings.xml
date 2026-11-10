@@ -6816,6 +6816,15 @@
     <!-- Import from another app: label of the media server address box. -->
     <string name="Migration_ServerAddress">Server address</string>
 
+    <!-- Import from another app, connect step (desktop): shown while the app looks for media servers on the local network. -->
+    <string name="Migration_Searching">Looking for servers on your network</string>
+
+    <!-- Import from another app, connect step (desktop): heading above the media servers found on the network. Clicking one fills in the server address. -->
+    <string name="Migration_FoundServers">Found on your network</string>
+
+    <!-- Import from another app, connect step (desktop): a media server found on the network. {0} is its name, {1} its address. -->
+    <string name="Migration_FoundServer">%1$s (%2$s)</string>
+
     <!-- Import from another app: label of the user name box. -->
     <string name="Migration_UserName">User name</string>
 
