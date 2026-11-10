@@ -828,7 +828,7 @@
     <string name="Settings_MusicFolderHint">Wo rpm deine Sammlung ablegt.</string>
 
     <!-- Settings, Music folder card: the chosen folder has files in it and no RPM mirror. -->
-    <string name="Settings_MusicFolderNotEmpty">Dieser Ordner ist nicht leer. Wähle einen leeren Ordner, oder einen vorhandenen rpm-Musikordner, um ihn zu öffnen.</string>
+    <string name="Settings_MusicFolderNotEmpty">Dieser Ordner enthält andere Dateien. Wähle einen leeren Ordner, einen Ordner mit Musik oder einen vorhandenen rpm Musikordner.</string>
 
     <!-- Settings, Music folder card: the chosen folder and the current one are nested. -->
     <string name="Settings_MusicFolderOverlaps">Dieser Ordner liegt in deinem Musikordner oder enthält ihn. Wähle einen separaten Ordner.</string>
@@ -859,7 +859,7 @@
     <string name="Setup_ExistingLibrary">Das ist bereits ein rpm-Musikordner. rpm öffnet ihn.</string>
 
     <!-- Shown under the folder picker when the chosen folder has visible content and no RPM mirror. -->
-    <string name="Setup_NotEmpty">Dieser Ordner ist nicht leer. Wähle einen leeren Ordner, oder einen vorhandenen rpm-Musikordner, um ihn zu öffnen.</string>
+    <string name="Setup_NotEmpty">Dieser Ordner enthält andere Dateien. Wähle einen leeren Ordner, einen Ordner mit Musik oder einen vorhandenen rpm Musikordner.</string>
     <string name="Shell_Help">Hilfe</string>
     <string name="Shell_Privacy">Datenschutzrichtlinie</string>
 
@@ -7166,4 +7166,58 @@
 
     <!-- Problem screen at launch: the library is on a NAS that could not be mounted. {0} is the NAS name. -->
     <string name="Nas_NotAvailable">%1$s ist nicht erreichbar. Deine Bibliothek liegt darauf.</string>
+
+    <!-- Existing music dialog: title. Shown when the chosen library folder already holds music. -->
+    <string name="ExistingMusic_Title">Musik schon vorhanden</string>
+
+    <!-- Existing music dialog: body. {0} is the folder or NAS name. -->
+    <string name="ExistingMusic_Body">%1$s enthält bereits Musik. Wie soll rpm mit diesen Dateien umgehen?</string>
+
+    <!-- Existing music dialog: first choice. -->
+    <string name="ExistingMusic_Keep">Dateien so lassen, wie sie sind</string>
+
+    <!-- Existing music dialog: explanation under the first choice. -->
+    <string name="ExistingMusic_KeepBody">rpm liest deine Musik dort, wo sie liegt. Es benennt diese Dateien nie um, verschiebt sie nicht, ändert keine Tags und löscht nichts. Deine Änderungen in rpm bleiben in rpm.</string>
+
+    <!-- Existing music dialog: second choice. Also the button in Library settings for a kept library. -->
+    <string name="ExistingMusic_Organise">rpm ordnen lassen</string>
+
+    <!-- Existing music dialog: explanation under the second choice. -->
+    <string name="ExistingMusic_OrganiseBody">rpm liest deine Musik und benennt und sortiert sie dann in eigene Ordner, wie alles, was du importierst. Geänderte Tags werden in die Dateien geschrieben.</string>
+
+    <!-- Setup and Settings: status under a chosen folder with music, after Keep was chosen. -->
+    <string name="Setup_HasMusicKept">Dieser Ordner enthält Musik. rpm lässt die Dateien, wie sie sind.</string>
+
+    <!-- Setup and Settings: status under a chosen folder with music, after Organise was chosen. -->
+    <string name="Setup_HasMusicOrganised">Dieser Ordner enthält Musik. rpm wird sie ordnen.</string>
+
+    <!-- Status bar while a folder adopted with Organise is re-filed. -->
+    <string name="Library_Organising">Musik wird geordnet: %1$s von %2$s</string>
+
+    <!-- Status bar when that re-file has finished. -->
+    <string name="Library_Organised">Deine Musik ist geordnet (%1$s Dateien verschoben)</string>
+
+    <!-- Status bar when that re-file failed part-way. -->
+    <string name="Library_OrganiseStopped">Das Ordnen wurde angehalten. rpm beendet es beim nächsten Öffnen der Bibliothek.</string>
+
+    <!-- Setup and Library settings: line on a NAS row when the NAS folder already holds music. {0} is the NAS name. -->
+    <string name="Nas_ExistingMusicHint">%1$s enthält bereits Musik. Nutze sie als deine Sammlung, so wie sie ist oder von rpm geordnet.</string>
+
+    <!-- NAS sign-in dialog: the choice that makes the NAS folder itself the library. {0} is the NAS name. -->
+    <string name="Nas_UseExistingMusic">Die Musik auf %1$s</string>
+
+    <!-- Library settings: button on a NAS row when the NAS folder already holds music. {0} is the NAS name. -->
+    <string name="Nas_UseMusic">Musik auf %1$s verwenden</string>
+
+    <!-- Library settings: line for a library whose files are kept as they are. -->
+    <string name="Settings_FilesKept">Die Dateien bleiben, wie sie sind. rpm benennt sie nicht um, verschiebt sie nicht, ändert keine Tags und löscht sie nicht.</string>
+
+    <!-- Library settings: confirmation shown after pressing Let rpm organise them for a kept library. -->
+    <string name="Settings_OrganiseKeptConfirm">rpm schreibt seine IDs in diese Dateien und benennt sie dann um und verschiebt sie in eigene Ordner. Das lässt sich nicht rückgängig machen.</string>
+
+    <!-- Library settings: button that confirms organising a kept library. -->
+    <string name="Settings_OrganiseKeptConfirmButton">Dateien ordnen</string>
+
+    <!-- Tooltip on actions that would change files (Apply naming, Split album, Delete) in a library whose files are kept as they are. -->
+    <string name="Kept_Unavailable">Die Dateien in diesem Ordner bleiben, wie sie sind</string>
 </resources>

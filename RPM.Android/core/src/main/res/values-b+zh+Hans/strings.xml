@@ -828,7 +828,7 @@
     <string name="Settings_MusicFolderHint">rpm 存放音乐收藏的位置。</string>
 
     <!-- Settings, Music folder card: the chosen folder has files in it and no RPM mirror. -->
-    <string name="Settings_MusicFolderNotEmpty">此文件夹不是空的。请选择一个空文件夹，或选择一个现有的 rpm 音乐文件夹以打开它。</string>
+    <string name="Settings_MusicFolderNotEmpty">此文件夹包含其他文件。请选择空文件夹、含有音乐的文件夹或现有的 rpm 音乐文件夹。</string>
 
     <!-- Settings, Music folder card: the chosen folder and the current one are nested. -->
     <string name="Settings_MusicFolderOverlaps">该文件夹位于音乐文件夹内，或包含音乐文件夹。请选择另一个独立的文件夹。</string>
@@ -859,7 +859,7 @@
     <string name="Setup_ExistingLibrary">这已经是一个 rpm 音乐文件夹，rpm 将直接打开它。</string>
 
     <!-- Shown under the folder picker when the chosen folder has visible content and no RPM mirror. -->
-    <string name="Setup_NotEmpty">此文件夹不是空的。请选择一个空文件夹，或选择一个现有的 rpm 音乐文件夹以打开它。</string>
+    <string name="Setup_NotEmpty">此文件夹包含其他文件。请选择空文件夹、含有音乐的文件夹或现有的 rpm 音乐文件夹。</string>
     <string name="Shell_Help">帮助</string>
     <string name="Shell_Privacy">隐私政策</string>
 
@@ -7166,4 +7166,58 @@
 
     <!-- Problem screen at launch: the library is on a NAS that could not be mounted. {0} is the NAS name. -->
     <string name="Nas_NotAvailable">%1$s 无法连接。你的音乐库在它上面。</string>
+
+    <!-- Existing music dialog: title. Shown when the chosen library folder already holds music. -->
+    <string name="ExistingMusic_Title">这里已有音乐</string>
+
+    <!-- Existing music dialog: body. {0} is the folder or NAS name. -->
+    <string name="ExistingMusic_Body">%1$s 中已有音乐。rpm 应如何处理这些文件？</string>
+
+    <!-- Existing music dialog: first choice. -->
+    <string name="ExistingMusic_Keep">保持文件原样</string>
+
+    <!-- Existing music dialog: explanation under the first choice. -->
+    <string name="ExistingMusic_KeepBody">rpm 在原位置读取你的音乐，绝不重命名、移动、修改标签或删除这些文件。你在 rpm 中的更改保存在 rpm 中。</string>
+
+    <!-- Existing music dialog: second choice. Also the button in Library settings for a kept library. -->
+    <string name="ExistingMusic_Organise">让 rpm 整理</string>
+
+    <!-- Existing music dialog: explanation under the second choice. -->
+    <string name="ExistingMusic_OrganiseBody">rpm 读取你的音乐，然后像导入的所有内容一样命名并归入自己的文件夹。你修改的标签会写入文件。</string>
+
+    <!-- Setup and Settings: status under a chosen folder with music, after Keep was chosen. -->
+    <string name="Setup_HasMusicKept">此文件夹包含音乐。rpm 将保持文件原样。</string>
+
+    <!-- Setup and Settings: status under a chosen folder with music, after Organise was chosen. -->
+    <string name="Setup_HasMusicOrganised">此文件夹包含音乐。rpm 将整理这些音乐。</string>
+
+    <!-- Status bar while a folder adopted with Organise is re-filed. -->
+    <string name="Library_Organising">正在整理你的音乐：第 %1$s 首，共 %2$s 首</string>
+
+    <!-- Status bar when that re-file has finished. -->
+    <string name="Library_Organised">你的音乐已整理完毕（移动了 %1$s 个文件）</string>
+
+    <!-- Status bar when that re-file failed part-way. -->
+    <string name="Library_OrganiseStopped">整理已停止。下次打开资料库时 rpm 会继续完成。</string>
+
+    <!-- Setup and Library settings: line on a NAS row when the NAS folder already holds music. {0} is the NAS name. -->
+    <string name="Nas_ExistingMusicHint">%1$s 中已有音乐。可将其作为你的收藏，保持原样或由 rpm 整理。</string>
+
+    <!-- NAS sign-in dialog: the choice that makes the NAS folder itself the library. {0} is the NAS name. -->
+    <string name="Nas_UseExistingMusic">%1$s 上已有的音乐</string>
+
+    <!-- Library settings: button on a NAS row when the NAS folder already holds music. {0} is the NAS name. -->
+    <string name="Nas_UseMusic">使用 %1$s 上的音乐</string>
+
+    <!-- Library settings: line for a library whose files are kept as they are. -->
+    <string name="Settings_FilesKept">文件保持原样。rpm 不会重命名、移动、修改标签或删除它们。</string>
+
+    <!-- Library settings: confirmation shown after pressing Let rpm organise them for a kept library. -->
+    <string name="Settings_OrganiseKeptConfirm">rpm 将把其 ID 写入这些文件，然后重命名并移入自己的文件夹。此操作无法撤销。</string>
+
+    <!-- Library settings: button that confirms organising a kept library. -->
+    <string name="Settings_OrganiseKeptConfirmButton">整理文件</string>
+
+    <!-- Tooltip on actions that would change files (Apply naming, Split album, Delete) in a library whose files are kept as they are. -->
+    <string name="Kept_Unavailable">此文件夹中的文件保持原样</string>
 </resources>
