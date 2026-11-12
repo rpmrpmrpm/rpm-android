@@ -8,10 +8,10 @@
     <!-- Tooltip on the album wall's sort button. -->
     <string name="AlbumSort_Tooltip">专辑排序</string>
 
-    <!-- Album wall sort order: by album artist, then album name. -->
+    <!-- Album wall sort order, and iPhone library list view sort order: by album artist, then album name. -->
     <string name="AlbumSort_Artist">按艺人</string>
 
-    <!-- Album wall sort order: by the record's own name. -->
+    <!-- Album wall sort order, and iPhone library list view sort order: by the record's own name. -->
     <string name="AlbumSort_Album">按专辑</string>
 
     <!-- Album wall sort order: newest in the library first. -->
@@ -22,6 +22,9 @@
 
     <!-- Album wall sort order: most listened to first. -->
     <string name="AlbumSort_Plays">播放最多</string>
+
+    <!-- iPhone library list view sort order: every song as its own row, by its title. -->
+    <string name="AlbumSort_Track">按歌曲名</string>
 
     <!-- Tooltip on the play button in an open album band (album grid). -->
     <string name="AlbumGrid_PlayAll">播放专辑</string>
@@ -518,7 +521,7 @@
     <!-- Status line after a library sync moved several hand-copied files into the inbox folder. {1} is the inbox folder name, which is not translated. -->
     <string name="Library_Quarantined">有 %1$s 个文件被复制到音乐收藏。它们现在位于“%2$s”，可以导入。</string>
 
-    <!-- Tooltip on the grid button of the library view switch (wall of album covers). -->
+    <!-- Tooltip on the grid button of the library view switch (wall of album covers), and the same choice in the iPhone library's view menu. -->
     <string name="Library_ViewGrid">专辑网格</string>
 
     <!-- Shown under the login dialog title when sign-in gates an action (recognize / split). -->
@@ -1963,10 +1966,10 @@
     <!-- Empty state on the iPhone Now playing queue. -->
     <string name="Rpm_Queue_Empty">队列为空。播放任意内容后即会显示在这里。</string>
 
-    <!-- iPhone library header button: choose the order the album wall is in. -->
+    <!-- iPhone library header button: choose the order the album grid or the album list is in. -->
     <string name="Rpm_Library_Sort">排序</string>
 
-    <!-- iPhone library header button: switch between the albums wall and the artists wall. -->
+    <!-- iPhone library header button: switch between views, such as the album grid and the album list, or the playlists' covers and rows. -->
     <string name="Rpm_Library_View">视图</string>
 
     <!-- iPhone playlist page: the main button that plays the whole playlist from the top. -->
@@ -2676,6 +2679,8 @@
 
     <!-- Cloud failure reason: anything not recognised, usually a network problem. -->
     <string name="Cloud_FailUnknown">上传失败</string>
+
+    <!-- Library view switch: the records as a list, each with its songs. Also the choice in the iPhone library's view menu. -->
     <string name="Library_ViewAlbums">专辑列表</string>
     <string name="Library_ViewTable">数据表</string>
     <string name="Library_SongsAndTime">%1$s 首歌曲，%2$s 分钟</string>
