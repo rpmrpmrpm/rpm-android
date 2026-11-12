@@ -3407,7 +3407,7 @@
     <!-- Supporters-only window: shown when the gold backdrop is picked by an account that is not a supporter. -->
     <string name="Supporters_Backdrop">Este fondo es solo para los colaboradores de rpm. ¿Te gusta? ¡Plantéate apoyar rpm!</string>
 
-    <!-- Supporters-only window: shown when word by word lyric timing is switched on by an account that is not a supporter. -->
+    <!-- Supporters-only window: shown when word by word lyric timing is switched on by an account that is not a supporter. On the iPhone app, the line under the greyed-out karaoke switch on the Profile page. -->
     <string name="Supporters_Karaoke">El modo karaoke está disponible solo para colaboradores de rpm. Considera apoyar a rpm.</string>
 
     <!-- Button that opens the page where supporting rpm is bought. -->
@@ -6287,7 +6287,7 @@
     <!-- Sort option on the Android TV albums screen and in its settings: albums by release year, oldest first. -->
     <string name="AlbumSort_Date">Por fecha</string>
 
-    <!-- Row in the Android TV app's settings: whether the sung lyric line lights word by word. -->
+    <!-- Row in the Android TV app's settings, and a switch on the Profile page of the iPhone app: whether the sung lyric line lights word by word. -->
     <string name="Tv_SettingsKaraoke">Letras de karaoke</string>
 
     <!-- Line under the "Mixtape when a record ends" heading (Tv_SettingsMixtapeAfter) on the desktop Sound settings page, above its on/off switch. -->
