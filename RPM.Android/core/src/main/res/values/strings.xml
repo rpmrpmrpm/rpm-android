@@ -1148,7 +1148,7 @@
     <!-- Header/tab label for the playlists pane, and the deck pill that opens it. -->
     <string name="Playlists_Title">Playlists</string>
 
-    <!-- Tooltip on the button in the automatic playlist header that builds a different selection of songs. -->
+    <!-- Tooltip on the button in the automatic playlist header that builds a different selection of songs. Also the item in the menu of an iPhone page for such a list. -->
     <string name="Playlists_GenerateNew">Generate a new list</string>
 
     <!-- Shown under the spinner while an automatic playlist is being generated again. -->
@@ -4319,7 +4319,7 @@
     <!-- Key in the drawer behind a track row on the iPhone: opens the playlist picker. -->
     <string name="Rpm_Track_AddToPlaylist">Add to playlist</string>
 
-    <!-- Plus button in the header of an open playlist on the iPhone: opens the song picker to add more. -->
+    <!-- Item in the menu at the top right of an open playlist on the iPhone: opens the song picker to add songs to the playlist. -->
     <string name="Rpm_Playlist_AddSongs">Add songs</string>
 
     <!-- Button in the iPhone playlist picker that files the song in the playlist chosen. -->
@@ -4421,6 +4421,27 @@
     <!-- Error on the iPhone after dragging playlist rows into a new order. -->
     <string name="Rpm_Playlists_OrderFailed">That order could not be saved.</string>
 
+    <!-- iPhone: item in the menu at the top right of a playlist page, and the title of the sheet it opens, where the playlist's name is changed. -->
+    <string name="Rpm_PlaylistMenu_Edit">Edit playlist</string>
+
+    <!-- iPhone: item in the menu at the top right of a playlist page, and the key on the confirmation it opens. -->
+    <string name="Rpm_PlaylistMenu_Delete">Delete playlist</string>
+
+    <!-- iPhone: title of the confirmation before a playlist is deleted. {0} is the playlist's name. -->
+    <string name="Rpm_PlaylistDelete_Title">Delete “%1$s”?</string>
+
+    <!-- iPhone: text of the confirmation before a playlist is deleted. -->
+    <string name="Rpm_PlaylistDelete_Body">The playlist is removed from the cloud. The songs stay in your collection, and a computer that has this playlist keeps its copy.</string>
+
+    <!-- Error on the iPhone when changing a playlist's name fails and there is no reason to give. -->
+    <string name="Rpm_Playlists_RenameFailed">The playlist could not be renamed.</string>
+
+    <!-- Error on the iPhone when deleting a playlist fails and there is no reason to give. -->
+    <string name="Rpm_Playlists_DeleteFailed">The playlist could not be deleted.</string>
+
+    <!-- iPhone: a playlist rename was refused because the name was empty. -->
+    <string name="Rpm_PlaylistWrite_NoName">Type a name for the playlist.</string>
+
     <!-- Playlist total length between one and two hours. {0} = minutes. -->
     <string name="Rpm_Playlists_LenHourOne">1 hour, %1$s minutes</string>
 
@@ -4466,7 +4487,7 @@
     <!-- Key on the iPhone queue panel, and in the band of the desktop Now playing card, that puts the tracks still to come in another order. -->
     <string name="Rpm_Queue_Shuffle">Shuffle</string>
 
-    <!-- Key on the iPhone queue panel and Now playing page, and in the band of the desktop Now playing card, that turns row dragging on. -->
+    <!-- Key on the iPhone queue panel and Now playing page, item in the menu of an iPhone playlist page, and in the band of the desktop Now playing card, that turns row dragging on. -->
     <string name="Rpm_Queue_Rearrange">Rearrange</string>
 
     <!-- Line under the iPhone library search results when the list is capped. {0} is the number shown. -->
