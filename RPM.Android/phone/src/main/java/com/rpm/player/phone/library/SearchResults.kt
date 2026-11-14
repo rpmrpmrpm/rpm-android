@@ -62,6 +62,7 @@ import com.rpm.player.phone.design.icon
 import com.rpm.player.phone.design.kicker
 import com.rpm.player.phone.design.rememberPicture
 import com.rpm.player.phone.design.scrolled
+import com.rpm.player.phone.design.ScrollsToTop
 
 /**
  * What one search answered, and the words it is the answer to: the artists, records, songs, playlists and genres the
@@ -124,6 +125,7 @@ internal fun SearchResults(
         return
     }
     val list = rememberLazyListState()
+    ScrollsToTop(list)
     val focus = LocalFocusManager.current
     LaunchedEffect(list.isScrollInProgress) { if (list.isScrollInProgress) focus.clearFocus() }
     // Which groups show all their answers. Folded again for every new answer.

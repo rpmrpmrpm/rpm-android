@@ -118,6 +118,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
+import com.rpm.player.phone.design.ScrollsToTop
 
 /** The row at the top of a page with no header, where its back key floats (`RPMLayout.backRow` on iPhone). */
 internal val BACK_ROW = 44.dp
@@ -184,6 +185,7 @@ fun AlbumPage(
     BackHandler(onBack = onBack)
     val page = rememberBackdrop()
     val list = rememberLazyListState()
+    ScrollsToTop(list)
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val top = WindowInsets.statusBars.asPaddingValues(density).calculateTopPadding() + BACK_ROW

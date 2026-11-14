@@ -2,7 +2,8 @@ package com.rpm.player.phone.home
 
 import com.rpm.player.phone.design.rememberPicture
 import com.rpm.player.phone.design.frostsAtTop
-import com.rpm.player.phone.design.blocksTouches
+import com.rpm.player.phone.design.tapsToTop
+import com.rpm.player.phone.design.ScrollsToTop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.animation.core.tween
@@ -254,6 +255,7 @@ fun HomePage(
     // Where the banner ends, from the page's top, in pixels: the ground's change is measured from it ([leadShare]).
     var bannerFoot by remember { mutableIntStateOf(0) }
     val scroll = rememberScrollState()
+    ScrollsToTop(scroll)
     // The rows as they scroll, for the frost under the title.
     val rows = rememberBackdrop()
     // The iPhone's band at the top: pulled past its top, the page comes down and the banner grows to cover the gap.
@@ -332,9 +334,9 @@ fun HomePage(
         // What scrolls up under the title, frosted as it goes, over the rows fading out there.
         Box(Modifier.fillMaxWidth().height(statusBar + heading + 30.dp).frostsAtTop(rows, statusBar + heading) { scroll.value.toFloat() })
         // **The title's band takes every touch**, so a row or the banner under the title cannot be opened or played
-        // through it. Only the switch key, drawn over this band, answers there. The strip below, where the rows fade
-        // out, stays open.
-        Box(Modifier.fillMaxWidth().height(statusBar + heading).blocksTouches())
+        // through it, and a tap on it takes home back to its top ([tapsToTop]). Only the switch key, drawn over this
+        // band, answers otherwise. The strip below, where the rows fade out, stays open.
+        Box(Modifier.fillMaxWidth().height(statusBar + heading).tapsToTop())
         // The title is drawn over the scroll. It does not move with the scroll. It sits on the same line as the title
         // of every other page.
         PageTitle(

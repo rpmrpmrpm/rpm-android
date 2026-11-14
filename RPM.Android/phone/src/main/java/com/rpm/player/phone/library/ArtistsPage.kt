@@ -99,6 +99,7 @@ import com.rpm.player.phone.ui.color
 import com.rpm.player.phone.ui.rememberAccent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.rpm.player.phone.design.ScrollsToTop
 
 /** The orders the artists' menu offers, in the iPhone's order. */
 private val ARTIST_ORDERS = listOf(
@@ -276,6 +277,7 @@ private fun Boxes(
     BoxWithConstraints(modifier.fillMaxSize()) {
         val (columns, width) = WallLayout.wall(maxWidth.value.toDouble(), stride, EDGE, BOX_GUTTER, BOX_COLUMNS)
         val grid = rememberLazyGridState()
+        ScrollsToTop(grid)
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             state = grid,

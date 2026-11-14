@@ -9,7 +9,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -24,9 +23,9 @@ import androidx.compose.ui.unit.dp
  * [ground] (the page's background) and the content are recorded together into [backdrop], so the header's glass
  * frosts the wall passing behind it and not only the background, as the iPhone's glass does.
  *
- * **The header takes every touch in its area.** Only its own keys answer them. A record, list or artist that has
- * scrolled up under the header cannot be opened through it, and a drag that starts on the header does not scroll the
- * wall. The header waits for touches without taking them, so its keys still get theirs first ([blocksTouches]).
+ * **The header takes every touch in its area.** Only its own keys answer them, and a tap on an empty part of it takes
+ * the wall back to its top. A record, list or artist that has scrolled up under the header cannot be opened through
+ * it. See [tapsToTop].
  */
 @Composable
 fun UnderHeader(
@@ -43,15 +42,6 @@ fun UnderHeader(
             ground()
             content(top)
         }
-        Box(Modifier.fillMaxWidth().onSizeChanged { top = with(density) { it.height.toDp() } }.blocksTouches()) { header() }
+        Box(Modifier.fillMaxWidth().onSizeChanged { top = with(density) { it.height.toDp() } }.tapsToTop()) { header() }
     }
-}
-
-/**
- * Makes this area the target of every touch inside it, so nothing drawn under it gets one. Compose gives a touch to
- * the top sibling that has a pointer input at that point, and an empty part of the header has none of its own. This
- * reads the events and takes none of them, so the keys inside the header work as before.
- */
-internal fun Modifier.blocksTouches(): Modifier = pointerInput(Unit) {
-    awaitPointerEventScope { while (true) awaitPointerEvent() }
 }

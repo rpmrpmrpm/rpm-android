@@ -75,6 +75,7 @@ import com.rpm.player.phone.design.rememberBackdrop
 import com.rpm.player.phone.design.scrolled
 import com.rpm.player.phone.player.QueueRead
 import com.rpm.player.phone.ui.VinylGround
+import com.rpm.player.phone.design.ScrollsToTop
 
 /** The gap between the back key and the title beside it (`RPMBackKey.besideTitle` on iPhone). */
 private val BESIDE_TITLE = 12.dp
@@ -259,6 +260,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.Rows(
     footer: @Composable () -> Unit,
 ) {
     val list = rememberLazyListState()
+    ScrollsToTop(list)
     LazyColumn(
         state = list,
         modifier = Modifier.weight(1f).fillMaxWidth().dissolvesAtTop(top) { list.scrolled() },

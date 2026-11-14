@@ -102,6 +102,7 @@ import com.rpm.player.phone.home.SongLine
 import com.rpm.player.phone.home.SongTap
 import com.rpm.player.core.playback.Tapped
 import com.rpm.player.phone.ui.VinylGround
+import com.rpm.player.phone.design.ScrollsToTop
 
 /** The space between the cards on the genres wall (`GenresPage.gutter` on iPhone). */
 private const val CARD_GUTTER = 14.0
@@ -154,6 +155,7 @@ fun GenresPage(
                     Box(Modifier.fillMaxSize().padding(top = top)) { Empty(lent = ready.collection.shelf != Shelf.Own) }
                 } else PullToRefresh(reading.refreshing, reading.onRefresh, top = top) {
                     val grid = rememberLazyGridState()
+                    ScrollsToTop(grid)
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
                         state = grid,
@@ -328,6 +330,7 @@ fun GenrePage(
     val collection = ready.collection
     val page = rememberBackdrop()
     val rows = rememberLazyListState()
+    ScrollsToTop(rows)
     val density = LocalDensity.current
     val statusBar = WindowInsets.statusBars.asPaddingValues(density).calculateTopPadding()
     val byKey = remember(collection) { collection.albums.associateBy { it.key } }

@@ -92,6 +92,7 @@ import com.rpm.player.phone.ui.LiveRoom
 import com.rpm.player.phone.ui.rememberRoomColours
 import com.rpm.player.core.room.RoomPalette
 import kotlin.math.roundToInt
+import com.rpm.player.phone.design.ScrollsToTop
 
 /**
  * One list whose order this phone does not own. That covers a stored or generated list, and the marked songs.
@@ -163,6 +164,7 @@ fun PlaylistPage(
     BackHandler(onBack = { if (rearranging) asked = false else onBack() })
     val page = rememberBackdrop()
     val rows = rememberLazyListState()
+    ScrollsToTop(rows)
     val density = LocalDensity.current
     val top = WindowInsets.statusBars.asPaddingValues(density).calculateTopPadding() + BACK_ROW
     val carry = remember { ListCarry() }

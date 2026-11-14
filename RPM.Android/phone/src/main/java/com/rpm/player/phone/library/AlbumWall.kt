@@ -48,6 +48,7 @@ import com.rpm.player.phone.downloads.LocalPlayable
 import com.rpm.player.phone.downloads.greyedOut
 import kotlin.math.max
 import kotlin.math.min
+import com.rpm.player.phone.design.ScrollsToTop
 
 /** The gap between two covers. */
 internal const val WALL_GUTTER = 24.0
@@ -88,6 +89,7 @@ fun AlbumWall(
         val (columns, art) = WallLayout.wall(maxWidth.value.toDouble(), targetStride, EDGE, WALL_GUTTER, WALL_COLUMNS)
         val caption = AlbumCaption.of(art)
         val grid = rememberLazyGridState()
+        ScrollsToTop(grid)
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             state = grid,

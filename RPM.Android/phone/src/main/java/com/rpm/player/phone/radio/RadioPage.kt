@@ -93,6 +93,7 @@ import com.rpm.player.phone.library.FOOT
 import com.rpm.player.phone.ui.RecordSpinner
 import com.rpm.player.phone.ui.VinylGround
 import java.util.Locale
+import com.rpm.player.phone.design.ScrollsToTop
 
 /** Which of the filter row's menus is open, and where its key is on the screen. */
 private class Picking(val which: Which, val from: Rect) {
@@ -357,6 +358,7 @@ private fun Stations(
         return
     }
     val rows = rememberLazyListState()
+    ScrollsToTop(rows)
     val focus = LocalFocusManager.current
     LaunchedEffect(rows.isScrollInProgress) { if (rows.isScrollInProgress) focus.clearFocus() }
     // Looked up once per list of saved stations, not once per row.

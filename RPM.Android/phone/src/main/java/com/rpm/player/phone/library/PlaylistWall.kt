@@ -43,6 +43,7 @@ import com.rpm.player.phone.design.scrolled
 import com.rpm.player.phone.design.system
 import kotlin.math.max
 import kotlin.math.min
+import com.rpm.player.phone.design.ScrollsToTop
 
 /**
  * How the playlists view shows a folder: as covers, or as rows. It matches the iPhone's `PlaylistLayout`
@@ -94,6 +95,7 @@ fun PlaylistWall(
         val (columns, art) = WallLayout.wall(maxWidth.value.toDouble(), targetStride, EDGE, WALL_GUTTER, WALL_COLUMNS)
         val caption = AlbumCaption.of(art)
         val grid = rememberLazyGridState()
+        ScrollsToTop(grid)
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             state = grid,

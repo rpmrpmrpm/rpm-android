@@ -67,6 +67,7 @@ import com.rpm.player.phone.player.QueueRead
 import com.rpm.player.core.room.RoomPalette
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
+import com.rpm.player.phone.design.ScrollsToTop
 
 /** The red of a key that takes something away. */
 private val REMOVE = Color(0xFFE5484D)
@@ -107,6 +108,7 @@ fun QueuePage(queue: QueueRead, sittingFrom: Int, controller: Player?, images: I
     var asked by rememberSaveable { mutableStateOf(false) }
     val page = rememberBackdrop()
     val list = rememberLazyListState()
+    ScrollsToTop(list)
     val density = LocalDensity.current
     val top = WindowInsets.statusBars.asPaddingValues(density).calculateTopPadding() + BACK_ROW
     val look = QueueLook.sitting(Sitting.shownFrom(sittingFrom, queue.entries.size, queue.playing), queue.playing)

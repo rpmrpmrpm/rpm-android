@@ -89,6 +89,7 @@ import com.rpm.player.phone.ui.Ground
 import com.rpm.player.phone.ui.GroundTile
 import com.rpm.player.phone.ui.VinylGround
 import java.text.DecimalFormat
+import com.rpm.player.phone.design.ScrollsToTop
 
 /** The page's side margin, the iPhone's `RPMLayout.margin`. */
 private val MARGIN = 20.dp
@@ -159,6 +160,7 @@ fun ProfilePage(
     val density = LocalDensity.current
     val page = rememberBackdrop()
     val scroll = rememberScrollState()
+    ScrollsToTop(scroll)
     val statusBar = WindowInsets.statusBars.asPaddingValues(density).calculateTopPadding()
     var heading by remember { mutableStateOf(0.dp) }
     var deletingAccount by remember { mutableStateOf(false) }

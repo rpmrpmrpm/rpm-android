@@ -145,6 +145,7 @@ import com.rpm.player.phone.design.GlassButton
 import com.rpm.player.phone.design.GlassKey
 import com.rpm.player.phone.design.Weight
 import com.rpm.player.phone.ui.LocalNightMode
+import com.rpm.player.phone.design.ScrollsToTop
 
 /** The space between the name and the foot of the photograph. */
 private val WRITING_FOOT = 14.dp
@@ -220,6 +221,7 @@ fun ArtistPage(
     BackHandler(onBack = onBack)
     val page = rememberBackdrop()
     val rows = rememberLazyListState()
+    ScrollsToTop(rows)
     val pull = rememberTopPull()
     val density = LocalDensity.current
     val statusBar = WindowInsets.statusBars.asPaddingValues(density).calculateTopPadding()

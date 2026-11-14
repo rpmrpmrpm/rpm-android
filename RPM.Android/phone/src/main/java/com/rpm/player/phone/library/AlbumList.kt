@@ -72,6 +72,7 @@ import com.rpm.player.phone.design.system
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.rpm.player.phone.design.ScrollsToTop
 
 /**
  * How the records tab shows the records: as a grid of covers, or as a list of records with their songs. The iPhone's
@@ -175,6 +176,7 @@ private fun AlbumList(
     onPlay: (CloudTrack, CloudAlbum) -> Unit,
 ) {
     val list = rememberLazyListState()
+    ScrollsToTop(list)
     val jumps = rememberCoroutineScope()
     // Where each row starts in the lazy list: a record takes one item for itself and one for each of its songs.
     val indexOf = remember(listing) {

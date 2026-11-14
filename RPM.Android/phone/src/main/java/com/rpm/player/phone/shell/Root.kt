@@ -73,6 +73,8 @@ import com.rpm.player.core.library.Filed
 import com.rpm.player.phone.design.ActionSheet
 import com.rpm.player.phone.design.Backdrop
 import com.rpm.player.phone.design.LocalOverChrome
+import com.rpm.player.phone.design.LocalTopTaps
+import com.rpm.player.phone.design.TopTaps
 import com.rpm.player.phone.design.OverChromeHost
 import com.rpm.player.phone.design.OverChromeLayer
 import com.rpm.player.phone.design.DialogKey
@@ -551,10 +553,13 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
 
     // The pages' sheets are drawn over the chrome (`OverChrome`), as the iPhone's cover the tab bar and the mini player.
     val overChrome = remember { OverChromeHost() }
+    // Each tab's way back to the top of the page it shows: a tap on the tab that is already showing, or on an empty part
+    // of a page's header ([TopTaps]).
+    val topTaps = remember { Tab.entries.associateWith { TopTaps() } }
     CompositionLocalProvider(LocalPlayable provides downloads.playable, LocalOverChrome provides overChrome) {
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(backdrop)) {
-          CompositionLocalProvider(LocalSongMenu provides songMenu) {
+          CompositionLocalProvider(LocalSongMenu provides songMenu, LocalTopTaps provides topTaps.getValue(tab)) {
             when (tab) {
                 Tab.Library -> AnimatedContent(
                     targetState = opened,
@@ -640,7 +645,8 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
         Chrome(
             backdrop,
             showing = tab,
-            onShow = { tab = it },
+            // A tap on the tab that is showing takes its page back to the top.
+            onShow = { if (it == tab) topTaps.getValue(it).tap() else tab = it },
             miniPlayer = if (now != null && controller != null) {
                 { MiniPlayer(now, controller, images, backdrop, onOpen = { wiring.leaving = false; playerUp = true }) }
             } else {
