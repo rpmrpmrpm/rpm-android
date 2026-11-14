@@ -51,9 +51,9 @@ import kotlin.math.roundToInt
 /**
  * One choice of a [PullDownMenu]. [ticked] marks the choice in force, as a SwiftUI `Picker` inside a `Menu` does; a
  * plain `Button` in a menu has no mark. [dividerAfter] draws iOS's wide menu divider under it, which separates "All
- * genres" from the genres.
+ * genres" from the genres. [destructive] draws the label in [Ink.red], as iOS draws a `Button(role: .destructive)`.
  */
-class PullItem(val label: String, val ticked: Boolean = false, val dividerAfter: Boolean = false, val onPress: () -> Unit)
+class PullItem(val label: String, val ticked: Boolean = false, val dividerAfter: Boolean = false, val destructive: Boolean = false, val onPress: () -> Unit)
 
 /**
  * A menu that drops from the key that opened it: what SwiftUI's `Menu` draws on iPhone, which the radio's filters use.
@@ -171,7 +171,7 @@ private fun Entry(item: PullItem, ticks: Boolean, onPress: () -> Unit) {
                 if (item.ticked) BasicText(Glyph.check, Modifier.padding(start = 2.dp), style = icon(14f).copy(color = Color.White))
             }
         }
-        BasicText(item.label, maxLines = 2, overflow = TextOverflow.Ellipsis, style = system(17f).copy(color = Color.White))
+        BasicText(item.label, maxLines = 2, overflow = TextOverflow.Ellipsis, style = system(17f).copy(color = if (item.destructive) Ink.red else Color.White))
     }
 }
 

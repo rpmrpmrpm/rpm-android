@@ -101,6 +101,12 @@ import kotlinx.coroutines.sync.withPermit
 import com.rpm.player.core.library.CloudAlbum
 import com.rpm.player.core.library.Collection
 import com.rpm.player.phone.design.BackKey
+import com.rpm.player.phone.design.OverChrome
+import com.rpm.player.phone.design.PullDownMenu
+import com.rpm.player.phone.design.PullItem
+import com.rpm.player.core.cloud.WallEntry
+import androidx.compose.runtime.key
+import androidx.compose.ui.geometry.Rect
 import com.rpm.player.phone.design.Glyph
 import com.rpm.player.phone.design.Ink
 import com.rpm.player.phone.design.backdropSource
@@ -163,9 +169,9 @@ private val SHELF_TOP = 18.dp
  * One artist's page. It matches the iPhone's `ArtistPage` (RPMUI/ArtistPage.swift). From the top: the artist's
  * photograph, a page wide and as tall as that. Their name is at its foot. Then the encyclopedia text, centred, and
  * three keys: a mixtape, Play and Shuffle. Then their popular songs. Then their records on shelves by kind: their own records, records made
- * with others, live albums, soundtracks, compilations, singles, and the records they appear on. Last, the acts
- * related to them in the collection. There is no list of every song: search finds any of them, as on the iPhone
- * (dropped there on 2026-10-18). The page uses the photograph as its blurred background.
+ * with others, live albums, soundtracks, compilations, singles, and the records they appear on. Then the acts
+ * related to them in the collection. Last, the wall, where listeners write about them ([artistWall]). There is no
+ * list of every song: search finds any of them, as on the iPhone (dropped there on 2026-10-18). The page uses the photograph as its blurred background.
  *
  * The popular songs are ranked by how often each song has been played by all listeners ([ArtistPopular]). The
  * plays are asked for up to four records at a time. A page opened again starts from the plays that are already known.
@@ -183,6 +189,9 @@ private val SHELF_TOP = 18.dp
  * popular songs opens the song menu ([LocalSongMenu]).
  *
  * @param walls the artists wall, which the related acts are picked from.
+ * @param wall what listeners wrote about the artist, drawn at the foot of the page. Null where the artist has no wall:
+ * the compilations, which name nobody.
+ * @param me the signed-in account, whose own posts can be deleted and whose lines cannot be reported.
  * @param onPlay plays the songs from the one at that index: a tap on a song.
  * @param onPlayAll the Play and Shuffle keys: all of these songs, in this order. See [AlbumPage] for why a key and a
  * row differ.
@@ -202,6 +211,8 @@ fun ArtistPage(
     onOpenArtist: (ArtistWallItem) -> Unit,
     onBack: () -> Unit,
     onPlayAll: (List<CloudTrack>) -> Unit = { onPlay(it, 0) },
+    wall: ArtistPosts? = null,
+    me: String? = null,
 ) {
     BackHandler(onBack = onBack)
     val page = rememberBackdrop()
@@ -219,12 +230,24 @@ fun ArtistPage(
     LaunchedEffect(subject) { dossiers.read(subject) {}?.let { article = it.article } }
     // A mixtape starts from one of their songs, chosen at random each time. Null where the app gives no way to start one.
     val startRadio = LocalSongMenu.current?.startRadio
+    // A popular song plays the popular songs from that one, as on the desktop, so the row becomes the queue; the key
+    // beside the heading plays all of them (`songTap: .theRowFromIt` on iPhone). The row hands a song's line over as
+    // that one song and its key as every song, so a single song is a tap on a line.
+    val popularSongs = remember(popular) { popular.map { it.first } }
     val picks = HomeActions(
         onOpen = onOpen,
         onOpenList = {},
-        onPlay = { tracks -> onPlay(tracks, 0) },
+        onPlay = { tracks ->
+            val at = if (tracks.size == 1) popularSongs.indexOfFirst { it.rpmId == tracks[0].rpmId } else -1
+            if (at >= 0) onPlay(popularSongs, at) else onPlayAll(tracks)
+        },
         onTune = {},
     )
+    // The wall is read each time the page opens, as the record page's reviews are. See [ArtistPosts].
+    if (wall != null) LaunchedEffect(wall) { wall.read() }
+    // The line whose corner menu is open, with where its key is, and the line the report card is open for.
+    var menu by remember(artist.name) { mutableStateOf<Pair<WallEntry, Rect>?>(null) }
+    var reporting by remember(artist.name) { mutableStateOf<WallEntry?>(null) }
 
     val feather = with(density) { Shadow(Color.Black.copy(alpha = FEATHER_ALPHA), Offset.Zero, blurRadius = FEATHER.toPx()) }
     CompositionLocalProvider(LocalTextFeather provides feather) {
@@ -273,12 +296,17 @@ fun ArtistPage(
                 ArtGround(dressed?.first, images, lead = dressed?.second ?: roomLead)
                 LazyColumn(state = rows, modifier = Modifier.fillMaxSize().dissolvesAtTop(statusBar + BACK_ROW) { rows.scrolled() }, overscrollEffect = pull) {
                     item(key = "band") {
-                        // The band's height, read from its layout: the photograph's mirror runs under everything below the
+                        // The band's height, read from its layout: the photograph's mirror runs under what is below the
                         // plate, the text when there is any and the keys, so it is right whether the text is there at once,
                         // arrives later, or never does.
+                        //
+                        // **The mirror is never deeper than the photograph.** It is the photograph turned over, so it holds
+                        // one plate of picture. Long text makes the band deeper than that, and a fade spread over the whole
+                        // band would still be half strong where the mirror runs out, a hard line across the text. Under the
+                        // mirror is the page's ground, which is the photograph's own colour.
                         var tall by remember { mutableIntStateOf(0) }
                         Box(Modifier.onSizeChanged { tall = it.height }) {
-                            val depth = with(density) { (tall.toDp() - plate).coerceAtLeast(0.dp) }
+                            val depth = with(density) { (tall.toDp() - plate).coerceIn(0.dp, plate) }
                             BandGround(photo, roomed, artist.name, plate, depth, pull, Modifier.matchParentSize())
                             Column {
                                 Band(title?.takeIf { it.artist == artist.name }, plate, photo, LocalNightMode.current)
@@ -330,11 +358,40 @@ fun ArtistPage(
                     if (related.isNotEmpty()) {
                         item(key = "related") { Related(related, collection, images, artwork, onOpenArtist) }
                     }
+                    if (wall != null) {
+                        artistWall(wall, me, SECTION_TOP) { line, key -> menu = line to key }
+                    }
                     item(key = "foot") { Spacer(Modifier.height(40.dp + bottomRoom)) }
                 }
             }
             Box(Modifier.padding(top = statusBar).height(BACK_ROW).padding(start = 20.dp), contentAlignment = Alignment.Center) {
                 BackKey(page, onBack)
+            }
+            // A wall line's corner menu: Delete on the reader's own post, Report on anybody else's line. Over the tab bar
+            // and the mini player, as the iPhone's menu is.
+            if (wall != null) {
+                menu?.let { (line, from) ->
+                    val mine = me != null && line.userId == me
+                    val item = if (mine) {
+                        PullItem(stringResource(R.string.Artists_WallDelete), destructive = true) { wall.delete(line) }
+                    } else {
+                        PullItem(stringResource(R.string.Artists_WallReport)) { reporting = line }
+                    }
+                    key(line.entryId) {
+                        OverChrome { PullDownMenu(page, from, listOf(item), onDismiss = { menu = null }) }
+                    }
+                }
+                reporting?.let { line ->
+                    OverChrome {
+                        ReportSheet(
+                            stringResource(R.string.Album_ReportCommentPrompt),
+                            page,
+                            bottomRoom,
+                            onSend = { note -> wall.report(line, note) },
+                            onClose = { reporting = null },
+                        )
+                    }
+                }
             }
         }
     }

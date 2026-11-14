@@ -8,14 +8,15 @@ import com.rpm.player.core.net.await
 import com.rpm.player.core.net.escapeSegment
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
- * rpm's shared album wall: the entries that everybody shares for a record, and what people wrote about them. It is
- * the iPhone's `RPMCommunityClient`, with the calls the record page uses.
+ * rpm's community: the entries that everybody shares for a record, what people wrote about them, and the walls on the
+ * artists' pages. It is the iPhone's `RPMCommunityClient`, with the calls the record page and the artist page use.
  *
  * **Reading does not need a token. Writing does.** Every read works signed out; the writes are the calls that fail
  * without one. The routes are at the root of the API host, as `albums/resolve`, not under a `community/` prefix.
@@ -69,6 +70,68 @@ class CommunityClient(private val http: OkHttpClient, private val auth: AuthClie
         )
     }.getOrNull()
 
+    /**
+     * Files a report. Nothing is hidden by it: a person reads it and decides.
+     *
+     * @param reason a short label from a list the app picks, at most 100 characters.
+     * @param note what the reporter wrote, at most 2,000 characters.
+     */
+    suspend fun report(target: ReportTarget, reason: String?, note: String?) {
+        val body = when (target) {
+            is ReportTarget.Album -> ReportBody("album", target.albumId, null, target.albumId, reason, note)
+            is ReportTarget.Review -> ReportBody("review", target.albumId, null, target.authorId, reason, note)
+            is ReportTarget.Comment -> ReportBody("comment", target.albumId, null, target.commentId, reason, note)
+            is ReportTarget.WallPost -> ReportBody("wallpost", null, target.artistId, target.entryId, reason, note)
+        }
+        send<Unit>("POST", "reports", WireJson.encodeToString(ReportBody.serializer(), body), null)
+    }
+
+    // Artists and their walls
+
+    /**
+     * The artist rpm already holds under this name, without creating an entry.
+     *
+     * Null when nobody has written about them. That is the usual answer, and the service says so with a 404. Any other
+     * failure throws, so a wall that could not be read is not drawn as an empty wall.
+     */
+    suspend fun lookupArtist(name: String): CommunityArtist? {
+        if (name.isBlank()) return null
+        return try {
+            get("artists/lookup?name=${escapeSegment(name)}", CommunityArtist.serializer())
+        } catch (_: ApiException.NotFound) {
+            null
+        }
+    }
+
+    /**
+     * The artist's entry, created if rpm has never been asked about them. Creating an entry is a write, so it is called
+     * before the first post and never before a read.
+     */
+    suspend fun resolveArtist(name: String): CommunityArtist =
+        send(
+            "POST",
+            "artists/resolve",
+            WireJson.encodeToString(NameBody.serializer(), NameBody(name)),
+            CommunityArtist.serializer(),
+        )!!
+
+    /** What is on the artist's wall, newest first. */
+    suspend fun wall(artistId: String, limit: Int = 50): List<WallEntry> =
+        get("artists/${escapeSegment(artistId)}/wall?limit=$limit", ListSerializer(WallEntry.serializer()))
+
+    suspend fun postToWall(artistId: String, body: String): WallEntry =
+        send(
+            "POST",
+            "artists/${escapeSegment(artistId)}/wall",
+            WireJson.encodeToString(PostBody.serializer(), PostBody(body)),
+            WallEntry.serializer(),
+        )!!
+
+    /** Removes the reader's own post. A review line cannot be removed here: it goes when its review goes. */
+    suspend fun deleteWallEntry(artistId: String, entryId: String) {
+        send<Unit>("DELETE", "artists/${escapeSegment(artistId)}/wall/${escapeSegment(entryId)}", null, null)
+    }
+
     private suspend fun <T> get(path: String, reader: DeserializationStrategy<T>): T = send("GET", path, null, reader)!!
 
     /** One call. A null [reader] reads nothing back (a delete). */
@@ -100,6 +163,28 @@ class CommunityClient(private val http: OkHttpClient, private val auth: AuthClie
 
     @Serializable
     private data class VoteBody(val value: Int)
+
+    @Serializable
+    private data class NameBody(val name: String)
+
+    @Serializable
+    private data class PostBody(val body: String)
+
+    /** A null field is left out of what is sent ([WireJson] writes no nulls), as the iPhone's encoder leaves it out. */
+    @Serializable
+    private data class ReportBody(
+        val targetType: String,
+        val albumId: String?,
+        val artistId: String?,
+        val targetId: String,
+        val reason: String?,
+        val note: String?,
+    )
+
+    companion object {
+        /** The longest post the server takes, in characters. */
+        const val LONGEST_WALL_POST = 2_000
+    }
 }
 
 /** rpm's shared entry for one record: its id, and what the wall makes of it so far. */

@@ -122,6 +122,7 @@ import com.rpm.player.phone.library.rememberPlaylistWrites
 import com.rpm.player.phone.library.QueuePage
 import com.rpm.player.phone.library.RecordArtists
 import com.rpm.player.phone.library.ReviewWalls
+import com.rpm.player.phone.library.ArtistPostsBook
 import com.rpm.player.phone.player.rememberQueue
 import com.rpm.player.phone.signin.SignIn
 import com.rpm.player.phone.signin.SignInScreen
@@ -436,6 +437,9 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
         )
     }
 
+    // The artist pages' walls, one per artist for the life of the shell, so two pages of one artist share theirs.
+    val artistWalls = remember(services) { ArtistPostsBook(services.community, services.scope) }
+
     // One artist's page. It is the same for either stack. A record opened from it goes on the same stack.
     @Composable
     fun artist(artist: ArtistWallItem, push: (Step) -> Unit, onBack: () -> Unit) {
@@ -453,6 +457,8 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             onOpenArtist = { push(Step.Artist(it.name)) },
             onBack = onBack,
             onPlayAll = { tracks -> play(tracks.map { queued(collection, it) }, 0, Tapped.List) },
+            wall = artistWalls.of(artist.name),
+            me = session?.userId,
         )
     }
 
