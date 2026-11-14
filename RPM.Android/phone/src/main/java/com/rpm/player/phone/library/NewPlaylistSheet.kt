@@ -371,6 +371,7 @@ fun refusalText(resources: Resources, refusal: PlaylistRefusal, failed: Int): St
         PlaylistRefusal.Generated -> R.string.Rpm_PlaylistWrite_Generated
         PlaylistRefusal.Busy -> R.string.Rpm_PlaylistWrite_Busy
         PlaylistRefusal.Unseen -> R.string.Rpm_PlaylistWrite_Unseen
+        PlaylistRefusal.Nameless -> R.string.Rpm_PlaylistWrite_NoName
         PlaylistRefusal.Failed -> failed
     },
 )

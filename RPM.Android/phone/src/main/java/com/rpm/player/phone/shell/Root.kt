@@ -429,8 +429,9 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             onBack = onBack,
             onPlayAll = { play(queue(), 0, Tapped.List) },
             framed = FramedList.of(list, shownName),
-            // Another selection, only where the computer sent enough songs for one.
-            onNewList = if (list.slices > 1) ({ services.library.newList(list) }) else null,
+            // The menu at the top right. A generated list's other selection, only where the computer sent enough songs
+            // for one.
+            menu = playlistWrites.menu(collection, list, onNewList = if (list.slices > 1) ({ services.library.newList(list) }) else null),
             adding = playlistWrites.adding(collection, list),
             canReorder = playlistWrites.canReorder(collection, list),
             onMove = { order -> playlistWrites.move(collection, list, order) },

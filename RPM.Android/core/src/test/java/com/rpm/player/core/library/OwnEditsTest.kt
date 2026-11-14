@@ -81,6 +81,52 @@ class OwnEditsTest {
         assertEquals(listOf(made), makes.over(library(emptyList(), listOf(made), readAt = 100)).playlists)
     }
 
+    // ── a removal (the iPhone's HeldPlaylistsTests, "a removal") ──
+
+    private val p = CloudPlaylist("p", name = "Mine", trackIds = listOf("a"), updatedAt = 100)
+    private val q = CloudPlaylist("q", name = "Other", trackIds = listOf("b"), updatedAt = 100)
+    private val none = OwnEdits("me", marks = emptyMap(), playlists = emptyMap(), made = emptyMap())
+
+    @Test fun aRemovedPlaylistGoesAtOnce() {
+        val edits = none.removedHere("p", at = 500)
+        assertEquals(listOf(q), edits.over(library(emptyList(), listOf(p, q), readAt = 100)).playlists)
+    }
+
+    /** The read was answered before the store dropped the row, so it still lists it. It must not bring the playlist back. */
+    @Test fun aReadStartedBeforeTheRemovalDoesNotBringItBack() {
+        val edits = none.removedHere("p", at = 500)
+        assertTrue(edits.over(library(emptyList(), listOf(p), readAt = 400)).playlists.isEmpty())
+    }
+
+    /** A read that started after the removal and still lists the playlist: another device wrote it again, and the store's
+     * answer stands. */
+    @Test fun aReadStartedAfterTheRemovalShowsWhatTheStoreHolds() {
+        val edits = none.removedHere("p", at = 500)
+        val again = CloudPlaylist("p", name = "Mine", trackIds = listOf("a", "b"), updatedAt = 300)
+        assertEquals(listOf(again), edits.over(library(emptyList(), listOf(again), readAt = 600)).playlists)
+    }
+
+    /** An add sent just before the delete, ending after it, does not bring the playlist back. */
+    @Test fun aWriteThatEndsAfterTheRemovalDoesNotBringItBack() {
+        val added = CloudPlaylist("p", name = "Mine", trackIds = listOf("a", "b"), updatedAt = 200)
+        val edits = none.removedHere("p", at = 500).wrote(added, began = 450)
+        assertTrue(edits.over(library(emptyList(), listOf(p), readAt = 400)).playlists.isEmpty())
+        assertTrue(edits.playlists.isEmpty())
+    }
+
+    /** A playlist made here and then removed is not added back to a read that began before it was made. */
+    @Test fun aPlaylistMadeHereAndRemovedStaysRemoved() {
+        val edits = makes.removedHere("n", at = 900)
+        assertTrue(edits.over(library(emptyList(), emptyList(), readAt = 100)).playlists.isEmpty())
+    }
+
+    /** The iPhone's "a removal from another value changes nothing": here, a removal recorded for another account. */
+    @Test fun aRemovalForAnotherAccountChangesNothing() {
+        val theirs = none.removedHere("p", at = 500)
+        val held = library(emptyList(), listOf(p), readAt = 400)
+        assertSame(held, theirs.forUser("you").over(held))
+    }
+
     @Test fun aFavouriteIsStampedInDotNetTicks() {
         // 1 January 2026, 00:00 UTC: DateTime(2026, 1, 1).Ticks.
         assertEquals(639_028_224_000_000_000L, OwnWriter.utcTicks(1_767_225_600_000L))

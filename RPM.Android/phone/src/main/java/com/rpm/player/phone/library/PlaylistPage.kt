@@ -16,6 +16,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.rpm.player.core.playback.QueueLook
 import com.rpm.player.core.playback.QueueRows
 import kotlinx.coroutines.launch
@@ -93,8 +97,10 @@ import kotlin.math.roundToInt
  * One list whose order this phone does not own. That covers a stored or generated list, and the marked songs.
  * It matches the iPhone's `PlaylistPage` (RPMUI/PlaylistPage.swift). The layout is the same as the album
  * page's. The list's picture is large and centred. Below it are the name, how much is in the list, who is on
- * it, and the keys. All of these scroll away with the songs. The back key floats over the page. The queue has
- * its own page ([QueuePage]).
+ * it, centred, and the round keys: Shuffle, then Play in the middle in a glass circle, as a record has them. All of
+ * these scroll away with the songs. The back key floats over the page at the top left, and the list's menu
+ * ([PlaylistMenu], [PlaylistCorner]) at the top right, where a record has its heart. The queue has its own page
+ * ([QueuePage]).
  *
  * The page's background is the list's room, moving ([RoomGround]): in a generated list's own colours, in the colours
  * of a list's own picture, or in the app's blue where there is no picture (the marked songs). If the cloud has no
@@ -102,13 +108,13 @@ import kotlin.math.roundToInt
  * cover for the square only, not for the room's colours.
  *
  * A generated list wears its frame on the square ([framed]). The five that stand on the room show it moving in the
- * square too, as on iPhone. Where the computer sent more than one list's worth of songs, the key beside Play shows another
- * selection ([onNewList]).
+ * square too, as on iPhone. Where the computer sent more than one list's worth of songs, its menu shows another
+ * selection ([PlaylistMenu.Generated]).
  *
- * A stored playlist of the person's own has the plus key, which adds songs picked from the albums ([adding]), and,
- * when this phone can see all its songs ([canReorder]), the grip key, which turns rearranging on: each row then has a
- * grip, and a row carried by it goes where it is let go. A generated list has neither: the computer replaces it on
- * its next run.
+ * A stored playlist of the person's own has, in its menu, Add songs, which adds songs picked from the albums
+ * ([adding]), and, when this phone can see all its songs ([canReorder]), Rearrange, which turns rearranging on: each
+ * row then has a grip, a row carried by it goes where it is let go, and Done takes the menu key's place. A generated
+ * list has both greyed: the computer replaces it on its next run.
  *
  * A song's long press opens the song menu ([LocalSongMenu]).
  *
@@ -121,6 +127,7 @@ import kotlin.math.roundToInt
  * @param playing the id of the track playing, which the mark in the margin follows.
  * @param onPlay plays the list from the song at that index: a tap on a row.
  * @param onPlayAll the Play key: the whole list from the top. See [AlbumPage] for why a key and a row differ.
+ * @param menu what the menu at the top right offers. None, the default, is no menu: the marked songs have none.
  * @param onMove writes the songs in a new order, after a row was carried. It answers whether the store took it; the
  * rows go back where they were when it did not.
  */
@@ -140,7 +147,7 @@ fun PlaylistPage(
     onBack: () -> Unit,
     onPlayAll: () -> Unit = { onPlay(0) },
     framed: FramedList? = null,
-    onNewList: (() -> Unit)? = null,
+    menu: PlaylistMenu = PlaylistMenu.None,
     adding: ListAdding? = null,
     canReorder: Boolean = false,
     onMove: suspend (List<CloudTrack>) -> Boolean = { false },
@@ -193,18 +200,24 @@ fun PlaylistPage(
                     val empty = order.isEmpty()
                     val square = picture ?: order.firstOrNull()?.let(coverOf)
                     ListHead(name, square, holding(order.size, seconds(order), missing), about(order, blurb), if (blurb == null) 2 else 3, images, edge, top, framed, drifts = true) {
-                        GlassButton(onClick = onPlayAll, modifier = Modifier.weight(1f), weight = Weight.Primary, enabled = !empty && !rearranging, height = 50.dp, radius = 14.dp) { style ->
-                            BasicText(Glyph.play, style = icon(15f).copy(color = style.color))
-                            Spacer(Modifier.width(10.dp))
-                            BasicText(stringResource(R.string.Rpm_Playlist_PlayList), style = display(17f).copy(color = style.color))
+                        // Shuffle, then Play in the middle in a glass circle, as on the album page. Play's other side is
+                        // kept empty, so Play stays in the middle of the page. Adding and rearranging are in the menu.
+                        SideKey(Glyph.shuffle, stringResource(R.string.AlbumMenu_Shuffle), onShuffle, enabled = !empty)
+                        val play = stringResource(R.string.Rpm_Playlist_PlayList)
+                        GlassButton(
+                            onClick = onPlayAll,
+                            modifier = Modifier.size(KEY_HEIGHT).alpha(if (empty) 0.4f else 1f).semantics { contentDescription = play },
+                            weight = Weight.Primary,
+                            enabled = !empty,
+                            stretches = false,
+                            height = KEY_HEIGHT,
+                            radius = KEY_HEIGHT / 2,
+                            inset = 0.dp,
+                        ) { style ->
+                            // The triangle's weight is left of its middle, so it is moved right a little to look centred.
+                            BasicText(Glyph.play, Modifier.offset(x = 2.dp), style = icon(18f).copy(color = style.color))
                         }
-                        // Another selection of the same list comes before shuffle, as on the desktop: first what the
-                        // list is, then what to do with it.
-                        if (onNewList != null) ListKey(Glyph.refresh, enabled = true, onClick = { haptics.pick(); onNewList() })
-                        ListKey(Glyph.shuffle, enabled = !empty && !rearranging, onClick = onShuffle)
-                        if (adding != null) ListKey(Glyph.plus, enabled = !rearranging) { picking = true }
-                        // The tick leaves rearranging. It is not a play mark, which would read as "play this".
-                        if (canReorder && rowsOf.size > 1) ListKey(if (rearranging) Glyph.check else Glyph.grip, enabled = true) { haptics.pick(); asked = !rearranging }
+                        Spacer(Modifier.size(SIDE_KEY_WIDTH, KEY_HEIGHT))
                     }
                 }
                 if (order.isEmpty()) {
@@ -239,6 +252,19 @@ fun PlaylistPage(
         Box(Modifier.padding(top = top - BACK_ROW).height(BACK_ROW).padding(start = 20.dp), contentAlignment = Alignment.Center) {
             BackKey(page, onBack = { if (rearranging) asked = false else onBack() })
         }
+        PlaylistCorner(
+            menu,
+            name,
+            page,
+            top,
+            bottomRoom,
+            rearranging = rearranging,
+            canAdd = adding != null,
+            canRearrange = canReorder && rowsOf.size > 1,
+            onAdd = { picking = true },
+            onRearrange = { asked = it },
+            onBack = onBack,
+        )
         // Over the tab bar and the mini player, as the iPhone's sheet is.
         OverChrome {
         AnimatedVisibility(picking && adding != null, enter = fadeIn(tween(180)), exit = fadeOut(tween(180))) {
@@ -291,7 +317,7 @@ internal fun RoomGround(palette: RoomPalette, seed: String) {
 
 /**
  * The top part of a list's page. It has the same layout as the album page: the picture large and centred,
- * the name, how much is in the list as a chip, a line about the list, and the keys.
+ * the name, how much is in the list as a chip, a line about the list, and the round keys, centred.
  *
  * @param about the line under the chip, or null for none. [aboutLines] is the most lines it may take.
  */
@@ -332,18 +358,16 @@ internal fun ListHead(
                 Modifier.fillMaxWidth().padding(top = 4.dp),
                 maxLines = aboutLines,
                 overflow = TextOverflow.Ellipsis,
-                style = display(14f).copy(color = Ink.white(0xB3), lineHeight = pt(14f * 1.2f + 7f)),
+                // Centred, as the album page centres the text about a record.
+                style = display(14f).copy(color = Ink.white(0xB3), lineHeight = pt(14f * 1.2f + 7f), textAlign = TextAlign.Center),
             )
         }
-        Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), content = keys)
-    }
-}
-
-/** A key in a list's head: an icon on the ghost face, 56 dp wide (`PlaylistPage.key` on iPhone). */
-@Composable
-internal fun ListKey(glyph: String, enabled: Boolean, onClick: () -> Unit) {
-    GlassButton(onClick = onClick, modifier = Modifier.width(56.dp), enabled = enabled, stretches = false, height = 50.dp, radius = 14.dp, inset = 0.dp) { style ->
-        BasicText(glyph, style = icon(17f).copy(color = style.color))
+        Row(
+            Modifier.fillMaxWidth().padding(top = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(KEYS_APART, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
+            content = keys,
+        )
     }
 }
 

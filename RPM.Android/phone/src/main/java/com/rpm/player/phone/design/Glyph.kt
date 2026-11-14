@@ -34,6 +34,13 @@ object Glyph {
     // Keeps the stage's controls visible instead of hiding them.
     const val pin = "\uF08D"
     const val more = "\uF141"
+
+    // Three bars: the menu of a playlist page, at the top right where a record has its heart.
+    const val menu = "\uF0C9"
+
+    // The marks of a playlist's menu items, standing for the iPhone's `pencil` and `arrow.up.arrow.down`.
+    const val pencil = "\uF303"
+    const val upDown = "\uF338"
     const val search = "\uF002"
     const val sort = "\uF0DC"
 

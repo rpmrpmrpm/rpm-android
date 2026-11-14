@@ -30,16 +30,25 @@ data class OwnEdits(
      * library read before it was made is added to it; missing from one read after, it was deleted
      * elsewhere and stays missing. */
     val made: Map<String, Long>,
+    /** Playlists removed here, by id, with when the removal ended (this device's clock, unix ms). One of these is
+     * left out of a library read before then: the read was answered before the store dropped it. A read that began
+     * after it and still lists it shows what the store holds, because another device wrote it again (the iPhone's
+     * `HeldPlaylists.removed`). */
+    val removed: Map<String, Long> = emptyMap(),
 ) {
     /** [library] with these edits laid over each row older than the edit. */
     fun over(library: CloudLibrary): CloudLibrary {
-        if (marks.isEmpty() && playlists.isEmpty() && made.isEmpty()) return library
+        if (marks.isEmpty() && playlists.isEmpty() && made.isEmpty() && removed.isEmpty()) return library
         val tracks = if (marks.isEmpty()) library.tracks else library.tracks.map { track ->
             val mark = marks[track.rpmId]
             if (mark == null || track.updatedAt >= mark.stamp || (track.tags?.favorite == true) == mark.favorite) track
             else track.copy(tags = (track.tags ?: CloudTrackTags()).copy(favorite = mark.favorite, favoritedAt = mark.at))
         }
-        val kept = if (playlists.isEmpty()) library.playlists else library.playlists.map { list ->
+        val read = if (removed.isEmpty()) library.playlists else library.playlists.filter { list ->
+            // Removed here after this read began: its answer is older than the removal.
+            removed[list.playlistId]?.let { gone -> gone > library.readAt } != true
+        }
+        val kept = if (playlists.isEmpty()) read else read.map { list ->
             val written = playlists[list.playlistId]
             if (written == null || list.updatedAt >= written.updatedAt) list else written
         }
@@ -47,6 +56,22 @@ data class OwnEdits(
         val missed = made.filter { (id, at) -> id !in present && at > library.readAt }.keys.mapNotNull(playlists::get)
         return library.copy(tracks = tracks, playlists = kept + missed)
     }
+
+    /**
+     * These edits with [playlist] as written here, by a write that began at [began] (this device's clock). A write
+     * that began before this device removed the playlist (an add sent just before the delete) is left out: it wrote
+     * a row the store no longer holds. One that began after it wrote the playlist again, and the removal is past.
+     */
+    fun wrote(playlist: CloudPlaylist, began: Long): OwnEdits {
+        val gone = removed[playlist.playlistId]
+        if (gone != null && began < gone) return this
+        return copy(playlists = playlists + (playlist.playlistId to playlist), removed = removed - playlist.playlistId)
+    }
+
+    /** These edits with the playlist [id] removed here, the removal having ended [at] (this device's clock). It goes
+     * from the screen at once, and a read that began before [at] does not bring it back. */
+    fun removedHere(id: String, at: Long): OwnEdits =
+        copy(playlists = playlists - id, made = made - id, removed = removed + (id to at))
 
     /** These edits for [user]: the same, or none if they were made for someone else. */
     fun forUser(user: String): OwnEdits = if (this.user == user) this else OwnEdits(user, emptyMap(), emptyMap(), emptyMap())
@@ -106,10 +131,11 @@ class OwnWriter(
      */
     suspend fun addToPlaylist(rpmId: String, playlistId: String, again: Boolean = false): Filed {
         val user = auth.session.value?.userId ?: return Filed.Failed
+        val began = clock()
         var current = orNull { cloud.playlists(Shelf.Own) }?.firstOrNull { it.playlistId == playlistId } ?: return Filed.Failed
         repeat(2) {
             if (!again && rpmId in current.trackIds) {
-                record(user, current)
+                record(user, current, began)
                 return Filed.AlreadyIn
             }
             val wanted = current.trackIds + rpmId
@@ -117,7 +143,7 @@ class OwnWriter(
             val write = PlaylistWrite(current.name, wanted, current.folder, current.updatedAt.takeIf { it > 0 })
             when (val put = orNull { cloud.putPlaylist(current.playlistId, write) } ?: return Filed.Failed) {
                 is PlaylistPut.Written -> {
-                    record(user, current.copy(trackIds = wanted, updatedAt = put.updatedAt))
+                    record(user, current.copy(trackIds = wanted, updatedAt = put.updatedAt), began)
                     return Filed.Added
                 }
                 is PlaylistPut.Conflict -> current = put.stored ?: return Filed.Failed
@@ -148,8 +174,9 @@ class OwnWriter(
         return true
     }
 
-    private fun record(user: String, playlist: CloudPlaylist) {
-        library.edited(user) { it.copy(playlists = it.playlists + (playlist.playlistId to playlist)) }
+    /** Records [playlist] as written by a write that began at [began]; see [OwnEdits.wrote]. */
+    private fun record(user: String, playlist: CloudPlaylist, began: Long) {
+        library.edited(user) { it.wrote(playlist, began) }
     }
 
     private suspend fun <T> orNull(call: suspend () -> T): T? = try {

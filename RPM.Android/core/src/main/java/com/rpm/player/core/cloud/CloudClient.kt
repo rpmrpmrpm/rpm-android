@@ -310,6 +310,30 @@ class CloudClient(private val http: OkHttpClient, private val auth: AuthClient) 
         }
     }
 
+    /**
+     * Removes one of the person's own playlists from the cloud (the iPhone's `RPMCloudClient.deletePlaylist`). The
+     * songs it named are not touched: they belong to records, and a song can be on other playlists too.
+     *
+     * **A 404 is the same result.** Asking for a playlist to be gone when it is already gone is not a failure. Any
+     * other status is thrown.
+     */
+    suspend fun deletePlaylist(playlistId: String) {
+        val token = auth.accessToken()
+        val request = Request.Builder()
+            .url(Hosts.API + "cloud/playlist/" + escapeSegment(playlistId))
+            .header(AppKey.HEADER, AppKey.VALUE)
+            .apply { if (!token.isNullOrEmpty()) header("Authorization", "Bearer $token") }
+            .delete()
+            .build()
+        http.newCall(request).await().use { response ->
+            when (response.code) {
+                in 200..299, 404 -> return
+                401, 403 -> throw ApiException.Unauthorized()
+                else -> throw ApiException.Status(response.code)
+            }
+        }
+    }
+
     /** Bytes from a signed URL. No credentials are sent: an extra header changes the request, and the store
      * refuses it. */
     suspend fun signedBytes(url: String): ByteArray {

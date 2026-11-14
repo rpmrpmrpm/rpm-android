@@ -20,8 +20,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 /**
- * The playlist writes the pages make, worded for the screen: the iPhone's `makePlaylist`, `addToPlaylist` and
- * `reorderPlaylist` (rpm/AppModel.swift, RPMSession/LibrarySession.swift), over `:core`'s
+ * The playlist writes the pages make, worded for the screen: the iPhone's `makePlaylist`, `addToPlaylist`,
+ * `reorderPlaylist`, `renamePlaylist` and `deletePlaylist` (rpm/AppModel.swift, RPMSession/LibrarySession.swift), over `:core`'s
  * [PlaylistWriter][com.rpm.player.core.library.PlaylistWriter].
  *
  * **Each write runs in the app's scope, not the page's**, so leaving the page while the store is answering does not
@@ -59,6 +59,30 @@ class PlaylistWrites(private val services: Services, private val resources: Reso
     /** Writes [order] as [list]'s running order; whether the store took it. */
     suspend fun move(collection: Collection, list: TrackList, order: List<CloudTrack>): Boolean =
         services.scope.async { services.playlistWriter.reorder(list, collection.shelf, order.map { it.rpmId }) == null }.await()
+
+    /**
+     * What the menu on [list]'s page offers (the iPhone's `RootView.menu(for:)`). A playlist the person made has the
+     * four items that change it; a list rpm made has its new selection, [onNewList] where the computer sent another
+     * one; another account's playlist has no menu, because every item would write to their account.
+     */
+    fun menu(collection: Collection, list: TrackList, onNewList: (() -> Unit)?): PlaylistMenu = when {
+        isWritable(collection, list) -> PlaylistMenu.Own(
+            onRename = { name -> rename(collection, list, name) },
+            onDelete = { delete(collection, list) },
+        )
+        list.generated -> PlaylistMenu.Generated(onNewList)
+        else -> PlaylistMenu.None
+    }
+
+    /** Gives [list] another name; a sentence when it failed, null when it is done. */
+    suspend fun rename(collection: Collection, list: TrackList, name: String): String? = services.scope.async {
+        services.playlistWriter.rename(list, collection.shelf, name)?.let { refusalText(resources, it, R.string.Rpm_Playlists_RenameFailed) }
+    }.await()
+
+    /** Removes [list] from the cloud; a sentence when it failed, null when it is done. The songs stay in the collection. */
+    suspend fun delete(collection: Collection, list: TrackList): String? = services.scope.async {
+        services.playlistWriter.delete(list, collection.shelf)?.let { refusalText(resources, it, R.string.Rpm_Playlists_DeleteFailed) }
+    }.await()
 
     /** A playlist the person made, on their own shelf (the iPhone's `PlaylistSet.isWritable`). */
     private fun isWritable(collection: Collection, list: TrackList): Boolean = collection.shelf == Shelf.Own && !list.generated

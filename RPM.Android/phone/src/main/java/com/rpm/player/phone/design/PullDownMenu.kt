@@ -51,16 +51,29 @@ import kotlin.math.roundToInt
 /**
  * One choice of a [PullDownMenu]. [ticked] marks the choice in force, as a SwiftUI `Picker` inside a `Menu` does; a
  * plain `Button` in a menu has no mark. [dividerAfter] draws iOS's wide menu divider under it, which separates "All
- * genres" from the genres. [destructive] draws the label in [Ink.red], as iOS draws a `Button(role: .destructive)`.
+ * genres" from the genres.
+ *
+ * [glyph] is the icon at the right of the row, as a SwiftUI `Label` in a menu draws its symbol, in Font Awesome's
+ * regular face as [ContextMenu]'s. A choice that is not [enabled] is shown greyed and cannot be pressed, as a
+ * `.disabled` button in a menu; a [destructive] one is red, as a button with the destructive role.
  */
-class PullItem(val label: String, val ticked: Boolean = false, val dividerAfter: Boolean = false, val destructive: Boolean = false, val onPress: () -> Unit)
+class PullItem(
+    val label: String,
+    val ticked: Boolean = false,
+    val dividerAfter: Boolean = false,
+    val glyph: String? = null,
+    val enabled: Boolean = true,
+    val destructive: Boolean = false,
+    val onPress: () -> Unit,
+)
 
 /**
  * A menu that drops from the key that opened it: what SwiftUI's `Menu` draws on iPhone, which the radio's filters use.
  * Unlike the long-press [ContextMenu] it does not dim the page or lift anything out of it; it is the system's menu
  * panel alone, frosted, 250 dp wide, with rows at least 44 dp high in the system face at 17.
  *
- * - It stands under the key, its leading edge at the key's, when it fits there; otherwise over the key; and when it
+ * - It stands under the key, its leading edge at the key's (its trailing edge, for a key on the right half of the
+ *   screen, as iOS keeps a menu on the screen), when it fits there; otherwise over the key; and when it
  *   fits on neither side, as the country list does not on a short screen, it takes the taller side and scrolls.
  * - A tick in front of a label marks the choice in force, in the leading gutter as iOS draws it.
  * - It grows out of the key with a spring, and fades away when it is put down. A tap outside it, or Back, puts it down
@@ -97,6 +110,9 @@ fun PullDownMenu(backdrop: Backdrop, source: Rect, items: List<PullItem>, onDism
         (ROW * items.size + DIVIDER * items.count { it.dividerAfter } + HAIRLINE * (items.size - 1).coerceAtLeast(0)).toPx()
     }
     var screen by remember { mutableStateOf(0f) }
+    var across by remember { mutableStateOf(0f) }
+    // A key on the right half of the screen: the menu hangs from its trailing edge, and grows out of that corner.
+    val fromRight = across > 0f && source.center.x > across / 2
     val below = screen - bottom - (source.bottom + gap)
     val above = source.top - gap - top
     val under = tall <= below || (tall > above && below >= above)
@@ -105,7 +121,10 @@ fun PullDownMenu(backdrop: Backdrop, source: Rect, items: List<PullItem>, onDism
     Box(
         Modifier
             .fillMaxSize()
-            .onSizeChanged { screen = it.height.toFloat() }
+            .onSizeChanged {
+                screen = it.height.toFloat()
+                across = it.width.toFloat()
+            }
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = ::close),
     ) {
         if (screen <= 0f) return@Box
@@ -121,7 +140,7 @@ fun PullDownMenu(backdrop: Backdrop, source: Rect, items: List<PullItem>, onDism
                             scaleX = grow
                             scaleY = grow
                             alpha = shown.value.coerceIn(0f, 1f)
-                            transformOrigin = TransformOrigin(0.1f, if (under) 0f else 1f)
+                            transformOrigin = TransformOrigin(if (fromRight) 0.9f else 0.1f, if (under) 0f else 1f)
                         }
                         .frost(backdrop, shape, CARD_BLUR)
                         .clip(shape)
@@ -146,13 +165,13 @@ fun PullDownMenu(backdrop: Backdrop, source: Rect, items: List<PullItem>, onDism
             val menu = measurables.single().measure(constraints.copy(minWidth = 0, minHeight = 0))
             val width = constraints.maxWidth
             val y = if (under) source.bottom + gap else source.top - gap - menu.height
-            val x = source.left.coerceIn(margin, (width - margin - menu.width).coerceAtLeast(margin))
+            val x = (if (fromRight) source.right - menu.width else source.left).coerceIn(margin, (width - margin - menu.width).coerceAtLeast(margin))
             layout(width, constraints.maxHeight) { menu.place(x.roundToInt(), y.roundToInt()) }
         }
     }
 }
 
-/** One row: the tick's gutter where the menu has ticks, the label, lit while a finger is on it. */
+/** One row: the tick's gutter where the menu has ticks, the label, the icon if it has one, lit while a finger is on it. */
 @Composable
 private fun Entry(item: PullItem, ticks: Boolean, onPress: () -> Unit) {
     val presses = remember { MutableInteractionSource() }
@@ -162,7 +181,7 @@ private fun Entry(item: PullItem, ticks: Boolean, onPress: () -> Unit) {
             .fillMaxWidth()
             .defaultMinSize(minHeight = ROW)
             .background(if (pressed) PRESSED else Color.Transparent)
-            .clickable(presses, indication = null, role = if (ticks) Role.RadioButton else Role.Button, onClick = onPress)
+            .clickable(presses, indication = null, enabled = item.enabled, role = if (ticks) Role.RadioButton else Role.Button, onClick = onPress)
             .padding(start = if (ticks) 10.dp else 16.dp, end = 16.dp, top = 11.dp, bottom = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -171,7 +190,17 @@ private fun Entry(item: PullItem, ticks: Boolean, onPress: () -> Unit) {
                 if (item.ticked) BasicText(Glyph.check, Modifier.padding(start = 2.dp), style = icon(14f).copy(color = Color.White))
             }
         }
-        BasicText(item.label, maxLines = 2, overflow = TextOverflow.Ellipsis, style = system(17f).copy(color = if (item.destructive) Ink.red else Color.White))
+        val ink = when {
+            !item.enabled -> GREYED
+            item.destructive -> Ink.red
+            else -> Color.White
+        }
+        BasicText(item.label, if (item.glyph != null) Modifier.weight(1f).padding(end = 12.dp) else Modifier, maxLines = 2, overflow = TextOverflow.Ellipsis, style = system(17f).copy(color = ink))
+        item.glyph?.let { glyph ->
+            Box(Modifier.width(24.dp), contentAlignment = Alignment.Center) {
+                BasicText(glyph, style = iconOutline(16f).copy(color = ink))
+            }
+        }
     }
 }
 
@@ -190,3 +219,6 @@ private val FILL = Color(0xB8252528)
 private val SEPARATOR = Color.White.copy(alpha = 0x26 / 255f)
 private val DIVIDER_FILL = Color.Black.copy(alpha = 0x33 / 255f)
 private val PRESSED = Color.White.copy(alpha = 0x1F / 255f)
+
+/** A greyed choice's label and icon: iOS's tertiary label on a dark menu. */
+private val GREYED = Color.White.copy(alpha = 0x4D / 255f)

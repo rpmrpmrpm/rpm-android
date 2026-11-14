@@ -182,10 +182,17 @@ fun QueuePage(queue: QueueRead, sittingFrom: Int, controller: Player?, images: I
                         edge = sleeve,
                         top = top,
                     ) {
-                        ListKey(Glyph.shuffle, enabled = rows.isNotEmpty() && !rearranging) { controller?.shuffleQueue() }
+                        // The round keys of a list's page, without Play: what is in the queue is already playing.
+                        SideKey(Glyph.shuffle, stringResource(R.string.AlbumMenu_Shuffle), { controller?.shuffleQueue() }, enabled = rows.isNotEmpty())
                         // Shown only when there is something to rearrange. The tick leaves rearranging mode. It is not
                         // a play mark, because a play mark here would look like "play this".
-                        if (rows.size > 1) ListKey(if (rearranging) Glyph.check else Glyph.grip, enabled = true) { asked = !rearranging }
+                        if (rows.size > 1) {
+                            SideKey(
+                                if (rearranging) Glyph.check else Glyph.grip,
+                                stringResource(if (rearranging) R.string.CloudChip_StageDone else R.string.Rpm_Queue_Rearrange),
+                                { asked = !rearranging },
+                            )
+                        }
                     }
                 }
                 if (rows.isEmpty()) {
