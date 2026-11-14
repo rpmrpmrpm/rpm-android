@@ -131,17 +131,17 @@ internal val BACK_ROW = 44.dp
 /** The share of the page's width that the cover takes. This keeps the title and the keys above the fold. */
 internal const val COVER_FRACTION = 0.62f
 
-/** On a square screen ([isSquare]), the share of the page's width that the record's column takes; the songs have the
- *  rest. */
-private const val SQUARE_LEFT = 0.46f
+/** On a square screen ([isSquare]), the share of the page's width that the record's or the list's column takes; the
+ *  songs have the rest. The record page and the list page use the same share, so the two look alike. */
+internal const val SQUARE_LEFT = 0.46f
 
 /** On a square screen, the height the record's column needs besides the sleeve, from the top of the sleeve's row to
  *  under the keys: the space above the sleeve, a one-line title, the artist, the facts, the format, the keys and a
  *  margin under them. Measured on the Titan. A two-line title pushes the keys down by a line. */
 private val SQUARE_UNDER_SLEEVE = 236.dp
 
-/** On a square screen, the sleeve's smallest edge, however little height the page has. */
-private val SQUARE_SLEEVE_LEAST = 120.dp
+/** On a square screen, the sleeve's or the list picture's smallest edge, however little height the page has. */
+internal val SQUARE_SLEEVE_LEAST = 120.dp
 
 /**
  * One record. It matches the iPhone's `AlbumPage` (RPMUI/AlbumPage.swift). The page uses its own background:

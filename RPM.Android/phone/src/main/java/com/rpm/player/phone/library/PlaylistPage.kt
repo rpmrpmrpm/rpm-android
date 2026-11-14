@@ -45,7 +45,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.rpm.player.phone.design.isSquare
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
@@ -191,17 +196,15 @@ fun PlaylistPage(
     EdgeScroll(carry, rows, bottomRoom)
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val edge = (maxWidth.value * COVER_FRACTION).coerceIn(160f, 360f).roundToInt().dp
-        Box(Modifier.fillMaxSize().backdropSource(page)) {
-            // The list's own colours for a generated list; the colours of its own picture for any other, never a
-            // record's in it; the app's blue for a list with neither (`PlaylistPage.dress` on iPhone).
-            val read = rememberRoomColours(if (framed == null) picture else null, images)
-            RoomGround(framed?.look?.room ?: read ?: RoomPalette.FALLBACK, seed = name)
-            LazyColumn(state = rows, modifier = Modifier.fillMaxSize().dissolvesAtTop(top) { rows.scrolled() }) {
-                item(key = "header") {
+        val wide = maxWidth
+        val high = maxHeight
+        val square = isSquare(wide, high)
+        // The list's picture, its name, how much is in it, the line about it and the keys. On a square screen the line
+        // about the list comes after the keys, as on the record page, so the keys are on screen before it is scrolled.
+        val header: @Composable (Dp) -> Unit = { edge ->
                     val empty = order.isEmpty()
-                    val square = picture ?: order.firstOrNull()?.let(coverOf)
-                    ListHead(name, square, holding(order.size, seconds(order), missing), about(order, blurb), if (blurb == null) 2 else 3, images, edge, top, framed, drifts = true) {
+                    val sleeve = picture ?: order.firstOrNull()?.let(coverOf)
+                    ListHead(name, sleeve, holding(order.size, seconds(order), missing), about(order, blurb), if (blurb == null) 2 else 3, images, edge, top, framed, drifts = true, keysFirst = square) {
                         // Shuffle, then Play in the middle in a glass circle, as on the album page. Play's other side is
                         // kept empty, so Play stays in the middle of the page. Adding and rearranging are in the menu.
                         SideKey(Glyph.shuffle, stringResource(R.string.AlbumMenu_Shuffle), onShuffle, enabled = !empty)
@@ -221,7 +224,10 @@ fun PlaylistPage(
                         }
                         Spacer(Modifier.size(SIDE_KEY_WIDTH, KEY_HEIGHT))
                     }
-                }
+        }
+        // The songs, or the line for an empty list, and room for the tab bar: the same rows on a tall page and on a
+        // square one.
+        val songs: LazyListScope.() -> Unit = {
                 if (order.isEmpty()) {
                     item(key = "nothing") { Nothing(missing, adding != null) }
                 } else {
@@ -249,6 +255,41 @@ fun PlaylistPage(
                     }
                 }
                 item(key = "foot") { Spacer(Modifier.height(40.dp + bottomRoom)) }
+        }
+        Box(Modifier.fillMaxSize().backdropSource(page)) {
+            // The list's own colours for a generated list; the colours of its own picture for any other, never a
+            // record's in it; the app's blue for a list with neither (`PlaylistPage.dress` on iPhone).
+            val read = rememberRoomColours(if (framed == null) picture else null, images)
+            RoomGround(framed?.look?.room ?: read ?: RoomPalette.FALLBACK, seed = name)
+            if (square) {
+                // **A square screen shows the list beside its songs**, as the record page does there ([isSquare]): the
+                // picture, the name, the facts, the keys and the line about the list on the left, the songs on the
+                // right, each side scrolling on its own. Rearranging works on the right-hand list as on a tall page.
+                val side = rememberScrollState()
+                ScrollsToTop(side)
+                val left = wide * SQUARE_LEFT
+                val edge = (high - top - bottomRoom - SQUARE_UNDER_LIST_PICTURE).coerceIn(SQUARE_SLEEVE_LEAST, left - 40.dp)
+                Row(Modifier.fillMaxSize()) {
+                    Column(
+                        Modifier
+                            .width(left)
+                            .fillMaxHeight()
+                            .dissolvesAtTop(top) { side.value.toFloat() }
+                            .verticalScroll(side),
+                    ) {
+                        header(edge)
+                        Spacer(Modifier.height(bottomRoom))
+                    }
+                    LazyColumn(state = rows, modifier = Modifier.weight(1f).fillMaxHeight().dissolvesAtTop(top) { rows.scrolled() }) {
+                        item(key = "top") { Spacer(Modifier.height(top)) }
+                        songs()
+                    }
+                }
+            } else {
+                LazyColumn(state = rows, modifier = Modifier.fillMaxSize().dissolvesAtTop(top) { rows.scrolled() }) {
+                    item(key = "header") { header((wide.value * COVER_FRACTION).coerceIn(160f, 360f).roundToInt().dp) }
+                    songs()
+                }
             }
         }
         Box(Modifier.padding(top = top - BACK_ROW).height(BACK_ROW).padding(start = 20.dp), contentAlignment = Alignment.Center) {
@@ -335,6 +376,7 @@ internal fun ListHead(
     top: Dp,
     framed: FramedList? = null,
     drifts: Boolean = false,
+    keysFirst: Boolean = false,
     keys: @Composable RowScope.() -> Unit,
 ) {
     Column(
@@ -351,27 +393,37 @@ internal fun ListHead(
                 .clip(RoundedCornerShape(percent = 50))
                 .background(Ink.white(0x1F))
                 .padding(horizontal = 10.dp, vertical = 3.dp),
-            style = display(12f).copy(color = Ink.white(0xE6)),
+            // Centred, so a chip that wraps in a narrow column (a square screen's) keeps its lines in the middle.
+            style = display(12f).copy(color = Ink.white(0xE6), textAlign = TextAlign.Center),
         )
-        // What the list is and who is on it. The desktop shows the same line under a list's name.
-        about?.let { about ->
-            BasicText(
-                about,
-                Modifier.fillMaxWidth().padding(top = 4.dp),
-                maxLines = aboutLines,
-                overflow = TextOverflow.Ellipsis,
-                // Centred, as the album page centres the text about a record.
-                style = display(14f).copy(color = Ink.white(0xB3), lineHeight = pt(14f * 1.2f + 7f), textAlign = TextAlign.Center),
-            )
+        // What the list is and who is on it. The desktop shows the same line under a list's name. Above the keys, or
+        // under them where [keysFirst] asks, as on a square screen.
+        val line: @Composable () -> Unit = {
+            about?.let { about ->
+                BasicText(
+                    about,
+                    Modifier.fillMaxWidth().padding(top = 4.dp),
+                    maxLines = aboutLines,
+                    overflow = TextOverflow.Ellipsis,
+                    // Centred, as the album page centres the text about a record.
+                    style = display(14f).copy(color = Ink.white(0xB3), lineHeight = pt(14f * 1.2f + 7f), textAlign = TextAlign.Center),
+                )
+            }
         }
+        if (!keysFirst) line()
         Row(
             Modifier.fillMaxWidth().padding(top = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(KEYS_APART, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
             content = keys,
         )
+        if (keysFirst) line()
     }
 }
+
+/** On a square screen, the height a list's column needs besides its picture: the space above it, a one-line name, the
+ *  chip, the keys and a margin under them. Measured on the Titan. A longer name pushes the keys down. */
+private val SQUARE_UNDER_LIST_PICTURE = 196.dp
 
 /**
  * A mood's sentence, then the artists that most of the songs are by, for example "Featuring Blur, Pulp and
