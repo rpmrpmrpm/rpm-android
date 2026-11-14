@@ -6,6 +6,8 @@ import com.rpm.player.core.net.Hosts
 import com.rpm.player.core.net.WireJson
 import com.rpm.player.core.net.await
 import com.rpm.player.core.net.escapeSegment
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.DeserializationStrategy
 import com.rpm.player.core.radio.StationListenWire
 import com.rpm.player.core.radio.StationListensPage
@@ -335,11 +337,15 @@ class CloudClient(private val http: OkHttpClient, private val auth: AuthClient) 
     }
 
     /** Bytes from a signed URL. No credentials are sent: an extra header changes the request, and the store
-     * refuses it. */
-    suspend fun signedBytes(url: String): ByteArray {
+     * refuses it.
+     *
+     * The body is read on [Dispatchers.IO]. [await] gives the response back on the caller's thread, and a body
+     * larger than what came with the headers, such as a sidecar with its cover inside, is read from the network.
+     * On the main thread Android stops the app for that (NetworkOnMainThreadException). */
+    suspend fun signedBytes(url: String): ByteArray = withContext(Dispatchers.IO) {
         http.newCall(Request.Builder().url(url).build()).await().use { response ->
             if (response.code !in 200..299) throw ApiException.Status(response.code)
-            return response.body.bytes()
+            response.body.bytes()
         }
     }
 
