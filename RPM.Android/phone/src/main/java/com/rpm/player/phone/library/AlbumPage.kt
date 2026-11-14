@@ -49,8 +49,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.rpm.player.phone.design.isSquare
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
@@ -125,6 +130,18 @@ internal val BACK_ROW = 44.dp
 
 /** The share of the page's width that the cover takes. This keeps the title and the keys above the fold. */
 internal const val COVER_FRACTION = 0.62f
+
+/** On a square screen ([isSquare]), the share of the page's width that the record's column takes; the songs have the
+ *  rest. */
+private const val SQUARE_LEFT = 0.46f
+
+/** On a square screen, the height the record's column needs besides the sleeve, from the top of the sleeve's row to
+ *  under the keys: the space above the sleeve, a one-line title, the artist, the facts, the format, the keys and a
+ *  margin under them. Measured on the Titan. A two-line title pushes the keys down by a line. */
+private val SQUARE_UNDER_SLEEVE = 236.dp
+
+/** On a square screen, the sleeve's smallest edge, however little height the page has. */
+private val SQUARE_SLEEVE_LEAST = 120.dp
 
 /**
  * One record. It matches the iPhone's `AlbumPage` (RPMUI/AlbumPage.swift). The page uses its own background:
@@ -222,25 +239,9 @@ fun AlbumPage(
     // is not found.
     if (wall != null) LaunchedEffect(wall) { wall.read() }
 
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val edge = (maxWidth.value * COVER_FRACTION).coerceIn(160f, 360f).roundToInt().dp
-        // The cover's colour leads the ground, with the cover faint over it, as on the artist page ([rememberLead]).
-        val led = rememberLead(cover, images)
-        Box(Modifier.fillMaxSize().backdropSource(page)) {
-            ArtGround(led?.first, images, lead = led?.second)
-            // The list scrolls up behind the status bar. Content that scrolls up there fades into the background.
-            LazyColumn(state = list, modifier = Modifier.fillMaxSize().dissolvesAtTop(top) { list.scrolled() }) {
-                item(key = "header") {
-                    Header(
-                        album, cover, collection.disc(album), images, edge, top, onPlayAll, onShuffle,
-                        artists = artists,
-                        onArtist = onArtist,
-                        rating = wall?.takeIf { it.ratingCount > 0 }?.let { it.average to it.ratingCount },
-                        article = article,
-                        download = download,
-                        anyPlayable = album.tracks.any(canPlay),
-                    )
-                }
+    // Everything under the header, in reading order: the songs, the copyright lines, Similar albums, the reviews wall
+    // and room for the tab bar. The same rows on a tall page and on a square one, so the two cannot drift apart.
+    val rows: LazyListScope.() -> Unit = {
                 items(lines, key = { it.key }, contentType = { it::class }) { line ->
                     when (line) {
                         is AlbumLine.Disc -> DiscHeading(line.number)
@@ -270,6 +271,61 @@ fun AlbumPage(
                     )
                 }
                 item(key = "foot") { Spacer(Modifier.height(40.dp + bottomRoom)) }
+    }
+
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val wide = maxWidth
+        val high = maxHeight
+        val square = isSquare(wide, high)
+        // The cover's colour leads the ground, with the cover faint over it, as on the artist page ([rememberLead]).
+        val led = rememberLead(cover, images)
+        val header: @Composable (Dp) -> Unit = { edge ->
+            Header(
+                album, cover, collection.disc(album), images, edge, top, onPlayAll, onShuffle,
+                artists = artists,
+                onArtist = onArtist,
+                rating = wall?.takeIf { it.ratingCount > 0 }?.let { it.average to it.ratingCount },
+                article = article,
+                download = download,
+                anyPlayable = album.tracks.any(canPlay),
+                keysFirst = square,
+            )
+        }
+        Box(Modifier.fillMaxSize().backdropSource(page)) {
+            ArtGround(led?.first, images, lead = led?.second)
+            if (square) {
+                // **A square screen shows the record beside its songs**, as the Android TV app does: the sleeve, the
+                // facts, the keys and the text about the record in a column on the left, the songs and what follows
+                // them on the right. Each side scrolls on its own, and both start level under the back key.
+                val side = rememberScrollState()
+                ScrollsToTop(side)
+                val left = wide * SQUARE_LEFT
+                // What is left of the page's height for the sleeve once the title, the facts and the keys under it have
+                // their room above the mini player and the tab bar: the keys are on screen before the column is
+                // scrolled. Never wider than the column, and never so small that the sleeve stops being the picture.
+                val edge = (high - top - bottomRoom - SQUARE_UNDER_SLEEVE).coerceIn(SQUARE_SLEEVE_LEAST, left - 40.dp)
+                Row(Modifier.fillMaxSize()) {
+                    Column(
+                        Modifier
+                            .width(left)
+                            .fillMaxHeight()
+                            .dissolvesAtTop(top) { side.value.toFloat() }
+                            .verticalScroll(side),
+                    ) {
+                        header(edge)
+                        Spacer(Modifier.height(bottomRoom))
+                    }
+                    LazyColumn(state = list, modifier = Modifier.weight(1f).fillMaxHeight().dissolvesAtTop(top) { list.scrolled() }) {
+                        item(key = "top") { Spacer(Modifier.height(top)) }
+                        rows()
+                    }
+                }
+            } else {
+                // The list scrolls up behind the status bar. Content that scrolls up there fades into the background.
+                LazyColumn(state = list, modifier = Modifier.fillMaxSize().dissolvesAtTop(top) { list.scrolled() }) {
+                    item(key = "header") { header((wide.value * COVER_FRACTION).coerceIn(160f, 360f).roundToInt().dp) }
+                    rows()
+                }
             }
         }
         // The back key floats over the page. It does not scroll with the page. It sits in the row kept free under the
@@ -322,6 +378,7 @@ private fun Header(
     article: EncyclopediaArticle?,
     download: DownloadKey?,
     anyPlayable: Boolean,
+    keysFirst: Boolean,
 ) {
     Column(
         // The space under the keys sets the track list apart from the header.
@@ -373,10 +430,15 @@ private fun Header(
         // The text and the keys in a column of their own, so the text brings the space above it with it when it arrives
         // late ([ArrivingAbout]): in the header's own spacing, that space would appear in one step.
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            // Above the keys, so it is read before the record is played. The space above it and under it are the same.
-            ArrivingAbout(article) {
-                CentredAboutText(it, Modifier.padding(top = 6.dp, bottom = 12.dp), lead = stringResource(R.string.TrackInfo_AboutAlbum), capitalKeys = true)
+            // Above the keys on a tall page, so it is read before the record is played. The space above it and under it
+            // are the same. **Under them on a square page**, as on the Android TV: the column there is short, and the
+            // keys must be on screen before it is scrolled.
+            val about: @Composable () -> Unit = {
+                ArrivingAbout(article) {
+                    CentredAboutText(it, Modifier.padding(top = if (keysFirst) 18.dp else 6.dp, bottom = 12.dp), lead = stringResource(R.string.TrackInfo_AboutAlbum), capitalKeys = true)
+                }
             }
+            if (!keysFirst) about()
             // Shuffle, Play and the download, as the artist page's keys: Play a round glass key in the middle, the two
             // beside it their marks alone. Without a download key its place is kept, so Play stays in the middle.
             Row(
@@ -401,6 +463,7 @@ private fun Header(
                 }
                 if (download != null) DownloadButton(download, bare = true) else Spacer(Modifier.size(SIDE_KEY_WIDTH, KEY_HEIGHT))
             }
+            if (keysFirst) about()
         }
         // Only while it is true: the list is then in the order the server sent, and is not shown as the running order.
         if (album.tracks.none { (it.tags?.trackNumber ?: 0) > 0 }) {
