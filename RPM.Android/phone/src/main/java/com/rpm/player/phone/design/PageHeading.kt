@@ -35,7 +35,7 @@ private val BESIDE_DESCENDER = 6.dp
  * The title of a library view, the line under it, and the keys on the title's line. The iPhone app has the
  * same `PageHeading` (RPMUI/PageTitle.swift). The title is laid out as if it had no descender. If the title
  * has one, the line under it starts just to the right of the last letter that goes below the baseline, at
- * the same height. So every header is the same height, whatever the title.
+ * the same height. So every header is the same height, whatever the title. The keys are centred on the title's line.
  */
 @Composable
 fun PageHeading(title: String, line: String, keys: @Composable () -> Unit) {
@@ -64,11 +64,15 @@ fun PageHeading(title: String, line: String, keys: @Composable () -> Unit) {
         val titleBase = shownTitle[FirstBaseline].takeIf { it != AlignmentLine.Unspecified } ?: shownTitle.height
         val lineBase = shownLine[FirstBaseline].takeIf { it != AlignmentLine.Unspecified } ?: 0
         val lineTop = titleBase + (SUBTITLE_GAP + LINE_ASCENT).roundToPx() - lineBase
+        // The keys are centred on the title's line, from its top to its baseline (the title is laid out as if it had no
+        // descender), not hung from its top. They are taller than the letters, and hung from the top they reached down
+        // into the line under the title, which on a borrowed collection is long enough to run under them.
+        val keysTop = (titleBase - shownKeys.height) / 2
         val width = constraints.maxWidth
-        val height = max(lineTop + shownLine.height, shownKeys.height)
+        val height = max(lineTop + shownLine.height, keysTop + shownKeys.height)
         layout(width, height) {
             shownTitle.place(0, 0)
-            shownKeys.place(width - shownKeys.width, 0)
+            shownKeys.place(width - shownKeys.width, keysTop)
             shownLine.place(0, lineTop)
         }
     }
