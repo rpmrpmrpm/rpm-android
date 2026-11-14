@@ -319,6 +319,31 @@ class CloudClient(private val http: OkHttpClient, private val auth: AuthClient) 
         }
     }
 
+    /**
+     * One of the person's own tracks' tags, as the uploader wrote them next to the file ([TagSidecar]), in two hops: the
+     * API signs a URL, and the bytes come from the store with no credentials ([signedBytes]). The route takes no shelf,
+     * so it answers only about this account's own files.
+     *
+     * A track with no sidecar gives null and does not throw: any refusal, a 404 or not, means "not there". A sidecar
+     * that cannot be fetched or read gives null too. Only a network that cannot be reached throws.
+     */
+    suspend fun sidecar(rpmId: String): TagSidecar? {
+        val signed = try {
+            get("cloud/sidecar/" + escapeSegment(rpmId), SignedUrl.serializer())
+        } catch (e: ApiException) {
+            return null
+        }
+        val bytes = try {
+            signedBytes(signed.url)
+        } catch (e: ApiException) {
+            return null
+        } catch (e: IllegalArgumentException) {
+            // Not a URL at all.
+            return null
+        }
+        return runCatching { WireJson.decodeFromString(TagSidecar.serializer(), bytes.decodeToString()) }.getOrNull()
+    }
+
     private suspend fun <T> get(path: String, reader: DeserializationStrategy<T>): T = send("GET", path, null, reader)
 
     private suspend fun <T> send(method: String, path: String, json: String?, reader: DeserializationStrategy<T>): T {

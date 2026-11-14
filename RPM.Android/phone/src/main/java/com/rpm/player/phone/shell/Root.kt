@@ -100,6 +100,7 @@ import com.rpm.player.phone.home.ShelfRow
 import com.rpm.player.phone.library.LibraryMode
 import com.rpm.player.phone.library.WallReading
 import com.rpm.player.phone.library.AlbumPage
+import com.rpm.player.phone.library.AlbumCreditsRead
 import com.rpm.player.phone.library.ArtistPage
 import com.rpm.player.phone.library.GenrePage
 import com.rpm.player.phone.radio.RadioPage
@@ -352,6 +353,8 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     // artist line opens.
     val reviewWalls = remember(collection.shelf) { ReviewWalls(services.community) }
     val recordArtists = remember(ready.walls) { RecordArtists(ready.walls) }
+    // The copyright line and label under each record's songs, read once per record for the life of this collection.
+    val creditsRead = remember(collection.shelf) { AlbumCreditsRead(services.cloud, collection.shelf) }
 
     // One record page. It is used for whichever tab's stack the record was opened on, and what it opens (a similar
     // record, the artist) goes on the same stack.
@@ -375,6 +378,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             classical = services.classicalMarks.isClassical(collection.shelf, album),
             wall = reviewWalls.of(album),
             me = session?.userId,
+            readCredits = creditsRead::of,
             onPlayAll = { play(queue(), 0, Tapped.List) },
             marked = favouriteRecords.isFavourite(album),
             onMark = { on -> services.scope.launch { services.albumFavourites.mark(album, on) } },

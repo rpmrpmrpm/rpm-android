@@ -11,7 +11,9 @@ import coil3.request.SuccessResult
 import coil3.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import coil3.request.allowHardware
+import coil3.size.Scale
 import coil3.toBitmap
+import com.rpm.player.core.library.AlbumCredits
 import com.rpm.player.core.library.DiscArt
 import com.rpm.player.phone.ui.RecordDisc
 import com.rpm.player.phone.ui.ScannedDisc
@@ -151,6 +153,8 @@ internal const val COVER_FRACTION = 0.62f
  * @param download the download key, or null where there is none to offer: a borrowed shelf.
  * @param canPlay whether a song can be played now. Offline, a song with no copy on the phone is shown and not offered,
  * and with none at all the play and shuffle keys are dimmed.
+ * @param readCredits reads the record's copyright line and label, drawn under the songs ([CreditsLines]). It answers
+ * null where they cannot be read: a borrowed shelf, or a failed read.
  */
 @Composable
 fun AlbumPage(
@@ -170,6 +174,7 @@ fun AlbumPage(
     classical: Boolean,
     wall: ReviewWall?,
     me: String?,
+    readCredits: suspend (CloudAlbum) -> AlbumCredits?,
     onPlayAll: () -> Unit = { onPlay(0) },
     marked: Boolean = false,
     onMark: ((Boolean) -> Unit)? = null,
@@ -191,8 +196,25 @@ fun AlbumPage(
     // The Similar albums row, worked out off the main thread: it walks every track on the shelf. It is worked out
     // again for another record or a shelf with records added or gone, and kept with the record it was made for.
     val shelf = collection.albums
+    val context = LocalContext.current
+    val similarEdge = with(density) { SIMILAR_ART.roundToPx() }
     val similar by produceState<Pair<String, List<CloudAlbum>>?>(null, album.key, shelf.size) {
-        value = album.key to withContext(Dispatchers.Default) { SimilarAlbums.row(album, shelf) }
+        val row = withContext(Dispatchers.Default) { SimilarAlbums.row(album, shelf) }
+        value = album.key to row
+        // **Their sleeves are read now, not when the row is scrolled to.** The row is at the foot of the page, and a
+        // lazy list builds its tiles only when they come on screen. A tile starts from the sleeve the image loader holds
+        // in memory, and a sleeve that is only on disk or on the network would pop in under the reader's eyes. The
+        // request is the one the tile makes (`rememberPicture` at the row's edge, cropped to fill), so the tile finds it.
+        // The row holds nine records at most, so this is a few small reads.
+        for (record in row) {
+            val sleeve = collection.cover(record) ?: continue
+            images.execute(ImageRequest.Builder(context).data(sleeve).size(similarEdge, similarEdge).scale(Scale.FILL).build())
+        }
+    }
+    // The record's copyright line and label, and the record they were read for: a page handed another record does not
+    // show the last one's lines while it reads the new ones.
+    val credits by produceState<Pair<String, AlbumCredits>?>(null, album.key) {
+        readCredits(album)?.let { value = album.key to it }
     }
     // The wall is read when the page opens, not when it is scrolled to: a wall that appears only when looked for
     // is not found.
@@ -223,6 +245,9 @@ fun AlbumPage(
                         is AlbumLine.Work -> WorkHeading(line)
                         is AlbumLine.Song -> SongSwipe(line.track) { SongRow(line, playing = line.track.rpmId == playing, enabled = canPlay(line.track)) { onPlay(line.index) } }
                     }
+                }
+                credits?.takeIf { it.first == album.key && !it.second.isEmpty }?.let { (_, read) ->
+                    item(key = "credits") { CreditsLines(read.lines, Modifier.animateItem(fadeInSpec = tween(CREDITS_FADE_MS), fadeOutSpec = null, placementSpec = null)) }
                 }
                 similar?.takeIf { it.first == album.key && it.second.isNotEmpty() }?.let { (_, row) ->
                     item(key = "similar") {
@@ -305,7 +330,8 @@ private fun Header(
         Spacer(Modifier.height(top))
         CaseAndDisc(album, cover, disc, images, edge)
         Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            BasicText(album.album, maxLines = 3, style = displayBold(24f).copy(color = Color.White, textAlign = TextAlign.Center))
+            // Two lines, and shortened only past them.
+            BasicText(album.album, maxLines = 2, overflow = TextOverflow.Ellipsis, style = displayBold(24f).copy(color = Color.White, textAlign = TextAlign.Center))
             ArtistLine(album.artist, artists, onArtist)
         }
         // How much record there is, as a chip because it describes the record above it, and what it is made of under
@@ -490,13 +516,20 @@ private fun CaseAndDisc(album: CloudAlbum, cover: Cover?, disc: DiscArt?, images
     val scope = rememberCoroutineScope()
     val diameter = edge * DISC_SHARE
     val pixels = with(density) { diameter.roundToPx() }
-    val scanned by produceState<ScannedDisc?>(null, album.key, disc, cover, pixels) {
-        value = disc?.let { ScannedDisc.load(context, it, images, pixels) }
-            ?: cover?.let { sleeve ->
-                val request = ImageRequest.Builder(context).data(sleeve).size(pixels).allowHardware(false).build()
-                (images.execute(request) as? SuccessResult)?.image?.toBitmap()?.asImageBitmap()?.let(ScannedDisc::printed)
-            }
+    // The disc, and the record it was read for, used only while that is the record here: the iPhone's `pictures`. A
+    // state produced under new keys keeps its last value until the new one is read, so without the key a page handed
+    // another record would take out the last record's disc.
+    val read by produceState<Pair<String, ScannedDisc?>?>(null, album.key, disc, cover, pixels) {
+        val key = album.key
+        value = key to (
+            disc?.let { ScannedDisc.load(context, it, images, pixels) }
+                ?: cover?.let { sleeve ->
+                    val request = ImageRequest.Builder(context).data(sleeve).size(pixels).allowHardware(false).build()
+                    (images.execute(request) as? SuccessResult)?.image?.toBitmap()?.asImageBitmap()?.let(ScannedDisc::printed)
+                }
+            )
     }
+    val scanned = read?.takeIf { it.first == album.key }?.second
     val out = remember(album.key) { Animatable(0f) }
     var showing by remember(album.key) { mutableStateOf<Job?>(null) }
 
@@ -552,8 +585,9 @@ private fun CaseAndDisc(album: CloudAlbum, cover: Cover?, disc: DiscArt?, images
 /** The disc against the sleeve: a CD in its case is a little smaller than the case. */
 private const val DISC_SHARE = 0.94f
 
-/** How far the disc comes out at most, as a share of the sleeve. */
-private const val DISC_OUT = 0.55f
+/** How far the disc comes out at most, as a share of the sleeve: half, so the disc's centre stops on the sleeve's edge
+ *  and half of the disc stays behind the sleeve. */
+private const val DISC_OUT = 0.5f
 
 /** The space kept between the moved sleeve or disc and the page's edge. */
 private val CASE_EDGE = 8.dp
@@ -570,6 +604,29 @@ private const val CASE_TURN = 6.0
 /** Between the year and the count in the pill: a middle dot with space round it, the separator the
  *  count lines use. No dashes in text the user reads. */
 private const val YEAR_GAP = " \u00b7 "
+
+/** The edge of the Similar albums row's sleeves: home's rows' (`ROW_ART` in HomePage.kt, `HomeRowView.art` on iPhone).
+ *  The sleeves are read early at this edge, so it must be the one the row draws. */
+private val SIMILAR_ART = 132.dp
+
+/** How long the copyright and label lines take to fade in when their read answers. */
+private const val CREDITS_FADE_MS = 250
+
+/**
+ * The record's copyright line and label, under the songs, as the files' tags give them ([AlbumCredits.lines]). The
+ * caller draws nothing where the tags have neither.
+ */
+@Composable
+private fun CreditsLines(lines: List<String>, modifier: Modifier = Modifier) {
+    Column(
+        modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        for (line in lines) {
+            BasicText(line, maxLines = 2, overflow = TextOverflow.Ellipsis, style = display(12f).copy(color = Ink.white(0x99)))
+        }
+    }
+}
 
 /** The heading for one disc of a set. A single-disc record never shows one. */
 @Composable
