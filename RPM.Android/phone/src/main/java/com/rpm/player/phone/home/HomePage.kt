@@ -2,6 +2,7 @@ package com.rpm.player.phone.home
 
 import com.rpm.player.phone.design.rememberPicture
 import com.rpm.player.phone.design.frostsAtTop
+import com.rpm.player.phone.design.blocksTouches
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.animation.core.tween
@@ -330,6 +331,10 @@ fun HomePage(
         }
         // What scrolls up under the title, frosted as it goes, over the rows fading out there.
         Box(Modifier.fillMaxWidth().height(statusBar + heading + 30.dp).frostsAtTop(rows, statusBar + heading) { scroll.value.toFloat() })
+        // **The title's band takes every touch**, so a row or the banner under the title cannot be opened or played
+        // through it. Only the switch key, drawn over this band, answers there. The strip below, where the rows fade
+        // out, stays open.
+        Box(Modifier.fillMaxWidth().height(statusBar + heading).blocksTouches())
         // The title is drawn over the scroll. It does not move with the scroll. It sits on the same line as the title
         // of every other page.
         PageTitle(
@@ -339,8 +344,8 @@ fun HomePage(
                 .padding(start = 20.dp, end = 16.dp, bottom = 10.dp)
                 .onSizeChanged { heading = with(density) { it.height.toDp() } + 10.dp },
         )
-        // On the title's line, where the library's keys are, 16 from the edge. A layer of its own, because the title
-        // lets taps through to the banner under it and this key must take them.
+        // On the title's line, where the library's keys are, 16 from the edge. A layer of its own, over the title's band,
+        // so this key takes the taps the band keeps from the page.
         if (onSwitch != null) {
             SwitchKey(backdrop, onSwitch, Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 4.dp, end = 16.dp))
         }
