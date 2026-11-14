@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -291,7 +292,9 @@ fun ArtistPage(
                 val dressed = rememberLead(photo, images)
                 val roomLead = roomed?.let { GroundLead.of(glow = it.glow, dominant = it.tint) }
                 ArtGround(dressed?.first, images, lead = dressed?.second ?: roomLead)
-                LazyColumn(state = rows, modifier = Modifier.fillMaxSize().dissolvesAtTop(statusBar + BACK_ROW) { rows.scrolled() }, overscrollEffect = pull) {
+                // The list ends at the top of the keyboard, so the wall's box can be scrolled above it ([WallBox]). The
+                // window draws edge to edge, so the keyboard does not make the window smaller.
+                LazyColumn(state = rows, modifier = Modifier.fillMaxSize().imePadding().dissolvesAtTop(statusBar + BACK_ROW) { rows.scrolled() }, overscrollEffect = pull) {
                     item(key = "band") {
                         // The band's height, read from its layout: the photograph's mirror runs under what is below the
                         // plate, the text when there is any and the keys, so it is right whether the text is there at once,

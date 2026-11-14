@@ -9,7 +9,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
@@ -92,8 +102,16 @@ fun LazyListScope.artistWall(wall: ArtistPosts, me: String?, top: Dp, onMenu: (W
 private fun WallBox(wall: ArtistPosts) {
     val card = RoundedCornerShape(14.dp)
     val canSend = !wall.sending && wall.draft.isNotBlank()
+    // **The box scrolls itself above the keyboard.** The box is at the foot of the page, and the keyboard comes up after
+    // the box takes focus, so the scroll that focus asks for happens before the list is made shorter. Each step of
+    // the keyboard asks again while the box has focus. Only this small box reads the keyboard's height.
+    val bringer = remember { BringIntoViewRequester() }
+    var focused by remember { mutableStateOf(false) }
+    val keyboard = WindowInsets.ime.getBottom(LocalDensity.current)
+    LaunchedEffect(focused, keyboard) { if (focused && keyboard > 0) bringer.bringIntoView() }
     Row(
         Modifier
+            .bringIntoViewRequester(bringer)
             .fillMaxWidth()
             .clip(card)
             .background(Ink.white(0x14))
@@ -105,7 +123,7 @@ private fun WallBox(wall: ArtistPosts) {
         BasicTextField(
             wall.draft,
             onValueChange = { wall.draft = it.take(CommunityClient.LONGEST_WALL_POST) },
-            modifier = Modifier.weight(1f).padding(vertical = 6.dp),
+            modifier = Modifier.weight(1f).padding(vertical = 6.dp).onFocusChanged { focused = it.isFocused },
             textStyle = display(15f).copy(color = Color.White),
             cursorBrush = SolidColor(Color.White),
             minLines = 1,
