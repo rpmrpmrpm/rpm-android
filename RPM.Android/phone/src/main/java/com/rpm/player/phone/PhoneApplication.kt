@@ -20,6 +20,8 @@ import com.rpm.player.core.playback.Levelling
 import com.rpm.player.phone.art.Logos
 import com.rpm.player.phone.art.Portraits
 import com.rpm.player.phone.downloads.Downloads
+import com.rpm.player.core.library.ListOrdering
+import com.rpm.player.phone.library.LibraryLayout
 import com.rpm.player.phone.library.LibraryMode
 import com.rpm.player.phone.library.PlaylistLayout
 import com.rpm.player.phone.signin.SignIn
@@ -144,6 +146,24 @@ class PhoneSettings(context: Context) {
     fun changeLibraryOrder(order: AlbumOrdering) {
         libraryOrder = order
         prefs.edit().putString(KEY_ORDER, order.stored).apply()
+    }
+
+    /** Whether the records are a grid of covers or a list with their songs (`library.layout`), and the list's own
+     * order (`library.listOrder`), kept apart from the grid's because the list can be ordered by song title. */
+    var libraryLayout by mutableStateOf(LibraryLayout.of(prefs.getString(KEY_LIBRARY_LAYOUT, null)) ?: LibraryLayout.Grid)
+        private set
+
+    var listOrder by mutableStateOf(ListOrdering.of(prefs.getString(KEY_LIST_ORDER, null)) ?: ListOrdering.Artist)
+        private set
+
+    fun changeLibraryLayout(layout: LibraryLayout) {
+        libraryLayout = layout
+        prefs.edit().putString(KEY_LIBRARY_LAYOUT, layout.stored).apply()
+    }
+
+    fun changeListOrder(order: ListOrdering) {
+        listOrder = order
+        prefs.edit().putString(KEY_LIST_ORDER, order.stored).apply()
     }
 
     var artistOrder by mutableStateOf(ArtistOrdering.entries.firstOrNull { it.name == prefs.getString(KEY_ARTIST_ORDER, null) } ?: ArtistOrdering.Name)
@@ -317,6 +337,8 @@ class PhoneSettings(context: Context) {
         const val KEY_GOLD = "supporter.gold"
         const val KEY_ORDER = "library.order"
         const val KEY_LIBRARY_MODE = "library.mode"
+        const val KEY_LIBRARY_LAYOUT = "library.layout"
+        const val KEY_LIST_ORDER = "library.listOrder"
         const val KEY_ARTIST_ORDER = "library.artistOrder"
         const val KEY_TRACK_GROUPING = "artist.trackGrouping"
         const val KEY_WALL_STRIDE = "library.tileArt.v2"

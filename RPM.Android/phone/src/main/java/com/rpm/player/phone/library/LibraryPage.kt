@@ -150,6 +150,9 @@ private val OFFERED = listOf(
  *
  * The playlists, artists and genres views are pages of their own, with their own titles, as on iPhone.
  *
+ * The view key beside search switches the records between the grid of covers and a list of each record with its songs
+ * ([AlbumListHost]), as on iPhone; the sort key then offers that view's own orders. Both choices are kept.
+ *
  * The search key opens a box under the header. The search results replace the wall until the box is closed.
  * The results are the records that the words name, which open, and the songs that they find, which play their
  * record from that song.
@@ -188,6 +191,10 @@ private fun AlbumsPage(
     val ground = rememberBackdrop()
     val page = rememberBackdrop()
     var sorting by remember { mutableStateOf(false) }
+    // The view menu: the grid of covers or the list of records with their songs ([LibraryLayout]).
+    var choosingLayout by remember { mutableStateOf(false) }
+    // The letter held on the list's rail, drawn large over the page ([HeldLetter]).
+    val hold = remember { RailHold() }
     // The size under the fingers during a pinch. It is stored only when the pinch ends.
     var pinching by remember { mutableStateOf<Double?>(null) }
     val order = settings.libraryOrder
@@ -258,6 +265,8 @@ private fun AlbumsPage(
                     PageHeading(stringResource(R.string.Settings_Library), lent(reading.lender, counts(ready.albums))) {
                         KeyGroup(ground) {
                             HeaderKey(Glyph.search) { if (searching) closeSearch() else { searching = true; raise = true } }
+                            // The view key is the one the playlists tab has, in the same place beside search.
+                            HeaderKey(settings.libraryLayout.mark) { choosingLayout = true }
                             HeaderKey(Glyph.sort) { sorting = true }
                         }
                     }
@@ -295,6 +304,16 @@ private fun AlbumsPage(
                         standing == WallStanding.Reading -> Box(below) { Reading() }
                         standing == WallStanding.Trouble -> Box(below) { Failed(onRetry) }
                         ready.albums.isEmpty() -> Box(below) { Empty(reading.lender != null) }
+                        settings.libraryLayout == LibraryLayout.List -> PullToRefresh(reading.refreshing, reading.onRefresh, top = top) {
+                            AlbumListHost(
+                                ready.collection, ready.albums, settings.listOrder, images, playing, hold,
+                                topRoom = top,
+                                bottomRoom = bottomRoom,
+                                onOpen = onOpen,
+                                onPlay = { track, album -> onPlaySong(SongSearch.SongHit(track, album)) },
+                                waiting = { Reading() },
+                            )
+                        }
                         else -> ordered?.let { wall ->
                             // Only the wall reads the collection again on a pull, not the search's answers.
                             PullToRefresh(reading.refreshing, reading.onRefresh, top = top) {
@@ -317,8 +336,22 @@ private fun AlbumsPage(
                 }
             }
         }
+        HeldLetter(hold, page, Modifier.align(Alignment.Center))
+        // Each view has its own orders: the list can be ordered by song title, and only the grid by date added or by year.
         if (sorting) {
-            SortMenu(page, OFFERED, order, onPick = { settings.changeLibraryOrder(it); sorting = false }, onClose = { sorting = false })
+            when (settings.libraryLayout) {
+                LibraryLayout.Grid -> SortMenu(page, OFFERED, order, onPick = { settings.changeLibraryOrder(it); sorting = false }, onClose = { sorting = false })
+                LibraryLayout.List -> SortMenu(page, LIST_OFFERED, settings.listOrder, onPick = { settings.changeListOrder(it); sorting = false }, onClose = { sorting = false })
+            }
+        }
+        if (choosingLayout) {
+            SortMenu(
+                page,
+                LibraryLayout.entries.map { it to it.label },
+                settings.libraryLayout,
+                onPick = { settings.changeLibraryLayout(it); choosingLayout = false },
+                onClose = { choosingLayout = false },
+            )
         }
     }
 }
