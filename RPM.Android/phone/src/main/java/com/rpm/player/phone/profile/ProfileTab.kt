@@ -75,6 +75,8 @@ fun ProfileTab(
         onGround = { settings.changeBackdrop(it.id) },
         nightMode = settings.nightMode,
         onNightMode = settings::changeNightMode,
+        karaoke = settings.karaoke,
+        onKaraoke = settings::changeKaraoke,
         version = account.version,
         onClearCache = { scope.launch { account.clearCache() } },
         onSignOut = { services.scope.launch { account.signOut(controller) } },

@@ -19,13 +19,16 @@ import kotlinx.coroutines.launch
 
 /**
  * What the app gives the player beyond the player itself, the parts the iPhone's `AppModel` hands its `NowPlayingSheet`:
- * the lyrics lookup, the speakers, the heart on the song playing, the artist's page, and whether the sheet is going down
- * because the listening ended. Made once by the shell ([rememberPlayerWiring]), so the lookup's answer and the speakers'
- * state outlive one showing of the sheet.
+ * the lyrics lookup and the measured words for karaoke, the speakers, the heart on the song playing, the artist's page,
+ * and whether the sheet is going down because the listening ended. Made once by the shell ([rememberPlayerWiring]), so
+ * the lookup's answer and the speakers' state outlive one showing of the sheet.
  */
 @Stable
 class PlayerWiring(private val services: Services) {
     val lyrics = LyricsLookup(services.lrcLib, services.measuredLyrics)
+
+    /** The measured words of the playing song, for karaoke. */
+    val timing = KaraokeTiming(services.measuredLyrics)
     val speakers = Speakers(services.casting)
 
     /** Set when the listening ended under the sheet: it goes down by itself. */
@@ -52,6 +55,16 @@ class PlayerWiring(private val services: Services) {
             track?.album ?: now.album,
             seconds,
         )
+    }
+
+    /**
+     * Reads the measured words of [now], and asks for them to be measured where none fit its lyrics. Only once the
+     * lyrics of this very record are in: the request names the sheet's lines, and the last record's sheet must not be
+     * sent for this one.
+     */
+    suspend fun readTiming(now: NowPlaying) {
+        if (now.station != null || lyrics.mediaId != now.mediaId) return
+        timing.read(now.mediaId, lyrics.original, lyrics.offset)
     }
 
     /** Whether the song [rpmId] carries the heart, as pressed here or as the library has it. */

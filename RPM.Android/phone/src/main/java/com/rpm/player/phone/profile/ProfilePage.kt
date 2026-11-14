@@ -40,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -116,6 +117,8 @@ private val TILE_TALL = 116.dp
  * @param downloaded how many albums are downloaded to this phone, and what they take.
  * @param onDownloads opens the list of downloaded albums. Null while that page does not exist; the key is then dim.
  * @param onDeleteAccount deletes the account and signs out. Returns null when done, and a sentence when it failed.
+ * @param karaoke the Karaoke lyrics switch as stored. It shows off, and cannot be changed, for an account that is not a
+ * supporter's.
  * @param bottomRoom how much of the bottom of the screen the chrome covers.
  */
 @Composable
@@ -150,6 +153,8 @@ fun ProfilePage(
     onCrashReports: (Boolean) -> Unit,
     onFeedback: (() -> Unit)?,
     bottomRoom: Dp,
+    karaoke: Boolean,
+    onKaraoke: (Boolean) -> Unit,
 ) {
     val density = LocalDensity.current
     val page = rememberBackdrop()
@@ -180,7 +185,7 @@ fun ProfilePage(
                 cards.Downloads(downloaded, onDownloads)
                 if (quota != null) cards.Plan(quota)
                 cards.Backdrops(ground, isGold, onGround, nightMode, onNightMode)
-                cards.Playback(onWifi, onCellular, onDownload, onRates, reachSavesData)
+                cards.Playback(onWifi, onCellular, onDownload, onRates, reachSavesData, quota, karaoke, onKaraoke)
                 cards.Loudness(levelling, levelsClassical, onLevelling, onLevelsClassical)
                 cards.Device(cached, onClearCache)
                 cards.About(version, onCredits = { credits = true }, crashReports, onCrashReports, onFeedback)
@@ -428,7 +433,7 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
      * wrong. A third is for downloads, which is a choice about space on the phone and not about the network.
      */
     @Composable
-    fun Playback(onWifi: Int, onCellular: Int, onDownload: Int, rates: Rates, savesData: Boolean) {
+    fun Playback(onWifi: Int, onCellular: Int, onDownload: Int, rates: Rates, savesData: Boolean, quota: CloudQuota?, karaoke: Boolean, onKaraoke: (Boolean) -> Unit) {
         Card(Glyph.speaker, stringResource(R.string.Rpm_Profile_Playback)) {
             Rate(stringResource(R.string.Rpm_Profile_QualityWifi), onWifi, rates.onWifi)
             Rate(stringResource(R.string.Rpm_Profile_QualityCellular), onCellular, rates.onCellular)
@@ -443,7 +448,36 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
                 Key(stringResource(R.string.Cloud_BecomeSupporter), onClick = onSupport)
             }
             BasicText(stringResource(R.string.Rpm_Profile_QualityDetail), style = display(11f).copy(color = Ink.white(0x66)))
+            KaraokeSwitch(quota, karaoke, onKaraoke)
         }
+    }
+
+    /**
+     * Karaoke lyrics ([com.rpm.player.phone.PhoneSettings.karaoke]). Shown to everyone and switchable only by a
+     * supporter, with the reason under it for everyone else, as the quality menus above are. Hidden until the plan is
+     * read, so a supporter does not see it greyed out for a moment. Off for anyone else, whatever is stored: a switch
+     * that shows on and does nothing says the wrong thing.
+     */
+    @Composable
+    private fun KaraokeSwitch(quota: CloudQuota?, on: Boolean, onChange: (Boolean) -> Unit) {
+        quota ?: return
+        val haptics = LocalHapticFeedback.current
+        val allowed = quota.supporter
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .alpha(if (allowed) 1f else 0.5f)
+                .clickable(remember { MutableInteractionSource() }, indication = null, enabled = allowed, role = Role.Switch) {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onChange(!on)
+                },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BasicText(stringResource(R.string.Tv_SettingsKaraoke), Modifier.weight(1f), style = display(13f).copy(color = Ink.white(0xB3)))
+            Spacer(Modifier.width(10.dp))
+            Switch(allowed && on)
+        }
+        if (!allowed) BasicText(stringResource(R.string.Supporters_Karaoke), style = display(11f).copy(color = Ink.white(0x88)))
     }
 
     @Composable

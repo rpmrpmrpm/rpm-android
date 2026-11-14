@@ -42,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,7 +81,9 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.rpm.player.core.R
 import com.rpm.player.core.cast.CastState
+import com.rpm.player.core.cloud.CloudTrack
 import com.rpm.player.core.lyrics.LyricSheet
+import com.rpm.player.core.lyrics.MeasuredLine
 import com.rpm.player.core.playback.NowPlaying
 import com.rpm.player.core.playback.SleepClock
 import com.rpm.player.core.playback.rememberPosition
@@ -97,6 +100,9 @@ import com.rpm.player.phone.design.icon
 import com.rpm.player.phone.design.iconOutline
 import com.rpm.player.phone.design.rememberBackdrop
 import com.rpm.player.phone.library.SleeveSquare
+import com.rpm.player.phone.library.SongMenu
+import com.rpm.player.phone.library.SongMenuLayer
+import com.rpm.player.phone.library.SongMenuShown
 import com.rpm.player.phone.radio.StationFace
 import com.rpm.player.phone.ui.RecordDisc
 import kotlinx.coroutines.Job
@@ -159,6 +165,12 @@ private const val QUEUE_GLYPH = ""
  * @param lookingUpLyrics whether the lookup still runs: the one state where the key is neither lit nor greyed.
  * @param onNeedLyrics asks for the lyrics, when the sheet is shown and when the record changes. **Nothing is asked
  *   while the sheet is hidden**, so ordinary listening sends no record name to any service.
+ * @param karaoke whether the sung line lights letter by letter: the setting, for a supporter ([karaokeOn]).
+ * @param measured the words of the playing song as the cloud measured them, or none.
+ * @param onNeedTiming reads the measured words of what is playing, and asks for them to be measured where none fit. It
+ *   is called while the sheet is shown and karaoke is on, and again when the record or its lyrics change.
+ * @param songMenu the long-press menu on the up next drawer's rows, where play next moves the row up instead
+ *   ([QueueOverlay]), and add to playlist puts the player away first; null leaves the rows without one.
  * @param onMark marks the song playing or clears the mark. Null hides the heart: a station is not a song.
  * @param onFile opens the add-to-playlist sheet for the song playing; null leaves it out of the menu.
  * @param onAlbum opens the playing record's page; null where the library has no page for it.
@@ -177,6 +189,10 @@ fun NowPlayingSheet(
     lyrics: LyricSheet,
     lookingUpLyrics: Boolean,
     onNeedLyrics: suspend () -> Unit,
+    karaoke: Boolean,
+    measured: List<MeasuredLine>,
+    onNeedTiming: suspend () -> Unit,
+    songMenu: SongMenu?,
     marked: Boolean,
     onMark: ((Boolean) -> Unit)?,
     onFile: (() -> Unit)?,
@@ -190,7 +206,10 @@ fun NowPlayingSheet(
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val backdrop = rememberBackdrop()
+    // Whether the person asked for the lyrics in place of the cover. What is shown is [lyricsUp], which also asks
+    // whether this record has lyrics.
     var showingLyrics by remember { mutableStateOf(false) }
+    val lyricsUp = LyricsLookup.shows(showingLyrics, lyrics, lookingUpLyrics)
     val haptics = rememberHaptics()
     var showingSpeakers by remember { mutableStateOf(false) }
     var showingSleepTimer by remember { mutableStateOf(false) }
@@ -203,10 +222,9 @@ fun NowPlayingSheet(
 
     // Asked when the sheet is shown and again when the record changes, and only while it is shown.
     LaunchedEffect(now.mediaId) { onNeedLyrics() }
-    // The lyrics were shown for a record that turns out to have none: back to the cover, not an empty screen.
-    LaunchedEffect(lyrics, lookingUpLyrics) {
-        if (showingLyrics && !lyrics.isSynced && !lookingUpLyrics) showingLyrics = false
-    }
+    // The measured words, once the lyrics are in. Keyed on the sheet too, because the sheet arrives after the record
+    // changes, and the request names its lines.
+    LaunchedEffect(now.mediaId, karaoke, lyrics) { if (karaoke) onNeedTiming() }
     // The sleep timer's drawer is shown only while a timer runs, so it closes when the timer ends.
     LaunchedEffect(timer.isOn) { if (!timer.isOn) showingSleepTimer = false }
 
@@ -234,6 +252,12 @@ fun NowPlayingSheet(
         }
         LaunchedEffect(leaving) { if (leaving) putAway() }
         BackHandler { putAway() }
+
+        // The song menu on the queue's rows. It is drawn over the sheet, in its own layer, and its add to playlist puts
+        // the player away first: the picker is drawn under it, as for the playlist item in the player's own menu.
+        val queueMenus = remember { SongMenuShown() }
+        val filing = rememberUpdatedState<(CloudTrack) -> Unit> { track -> putAway { songMenu?.onFile?.invoke(track) } }
+        val queueMenu = remember(songMenu) { songMenu?.drawnIn(queueMenus) { filing.value(it) } }
 
         val ramp = with(density) { RAMP.toPx() }
         // How far into the putting-down the sheet is: nothing at home, all of it a ramp's depth in and while it leaves.
@@ -282,9 +306,9 @@ fun NowPlayingSheet(
                 }
                 // The lyrics take the place of the cover. The ground stays: its colours come from the record, and the
                 // lyrics are read against it.
-                Crossfade(showingLyrics, Modifier.weight(1f).fillMaxWidth(), animationSpec = tween(250, easing = FastOutSlowInEasing), label = "lyrics") { lyricsUp ->
-                    if (lyricsUp) {
-                        LyricView(lyrics, now)
+                Crossfade(lyricsUp, Modifier.weight(1f).fillMaxWidth(), animationSpec = tween(250, easing = FastOutSlowInEasing), label = "lyrics") { up ->
+                    if (up) {
+                        LyricView(lyrics, now, karaoke, measured)
                     } else {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Sleeve(now, player, images, stage) }
                     }
@@ -292,11 +316,11 @@ fun NowPlayingSheet(
                 Column(Modifier.padding(horizontal = 24.dp).padding(top = 8.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     // The title, the artist and the heart are about the record. While the lyrics show, the lyrics are the
                     // text, and two sets of words over one ground would make the reader choose.
-                    val wordsAlpha by animateFloatAsState(if (showingLyrics) 0f else 1f, tween(250), label = "words")
+                    val wordsAlpha by animateFloatAsState(if (lyricsUp) 0f else 1f, tween(250), label = "words")
                     Box(Modifier.graphicsLayer { alpha = wordsAlpha }) {
                         Words(
                             now,
-                            enabled = !showingLyrics,
+                            enabled = !lyricsUp,
                             onAlbum = onAlbum?.let { open -> { putAway(open) } },
                             marked = marked,
                             onMark = onMark,
@@ -306,7 +330,7 @@ fun NowPlayingSheet(
                     Transport(now, player)
                     Below(
                         backdrop,
-                        lyricsLit = showingLyrics,
+                        lyricsLit = lyricsUp,
                         lyricsShown = lyrics.isSynced || lookingUpLyrics,
                         lyricsEnabled = lyrics.isSynced,
                         onLyrics = { haptics.pick(); showingLyrics = !showingLyrics },
@@ -317,8 +341,9 @@ fun NowPlayingSheet(
                 }
             }
             if (showingQueue) {
-                QueueOverlay(queue, sittingFrom, player, backdrop, onClose = { showingQueue = false })
+                QueueOverlay(queue, sittingFrom, player, backdrop, queueMenu, onClose = { showingQueue = false })
             }
+            SongMenuLayer(queueMenus, backdrop)
             menuAt?.let { anchor ->
                 val close = { menuAt = null }
                 val items = buildList {

@@ -306,6 +306,19 @@ class PhoneSettings(context: Context) {
     }
 
     /**
+     * Karaoke lyrics (`lyrics.karaoke`, the iPhone's `KaraokeSetting`): the sung line lights letter by letter as it is
+     * sung. On when it was never set, so a supporter sees the feature without looking for it. It is a supporter feature:
+     * the switch is kept for everyone, and the player combines it with the plan ([com.rpm.player.phone.player.karaokeOn]).
+     */
+    var karaoke by mutableStateOf(prefs.getBoolean(KEY_KARAOKE, true))
+        private set
+
+    fun changeKaraoke(on: Boolean) {
+        karaoke = on
+        prefs.edit().putBoolean(KEY_KARAOKE, on).apply()
+    }
+
+    /**
      * Whether this launch may stand on the gold pressing (the iPhone's `SupporterGround.isGold`). Read once, before the
      * first frame. A quota read later only leaves a note for the next launch ([rememberSupporter]), so the picture
      * never turns gold while somebody is looking at it. Only a sign-in, where nothing of the account is on screen yet,
@@ -334,6 +347,7 @@ class PhoneSettings(context: Context) {
         const val KEY_RATE_DOWNLOAD = "rate.download"
         const val KEY_BACKDROP = "backdrop.picture"
         const val KEY_NIGHT = "look.night"
+        const val KEY_KARAOKE = "lyrics.karaoke"
         const val KEY_GOLD = "supporter.gold"
         const val KEY_ORDER = "library.order"
         const val KEY_LIBRARY_MODE = "library.mode"

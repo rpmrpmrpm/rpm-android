@@ -685,6 +685,10 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                 lyrics = wiring.lyrics.sheet,
                 lookingUpLyrics = wiring.lyrics.looking,
                 onNeedLyrics = { wiring.readLyrics(sheetNow) },
+                karaoke = com.rpm.player.phone.player.karaokeOn(services, settings),
+                measured = wiring.timing.lines(sheetNow.mediaId),
+                onNeedTiming = { wiring.readTiming(sheetNow) },
+                songMenu = songMenu,
                 marked = wiring.isMarked(playing),
                 onMark = playing?.let { id -> wiring.canMark(sheetNow).takeIf { it }?.let { { on: Boolean -> wiring.mark(id, on) } } },
                 // The playlist picker, over everything, for the song playing. Not for a song on a borrowed shelf: a

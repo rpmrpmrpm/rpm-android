@@ -33,14 +33,26 @@ import com.rpm.player.phone.design.MenuItem
  * What "play next" means for the rows of one list: the iPhone's `TrackActions.UpNext`. **It differs between an ordinary
  * song list and the queue itself.** A row on a record or in a list is not in the queue, so play next adds it. A row of
  * the queue is already queued: adding it again would make a second copy where the person means *move this song up*,
- * which the queue page does with its own swipe. So the queue's rows have no play next in their menu at all.
+ * which is [MoveUp], given by the player's up next drawer to each row it can move.
  */
 sealed interface UpNext {
     /** Put the song in the queue after the one playing. */
     class Send(val put: (CloudTrack) -> Unit) : UpNext
 
-    /** No action: this row is already in the queue. */
+    /** No action: this row is already in the queue, and it is the song playing, the song already next, or a row of a
+     * list that moves its rows with a grip. */
     data object ItIsTheQueue : UpNext
+
+    /** A row of the queue that can still move up: [move] moves this row to just after the song playing. It is an action
+     * for this one row and not a function of the song, because the same song can be in the queue twice. */
+    class MoveUp(val move: () -> Unit) : UpNext
+}
+
+/** What play next does on [track] under [upNext], or null where it would do nothing. */
+private fun playNextDeed(upNext: UpNext, track: CloudTrack): (() -> Unit)? = when (upNext) {
+    is UpNext.Send -> { { upNext.put(track) } }
+    is UpNext.MoveUp -> upNext.move
+    UpNext.ItIsTheQueue -> null
 }
 
 /**
@@ -71,6 +83,10 @@ class SongMenu(
 ) {
     /** The same menu, with play next meaning [upNext] instead. */
     fun with(upNext: UpNext) = SongMenu(isMarked, isMine, upNext, onMark, onFile, startRadio, shown)
+
+    /** The same menu, opened in [shown] and with add to playlist doing [onFile] instead: for a layer drawn over the
+     * rest, such as the player, which shows its own open menu over itself. */
+    fun drawnIn(shown: SongMenuShown, onFile: (CloudTrack) -> Unit) = SongMenu(isMarked, isMine, upNext, onMark, onFile, startRadio, shown)
 }
 
 /**
@@ -125,7 +141,12 @@ private class Placed {
  * The swipe keys of a song row in a list, as the iPhone's `TrackActions` gives a row of a SwiftUI `List`: pull it right
  * to play the song next, and left for add to playlist and the favourite mark. The left side is only on this account's
  * own songs, for the reason [SongMenu] gives, and it does not run a key on a full pull, as on iPhone. A row of the
- * queue has no play next here: the queue page has its own keys. Each key is its icon alone, as SwiftUI draws a
+ * queue has no play next here: the queue page has its own keys.
+ *
+ * **Only on a song that is a row of a list of its own** (the iPhone's `TrackActions.Swipes.onItsRow`). Song lines drawn
+ * side by side in one sideways row, such as home's quick selection, take the long-press menu alone ([songPress]): a
+ * sideways swipe through the panels must not open them. A list that sets its own swipe keys, such as the up next drawer,
+ * does not take these as well. Each key is its icon alone, as SwiftUI draws a
  * `Label` in a swipe action; the long-press menu names the same actions in words.
  *
  * Where no menu is set ([LocalSongMenu]), the row is drawn as it is.
@@ -134,10 +155,10 @@ private class Placed {
 fun SongSwipe(track: CloudTrack, content: @Composable () -> Unit) {
     val menu = LocalSongMenu.current ?: return content()
     val haptics = LocalHapticFeedback.current
-    val leading = (menu.upNext as? UpNext.Send)?.let { send ->
+    val leading = playNextDeed(menu.upNext, track)?.let { deed ->
         SwipeKey(Glyph.next, "", Ink.white(0x33)) {
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-            send.put(track)
+            deed()
         }
     }
     val trailing = if (menu.isMine(track)) {
@@ -168,10 +189,10 @@ fun SongMenuLayer(shown: SongMenuShown, backdrop: Backdrop) {
     val menu = open.menu
     val haptics = LocalHapticFeedback.current
     val items = buildList {
-        (menu.upNext as? UpNext.Send)?.let { send ->
+        playNextDeed(menu.upNext, track)?.let { deed ->
             add(MenuItem(stringResource(R.string.AlbumMenu_PlayNext), Glyph.next) {
                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                send.put(track)
+                deed()
             })
         }
         // On a borrowed row too: a radio only plays, it writes nothing.

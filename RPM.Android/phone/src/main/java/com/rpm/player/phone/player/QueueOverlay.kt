@@ -39,6 +39,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -79,6 +80,10 @@ import com.rpm.player.phone.design.displayBold
 import com.rpm.player.phone.design.frost
 import com.rpm.player.phone.design.icon
 import com.rpm.player.phone.design.kicker
+import com.rpm.player.phone.library.LocalSongMenu
+import com.rpm.player.phone.library.SongMenu
+import com.rpm.player.phone.library.UpNext
+import com.rpm.player.phone.library.songPress
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -104,9 +109,12 @@ private val REMOVE = Color(0xFFE5484D)
  * plays from that song; a row pulled left is removed, one pulled right is played next. Rearranging is a mode with a grip
  * on each song still to come, and a drop never lands above the song playing ([QueueRows.drop]). Every action is given the
  * row's place in the queue, and checks the queue still holds that song there when it acts.
+ *
+ * A long press on a row opens the same song menu as a song anywhere else ([songMenu]), with play next moving that row
+ * up, as the row's leading swipe does ([UpNext.MoveUp]). Its swipe keys are this list's own, not the song menu's.
  */
 @Composable
-internal fun QueueOverlay(queue: QueueRead, sittingFrom: Int, player: Player, backdrop: Backdrop, onClose: () -> Unit) {
+internal fun QueueOverlay(queue: QueueRead, sittingFrom: Int, player: Player, backdrop: Backdrop, songMenu: SongMenu?, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val panelPx = with(density) { PANEL.toPx() }
@@ -151,6 +159,7 @@ internal fun QueueOverlay(queue: QueueRead, sittingFrom: Int, player: Player, ba
                 queue,
                 sittingFrom,
                 player,
+                songMenu,
                 onPull = { delta -> scope.launch { travel.snapTo((travel.value + delta).coerceAtLeast(0f)) } },
                 onLetGo = { velocity ->
                     val far = with(density) { 120.dp.toPx() }
@@ -166,7 +175,7 @@ internal fun QueueOverlay(queue: QueueRead, sittingFrom: Int, player: Player, ba
 
 /** The drawer's grip, heading and list. Rearranging is off each time the list comes up. */
 @Composable
-private fun Panel(queue: QueueRead, sittingFrom: Int, player: Player, onPull: (Float) -> Unit, onLetGo: (Float) -> Unit, onTap: () -> Unit) {
+private fun Panel(queue: QueueRead, sittingFrom: Int, player: Player, songMenu: SongMenu?, onPull: (Float) -> Unit, onLetGo: (Float) -> Unit, onTap: () -> Unit) {
     var rearranging by remember { mutableStateOf(false) }
     val haptics = rememberHaptics()
     val look = QueueLook.sitting(Sitting.shownFrom(sittingFrom, queue.entries.size, queue.playing), queue.playing)
@@ -218,7 +227,7 @@ private fun Panel(queue: QueueRead, sittingFrom: Int, player: Player, onPull: (F
             style = display(13f).copy(color = Ink.white(0x88), textAlign = TextAlign.Center),
         )
     } else {
-        Rows(rows, look, queue, player, rearranging && queue.entries.size > 1)
+        Rows(rows, look, queue, player, rearranging && queue.entries.size > 1, songMenu)
     }
 }
 
@@ -285,7 +294,7 @@ private fun PartHeading(part: QueuePart, record: String?) {
  * among them would put it one row off.
  */
 @Composable
-private fun Rows(rows: List<QueueRow<QueueEntry>>, look: QueueLook, queue: QueueRead, player: Player, rearranging: Boolean) {
+private fun Rows(rows: List<QueueRow<QueueEntry>>, look: QueueLook, queue: QueueRead, player: Player, rearranging: Boolean, songMenu: SongMenu?) {
     val list = rememberLazyListState()
     val density = LocalDensity.current
     val rowPx = with(density) { ROW.toPx() }
@@ -332,67 +341,74 @@ private fun Rows(rows: List<QueueRow<QueueEntry>>, look: QueueLook, queue: Queue
                 }
                 val shift by animateFloatAsState(aside, label = "make room")
                 val isCarried = row.id == carried
-                Box(
-                    Modifier
-                        .zIndex(if (isCarried) 1f else 0f)
-                        .graphicsLayer { translationY = if (isCarried) dy else shift }
-                        .background(if (isCarried) Ink.white(0x14) else Color.Transparent),
-                ) {
-                    if (rearranging) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.weight(1f)) { Song(row, trailingRoom = false) {} }
-                            if (row.state == QueueRow.State.Coming) {
-                                Box(
-                                    Modifier
-                                        .width(48.dp)
-                                        .height(ROW)
-                                        .pointerInput(row.id) {
-                                            detectDragGestures(
-                                                onDragStart = {
-                                                    carried = row.id
-                                                    dy = 0f
-                                                },
-                                                onDrag = { change, amount ->
-                                                    change.consume()
-                                                    dy += amount.y
-                                                },
-                                                onDragEnd = {
-                                                    val source = rows.indexOfFirst { it.id == carried }
-                                                    val target = if (source < 0) -1 else (source + (dy / rowPx).roundToInt()).coerceIn(first, rows.lastIndex)
-                                                    val move = if (source >= 0 && target >= 0) {
-                                                        QueueRows.drop(rows, look, source, if (target > source) target + 1 else target, queue.entries.size)
-                                                    } else null
-                                                    val id = rows.getOrNull(source)?.item?.mediaId
-                                                    if (move != null && id != null && player.holds(move.first, id)) {
-                                                        haptics.tick()
-                                                        player.moveMediaItem(move.first, move.second)
-                                                    }
-                                                    carried = null
-                                                    dy = 0f
-                                                },
-                                                onDragCancel = {
-                                                    carried = null
-                                                    dy = 0f
-                                                },
-                                            )
-                                        },
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    BasicText(Glyph.grip, style = icon(15f).copy(color = Ink.white(0x88)))
+                val playing = queue.playing
+                val id = row.item.mediaId
+                // Play next on this row: it moves the row to just after the song playing. Nothing on the song playing,
+                // on the song already next, or while rearranging, when the grips move the rows.
+                val canMoveUp = !rearranging && row.at != playing && row.at != (playing ?: -1) + 1
+                val menu = remember(songMenu, canMoveUp, row.at, id) {
+                    songMenu?.with(if (canMoveUp) UpNext.MoveUp { player.playNext(row.at, id) } else UpNext.ItIsTheQueue)
+                }
+                CompositionLocalProvider(LocalSongMenu provides menu) {
+                    Box(
+                        Modifier
+                            .zIndex(if (isCarried) 1f else 0f)
+                            .graphicsLayer { translationY = if (isCarried) dy else shift }
+                            .background(if (isCarried) Ink.white(0x14) else Color.Transparent),
+                    ) {
+                        if (rearranging) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.weight(1f)) { Song(row, trailingRoom = false) {} }
+                                if (row.state == QueueRow.State.Coming) {
+                                    Box(
+                                        Modifier
+                                            .width(48.dp)
+                                            .height(ROW)
+                                            .pointerInput(row.id) {
+                                                detectDragGestures(
+                                                    onDragStart = {
+                                                        carried = row.id
+                                                        dy = 0f
+                                                    },
+                                                    onDrag = { change, amount ->
+                                                        change.consume()
+                                                        dy += amount.y
+                                                    },
+                                                    onDragEnd = {
+                                                        val source = rows.indexOfFirst { it.id == carried }
+                                                        val target = if (source < 0) -1 else (source + (dy / rowPx).roundToInt()).coerceIn(first, rows.lastIndex)
+                                                        val move = if (source >= 0 && target >= 0) {
+                                                            QueueRows.drop(rows, look, source, if (target > source) target + 1 else target, queue.entries.size)
+                                                        } else null
+                                                        val moving = rows.getOrNull(source)?.item?.mediaId
+                                                        if (move != null && moving != null && player.holds(move.first, moving)) {
+                                                            haptics.tick()
+                                                            player.moveMediaItem(move.first, move.second)
+                                                        }
+                                                        carried = null
+                                                        dy = 0f
+                                                    },
+                                                    onDragCancel = {
+                                                        carried = null
+                                                        dy = 0f
+                                                    },
+                                                )
+                                            },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        BasicText(Glyph.grip, style = icon(15f).copy(color = Ink.white(0x88)))
+                                    }
+                                } else {
+                                    Spacer(Modifier.width(48.dp))
                                 }
-                            } else {
-                                Spacer(Modifier.width(48.dp))
                             }
-                        }
-                    } else {
-                        val playing = queue.playing
-                        val canMoveUp = row.at != playing && row.at != (playing ?: -1) + 1
-                        val id = row.item.mediaId
-                        SwipeRow(
-                            leading = if (canMoveUp) SwipeKey(Glyph.next, stringResource(R.string.AlbumMenu_PlayNext), Ink.white(0x33)) { haptics.commit(); player.playNext(row.at, id) } else null,
-                            trailing = SwipeKey(Glyph.remove, stringResource(R.string.Details_RemoveArt), REMOVE) { haptics.commit(); player.remove(row.at, id) },
-                        ) {
-                            Song(row, trailingRoom = true) { player.jump(row.at, id) }
+                        } else {
+                            SwipeRow(
+                                leading = if (canMoveUp) SwipeKey(Glyph.next, stringResource(R.string.AlbumMenu_PlayNext), Ink.white(0x33)) { haptics.commit(); player.playNext(row.at, id) } else null,
+                                trailing = SwipeKey(Glyph.remove, stringResource(R.string.Details_RemoveArt), REMOVE) { haptics.commit(); player.remove(row.at, id) },
+                            ) {
+                                Song(row, trailingRoom = true) { player.jump(row.at, id) }
+                            }
                         }
                     }
                 }
@@ -412,7 +428,8 @@ private fun Song(row: QueueRow<QueueEntry>, trailingRoom: Boolean, onClick: () -
         Modifier
             .fillMaxWidth()
             .height(ROW)
-            .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+            // A long press opens the song menu the row was given ([LocalSongMenu]).
+            .songPress(track, remember { MutableInteractionSource() }, onClick)
             .padding(end = if (trailingRoom) 18.dp else 0.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,

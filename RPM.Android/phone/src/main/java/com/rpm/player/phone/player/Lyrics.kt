@@ -42,10 +42,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rpm.player.core.cloud.Shelf
+import com.rpm.player.core.lyrics.KaraokeLines
 import com.rpm.player.core.lyrics.LrcLib
 import com.rpm.player.core.lyrics.LyricScore
 import com.rpm.player.core.lyrics.LyricSheet
+import com.rpm.player.core.lyrics.MeasuredLine
 import com.rpm.player.core.lyrics.MeasuredLyrics
+import com.rpm.player.core.lyrics.WordSpan
 import com.rpm.player.core.playback.NowPlaying
 import com.rpm.player.core.playback.TrackRef
 import com.rpm.player.phone.design.system
@@ -75,6 +78,19 @@ class LyricsLookup(private val lrcLib: LrcLib, private val measured: MeasuredLyr
     var looking by mutableStateOf(false)
         private set
 
+    /** The sheet as it was found, before it was moved by [offset]: the one the cloud is asked to measure, and the one
+     * its measured lines are matched against ([KaraokeTiming]). */
+    var original by mutableStateOf(LyricSheet.EMPTY)
+        private set
+
+    /** How far [sheet] was moved from [original], in seconds ([MeasuredLyrics.offsetFor]); 0 where it was not. */
+    var offset by mutableStateOf(0.0)
+        private set
+
+    /** The media id of the record [sheet] belongs to, once its lookup has finished; null while one runs. */
+    var mediaId by mutableStateOf<String?>(null)
+        private set
+
     /** The record the sheet belongs to: its media id, then the names and length sent to LRCLIB. */
     private var asked: String? = null
 
@@ -86,6 +102,9 @@ class LyricsLookup(private val lrcLib: LrcLib, private val measured: MeasuredLyr
         val track = mediaId?.let(TrackRef::parse)
         if (track == null || title.isNullOrBlank()) {
             sheet = LyricSheet.EMPTY
+            original = LyricSheet.EMPTY
+            offset = 0.0
+            this.mediaId = null
             asked = null
             looking = false
             return
@@ -95,6 +114,9 @@ class LyricsLookup(private val lrcLib: LrcLib, private val measured: MeasuredLyr
         // Set before the wait, so a second call while the first waits does not look up the same record twice.
         asked = key
         sheet = LyricSheet.EMPTY
+        original = LyricSheet.EMPTY
+        offset = 0.0
+        this.mediaId = null
         looking = true
 
         // The owner's own choice comes first. A track the cloud does not know, a sheet with no timings, or a failed
@@ -103,13 +125,31 @@ class LyricsLookup(private val lrcLib: LrcLib, private val measured: MeasuredLyr
         if (asked != key) return
         if (!found.isSynced) found = withContext(Dispatchers.IO) { lrcLib.sheet(artist, title, album, seconds) }
         if (asked != key) return
+        var moved = 0.0
         if (found.isSynced && track.shelf == Shelf.Own) {
             val answer = withContext(Dispatchers.IO) { measured.read(track) }
             if (asked != key) return
-            found = MeasuredLyrics.shifted(found, MeasuredLyrics.offsetFor(answer, found))
+            moved = MeasuredLyrics.offsetFor(answer, found)
         }
-        sheet = found
+        original = found
+        offset = moved
+        sheet = MeasuredLyrics.shifted(found, moved)
+        this.mediaId = mediaId
         looking = false
+    }
+
+    companion object {
+        /**
+         * Whether the player shows the lyrics in place of the cover. [asked] is the person's choice, from the lyrics
+         * key. The lyrics are shown while they asked for them and this record has timed lyrics, or the lookup for it is
+         * still running. A record with none shows the cover, and the next record with lyrics shows them again.
+         *
+         * **Worked out from the values, not switched by a change.** A new record sets the sheet to empty while it is
+         * looked up, and a record with no lyrics ends the lookup with an empty sheet again. The sheet does not change at
+         * the end, so a rule that waited for a change left the empty lyrics screen up, with the lyrics key greyed out and
+         * no way to close it. The iPhone's `LyricsLookup.shows`.
+         */
+        fun shows(asked: Boolean, sheet: LyricSheet, looking: Boolean): Boolean = asked && (sheet.isSynced || looking)
     }
 }
 
@@ -127,18 +167,34 @@ private const val LEADING = 0.62f
  * **The playhead is not read on every frame.** The piece being sung is worked out when the record reaches the next
  * piece's moment, by waiting for that moment, so the list recomposes once a line. Only the dots of a break, and of the
  * intro, follow the playhead, four times a second, as on iPhone.
+ *
+ * With [karaoke] (the setting, for a supporter), the sung line lights letter by letter ([SweptLine]), from the words the
+ * cloud [measured] off the recording where they fit the line ([KaraokeLines]), and a line stays up while its last
+ * measured word is still sung.
  */
 @Composable
-internal fun LyricView(sheet: LyricSheet, now: NowPlaying) {
+internal fun LyricView(sheet: LyricSheet, now: NowPlaying, karaoke: Boolean, measured: List<MeasuredLine>) {
     val score = remember(sheet) { LyricScore.of(sheet) }
-    val at by produceState(score.index(now.positionAt(SystemClock.uptimeMillis()) / 1000.0), score, now) {
+    // Each piece's measured words, worked out once per answer. Empty without karaoke, which leaves the stamps to decide.
+    val heard = remember(score, measured, karaoke) { if (karaoke) KaraokeLines.heard(score, measured) else emptyList() }
+    // With karaoke, a line stays up while its last measured word is still sung ([KaraokeLines.held]).
+    fun piece(seconds: Double): Int? = KaraokeLines.held(score, score.index(seconds), seconds, heard)
+    val at by produceState(piece(now.positionAt(SystemClock.uptimeMillis()) / 1000.0), score, now, heard) {
+        // Measured words move the line on between the stamps as well, so then the playhead is looked at a few times a
+        // second. A value that did not change recomposes nothing.
+        val measuring = heard.any { it != null }
         while (true) {
             val seconds = now.positionAt(SystemClock.uptimeMillis()) / 1000.0
-            val index = score.index(seconds)
+            val index = piece(seconds)
             value = index
             if (!now.advancing) break
-            val next = score.parts.getOrNull((index ?: -1) + 1)?.seconds ?: break
-            delay(((next - seconds) * 1000).roundToInt().toLong().coerceAtLeast(16))
+            val next = score.parts.getOrNull((score.index(seconds) ?: -1) + 1)?.seconds
+            val wait = when {
+                next != null -> ((next - seconds) * 1000).roundToInt().toLong().coerceAtLeast(16)
+                measuring -> Long.MAX_VALUE
+                else -> break
+            }
+            delay(if (measuring) minOf(wait, HELD_LOOK_MS) else wait)
         }
     }
     val list = rememberLazyListState()
@@ -173,7 +229,7 @@ internal fun LyricView(sheet: LyricSheet, now: NowPlaying) {
             modifier = Modifier.fillMaxSize(),
         ) {
             itemsIndexed(score.parts, key = { _, part -> part.id }, contentType = { _, part -> part.isRest }) { _, part ->
-                ScoreRow(part, score, at, size, now)
+                ScoreRow(part, score, at, size, now, karaoke, heard)
             }
         }
 
@@ -187,7 +243,7 @@ internal fun LyricView(sheet: LyricSheet, now: NowPlaying) {
 
 /** One piece of the score: a line of words, or the dots of the rest that closes a stretch. */
 @Composable
-private fun ScoreRow(part: LyricScore.Part, score: LyricScore, at: Int?, size: Float, now: NowPlaying) {
+private fun ScoreRow(part: LyricScore.Part, score: LyricScore, at: Int?, size: Float, now: NowPlaying, karaoke: Boolean, heard: List<List<WordSpan>?>) {
     val here = at?.let { score.parts[it] }
     val distance = abs(part.id - (at ?: 0))
     val sung = part.id == at
@@ -204,15 +260,24 @@ private fun ScoreRow(part: LyricScore.Part, score: LyricScore, at: Int?, size: F
         is LyricScore.Piece.Rest -> Box(Modifier.fillMaxWidth().graphicsLayer { this.alpha = alpha }, contentAlignment = Alignment.Center) {
             if (wanted > 0f || alpha > 0f) Dots(now) { seconds -> through(seconds, piece.from, piece.until) }
         }
-        is LyricScore.Piece.Words -> BasicText(
-            piece.line.text,
-            Modifier.fillMaxWidth().graphicsLayer { this.alpha = alpha },
+        is LyricScore.Piece.Words -> {
             // The same weight on every line, sung or not: a bolder sung line would wrap again and move the lines under
             // it. Only the brightness shows which line is sung.
-            style = system(size, FontWeight.SemiBold).copy(color = if (sung) Color.White else LINE, textAlign = TextAlign.Center),
-        )
+            val style = system(size, FontWeight.SemiBold).copy(textAlign = TextAlign.Center)
+            val shape = Modifier.fillMaxWidth().graphicsLayer { this.alpha = alpha }
+            if (sung && karaoke) {
+                // Its measured words where they fit the line, else its time shared between its words by length.
+                val spans = remember(part.id, heard) { KaraokeLines.spans(part, score, heard) }
+                SweptLine(piece.line.text, spans, now, style.copy(color = Color.White), shape)
+            } else {
+                BasicText(piece.line.text, shape, style = style.copy(color = if (sung) Color.White else LINE))
+            }
+        }
     }
 }
+
+/** How often the playhead is looked at while measured words can move the sung line between stamps, in milliseconds. */
+private const val HELD_LOOK_MS = 100L
 
 /** The colour of a line that is not being sung. */
 private val LINE = Color(0xFFEAEAEA)
