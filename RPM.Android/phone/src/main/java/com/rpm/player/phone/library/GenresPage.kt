@@ -99,6 +99,8 @@ import com.rpm.player.phone.home.HomeActions
 import com.rpm.player.phone.home.ListsRow
 import com.rpm.player.phone.home.PicksRow
 import com.rpm.player.phone.home.SongLine
+import com.rpm.player.phone.home.SongTap
+import com.rpm.player.core.playback.Tapped
 import com.rpm.player.phone.ui.VinylGround
 
 /** The space between the cards on the genres wall (`GenresPage.gutter` on iPhone). */
@@ -316,7 +318,7 @@ fun GenrePage(
     artwork: Artwork,
     bottomRoom: Dp,
     onOpen: (CloudAlbum) -> Unit,
-    onPlay: (List<CloudTrack>) -> Unit,
+    onPlay: (List<CloudTrack>, Int, Tapped) -> Unit,
     onArtist: (ArtistWallItem) -> Unit,
     onList: (TrackList) -> Unit,
     onGenre: (String) -> Unit,
@@ -366,6 +368,8 @@ fun GenrePage(
                                 logoStamp = "",
                                 actions = picks,
                                 songLine = SongLine.Artist,
+                                // The most played songs play from the one tapped, as on the desktop.
+                                songTap = SongTap.TheRowFromIt,
                             )
                         }
                     }

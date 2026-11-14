@@ -472,7 +472,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             services.artwork,
             bottomRoom = chrome,
             onOpen = { push(Step.Record(it.key)) },
-            onPlay = { tracks -> play(tracks.map { queued(collection, it) }, 0, Tapped.List) },
+            onPlay = { tracks, at, tapped -> play(tracks.map { queued(collection, it) }, at, tapped) },
             onArtist = { push(Step.Artist(it.name)) },
             onList = { push(Step.Playlist(it.id)) },
             onGenre = { push(Step.Genre(it)) },
@@ -504,7 +504,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     val homeActions = HomeActions(
         onOpen = { homeOpened = homeOpened + Step.Record(it.key) },
         onOpenList = { homeOpened = homeOpened + Step.Playlist(it.id) },
-        onPlay = { tracks -> play(tracks.map { queued(collection, it) }, 0, Tapped.List) },
+        onPlay = { tracks, at, tapped -> play(tracks.map { queued(collection, it) }, at, tapped) },
         onRadio = { track -> controller?.startRadio(queued(collection, track)) },
         onTune = { station ->
             controller?.let {

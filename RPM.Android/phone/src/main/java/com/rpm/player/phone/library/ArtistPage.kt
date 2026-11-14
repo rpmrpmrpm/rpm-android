@@ -93,6 +93,8 @@ import com.rpm.player.core.papers.WorldPlays
 import com.rpm.player.phone.home.HomeActions
 import com.rpm.player.phone.home.PicksRow
 import com.rpm.player.phone.home.SongLine
+import com.rpm.player.phone.home.SongTap
+import com.rpm.player.core.playback.Tapped
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -230,17 +232,12 @@ fun ArtistPage(
     LaunchedEffect(subject) { dossiers.read(subject) {}?.let { article = it.article } }
     // A mixtape starts from one of their songs, chosen at random each time. Null where the app gives no way to start one.
     val startRadio = LocalSongMenu.current?.startRadio
-    // A popular song plays the popular songs from that one, as on the desktop, so the row becomes the queue; the key
-    // beside the heading plays all of them (`songTap: .theRowFromIt` on iPhone). The row hands a song's line over as
-    // that one song and its key as every song, so a single song is a tap on a line.
-    val popularSongs = remember(popular) { popular.map { it.first } }
     val picks = HomeActions(
         onOpen = onOpen,
         onOpenList = {},
-        onPlay = { tracks ->
-            val at = if (tracks.size == 1) popularSongs.indexOfFirst { it.rpmId == tracks[0].rpmId } else -1
-            if (at >= 0) onPlay(popularSongs, at) else onPlayAll(tracks)
-        },
+        // A popular song plays the popular songs from that one, as on the desktop, so the row becomes the queue; the
+        // key beside the heading plays all of them (SongTap.TheRowFromIt, below).
+        onPlay = { tracks, at, tapped -> if (tapped == Tapped.List) onPlayAll(tracks) else onPlay(tracks, at) },
         onTune = {},
     )
     // The wall is read each time the page opens, as the record page's reviews are. See [ArtistPosts].
@@ -335,6 +332,7 @@ fun ArtistPage(
                                     logoStamp = "",
                                     actions = picks,
                                     songLine = SongLine.Record,
+                                    songTap = SongTap.TheRowFromIt,
                                 )
                             }
                         }

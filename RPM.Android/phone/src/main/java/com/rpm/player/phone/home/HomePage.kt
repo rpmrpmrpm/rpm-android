@@ -136,6 +136,11 @@ import com.rpm.player.phone.ui.roomReflection
 import com.rpm.player.core.room.PaintedRoom
 import com.rpm.player.phone.ui.rememberRoomColours
 import com.rpm.player.core.room.RoomPalette
+import com.rpm.player.core.playback.Tapped
+import com.rpm.player.phone.ui.LocalNightMode
+import com.rpm.player.phone.ui.rememberLead
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.unit.Density
 
 /**
  * The height of the banner's plate, before it reaches up behind the title and the status bar (`HomeBannerMetrics` on
@@ -166,6 +171,8 @@ private const val QUICK_PICKS = 16
 private const val QUICK_TALL = 4
 private val QUICK_LINE = 60.dp
 private val QUICK_ART = 44.dp
+/** How far a station's logo stands in from the edges of its square on a line of the quick selection. */
+private val QUICK_STATION_INSET = 4.dp
 private val PEEK = 32.dp
 private val PANELS_APART = 16.dp
 
@@ -176,7 +183,9 @@ private val SECTIONS_APART = 26.dp
 class HomeActions(
     val onOpen: (CloudAlbum) -> Unit,
     val onOpenList: (TrackList) -> Unit,
-    val onPlay: (List<CloudTrack>) -> Unit,
+    /** Plays these tracks from this position: one song from the quick selection, a row from the song tapped in it, or
+     * all its songs. */
+    val onPlay: (List<CloudTrack>, Int, Tapped) -> Unit,
     val onTune: (RadioStation) -> Unit,
     /** Start radio on a song: it plays now and the queue keeps filling with songs like it. */
     val onRadio: (CloudTrack) -> Unit = {},
@@ -240,7 +249,9 @@ fun HomePage(
     val quick = remember(home.quick, stations) { HomeShelf.withStations(home.quick, stations).take(QUICK_PICKS) }
     val statusBar = WindowInsets.statusBars.asPaddingValues(density).calculateTopPadding()
     var heading by remember { mutableStateOf(0.dp) }
-    var dress by remember { mutableStateOf<Any?>(null) }
+    var dress by remember { mutableStateOf<BannerDress?>(null) }
+    // Where the banner ends, from the page's top, in pixels: the ground's change is measured from it ([leadShare]).
+    var bannerFoot by remember { mutableIntStateOf(0) }
     val scroll = rememberScrollState()
     // The rows as they scroll, for the frost under the title.
     val rows = rememberBackdrop()
@@ -251,11 +262,39 @@ fun HomePage(
     // How far the banner reaches up: the title and the status bar. This is known once the title has been measured.
     val overhang = if (banner.isNotEmpty() && heading > 0.dp) heading + statusBar else 0.dp
 
+    // The pictures the rows show before they are swiped, read now, so a card built on scroll starts from memory.
+    val context = LocalContext.current
+    LaunchedEffect(home, quick, collection, logoStamp) {
+        val rowsOfRecords = listOf(home.listened, home.suggested, home.taste, home.played, home.added)
+        val art = HomeArt(quick = QUICK_ART, quickStationInset = QUICK_STATION_INSET, row = ROW_ART.dp)
+        warmHome(images, warmRequests(context, density, art, quick, rowsOfRecords, home.madeForYou, collection, logoStamp))
+    }
+
     Box(Modifier.fillMaxSize()) {
+        val wearing = dress?.wearing
         // A cover's accent tints the ground, as on iPhone (`BannerDress.accent`). A photograph gives none: its colour is
         // the photograph's own.
-        val accent = rememberAccent(dress?.takeIf { it !is Bitmap }, images)
-        Box(Modifier.fillMaxSize().backdropSource(backdrop)) { ArtGround(dress, images, accent) }
+        val accent = rememberAccent(wearing?.takeIf { it !is Bitmap }, images)
+        // The front card's colour, the photograph's or the cover's, as the artist and album pages are led by theirs
+        // (`BannerDress.lead` on iPhone). None for a card on a room, and none in night mode, where a ground has no lead.
+        val lead = rememberLead(wearing?.takeIf { dress?.roomed == false && !LocalNightMode.current }, images)?.second
+        // How far the page is through the ground's change. Only the two layers' graphicsLayer reads it, so a scroll
+        // redraws their opacity and nothing else (`LeadsOnScroll` on iPhone).
+        val top = if (heading > 0.dp) statusBar + heading else 0.dp
+        val share: Density.() -> Float = { leadShare(scroll.value.toFloat(), bannerFoot.toFloat(), top.toPx()) }
+        Box(Modifier.fillMaxSize().backdropSource(backdrop)) {
+            // The ground on the front card's picture. With a colour coming in over it, it is taken away once covered,
+            // so its picture is not drawn under an opaque layer.
+            Box(Modifier.fillMaxSize().then(if (lead != null) Modifier.graphicsLayer { alpha = if (share() >= 1f) 0f else 1f } else Modifier)) {
+                ArtGround(wearing, images, accent)
+            }
+            // **Lower down the page, the card's colour leads the ground**, with its picture faint over it, as on the
+            // artist page and the album page. The blurred picture is the ground only while the banner is in view. Its
+            // blur is the one the layer under it already made, kept by the image loader: no new blur is drawn.
+            if (lead != null) {
+                Box(Modifier.fillMaxSize().graphicsLayer { alpha = share() }) { ArtGround(wearing, images, lead = lead) }
+            }
+        }
         Column(
             Modifier
                 .fillMaxSize()
@@ -266,13 +305,13 @@ fun HomePage(
             verticalArrangement = Arrangement.spacedBy(SECTIONS_APART),
         ) {
             if (banner.isNotEmpty()) {
-                Banner(banner, collection, images, logoStamp, overhang, statusBar, turns = onScreen && atTop, pull, roomsRun = onScreen, onDress = { dress = it }, onReady = onReady, actions = actions)
+                Banner(banner, collection, images, logoStamp, overhang, statusBar, turns = onScreen && atTop, pull, roomsRun = onScreen, onDress = { dress = it }, onReady = onReady, actions = actions, Modifier.onSizeChanged { bannerFoot = it.height })
             } else {
                 Spacer(Modifier.height(heading + statusBar))
                 // No banner to wait for.
                 LaunchedEffect(Unit) { onReady() }
             }
-            if (quick.isNotEmpty()) PicksRow(stringResource(R.string.Home_QuickPicks), quick, collection, images, logoStamp, actions, SongLine.Artist)
+            if (quick.isNotEmpty()) PicksRow(stringResource(R.string.Home_QuickPicks), quick, collection, images, logoStamp, actions, SongLine.Artist, SongTap.ThatSong)
             for ((label, albums) in listOf(
                 R.string.Home_Listened to home.listened,
                 R.string.Home_Suggested to home.suggested,
@@ -306,6 +345,29 @@ fun HomePage(
             SwitchKey(backdrop, onSwitch, Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 4.dp, end = 16.dp))
         }
     }
+}
+
+/**
+ * What the banner's front card dresses the page in: the picture it wears, its photograph or its cover, and whether it
+ * stands on a room, which gives the page no leading colour (`BannerDress` on iPhone).
+ */
+private data class BannerDress(val wearing: Any, val roomed: Boolean)
+
+/** Where the ground starts to move to the card's colour: when this share of the way to the quick selection is scrolled. */
+private const val LEAD_FROM = 0.4f
+
+/**
+ * How far through the ground's change the page has scrolled, from 0 to 1 (`LeadsOnScroll.share` and `HomePage.leadRange`
+ * on iPhone). It starts when the banner is 40% of the way off and ends when the banner's foot reaches the title, where
+ * the quick selection is read. All in pixels: [scrolled] from the top, [bannerFoot] from the page's top, and [top] the
+ * status bar and the title. It is 0 until the banner and the title are measured (either 0), and the picture stays the
+ * ground until then.
+ */
+internal fun leadShare(scrolled: Float, bannerFoot: Float, top: Float): Float {
+    if (bannerFoot <= 0f || top <= 0f) return 0f
+    val end = maxOf(1f, bannerFoot - top)
+    val start = end * LEAD_FROM
+    return ((scrolled - start) / (end - start)).coerceIn(0f, 1f)
 }
 
 /** How long after the banner is drawn the other cards' photographs start to be cut: after the front card's own, so the
@@ -345,9 +407,10 @@ private fun Banner(
     turns: Boolean,
     pull: TopPull,
     roomsRun: Boolean,
-    onDress: (Any?) -> Unit,
+    onDress: (BannerDress) -> Unit,
     onReady: () -> Unit,
     actions: HomeActions,
+    modifier: Modifier = Modifier,
 ) {
     // Every card's room runs on one clock, so the copy of the first card after the last draws the same frame as the first
     // card when one takes the other's place (`RoomView.Zero.shared` on iPhone).
@@ -380,7 +443,7 @@ private fun Banner(
             stepping.launch { pager.animateScrollToPage(at + 1) }
         }
     }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             // The photograph is cut for the height the card is drawn at, including the overhang. If it were cut for
             // the plate alone and then stretched to the taller card, a face in the clear area would be pushed up behind
@@ -490,7 +553,7 @@ private fun BannerCardView(
     onWhole: (Boolean) -> Unit,
     onRunOff: (ImageBitmap?) -> Unit,
     onRoom: (PaintedRoom, Boolean) -> Unit,
-    onDress: (Any?) -> Unit,
+    onDress: (BannerDress) -> Unit,
     onReady: () -> Unit,
     actions: HomeActions,
 ) {
@@ -527,7 +590,6 @@ private fun BannerCardView(
         if (scene != null && picture != null && baked != null) onHeld(HeldPhoto(scene, picture, baked, width, plate, mirror))
     }
     LaunchedEffect(runOff) { onRunOff(runOff) }
-    LaunchedEffect(live, wearing) { if (live && wearing != null) onDress(wearing) }
     // Ready once the photograph and its run-off are both in, so the front card comes in whole: the run-off is baked a
     // fifth of a second after the photograph, and a card shown between the two has no blur or fade at its foot.
     LaunchedEffect(live, looked, runOff) { if (live && looked && (photo == null || runOff != null)) onReady() }
@@ -546,6 +608,7 @@ private fun BannerCardView(
     // looked for and not found (`HomeFeatureCard.standingOnARoom`). The room is in a generated list's own colours, or
     // in those of the card's cover or the station's logo. It moves only on the card in front, while home is showing.
     val roomed = list != null || station != null || (looked && photo == null)
+    LaunchedEffect(live, wearing, roomed) { if (live && wearing != null) onDress(BannerDress(wearing, roomed)) }
     val colours = rememberRoomColours(if (roomed && framed == null) station?.let { StationLogo.of(it, logoStamp) } ?: cover else null, images)
     val seed = album?.key ?: station?.uuid ?: title
     val subtitle = album?.artist
@@ -737,6 +800,21 @@ private fun kickerOf(kicker: Kicker): Int = when (kicker) {
 enum class SongLine { Artist, Record }
 
 /**
+ * What a tap on one song's line plays (`HomePicksRow.SongTap` on iPhone).
+ *
+ * **Stated by every page, with no default**, because the desktop does both. Its home page plays the one song: the quick
+ * selection is a mix of unrelated things. An artist's popular songs and a genre's most played songs play the row from
+ * the song that was tapped, so the row becomes the queue.
+ */
+enum class SongTap {
+    /** That song alone. */
+    ThatSong,
+
+    /** Every song in the row, starting with that one. */
+    TheRowFromIt,
+}
+
+/**
  * A row of picks under a heading. This matches the iPhone's `HomePicksRow`. Home's quick selection and an
  * artist's popular songs both use it. The picks are lines, not squares. They fill panels of four, from the top
  * down. The user swipes one panel at a time, and the edge of the next panel shows. The play key beside the
@@ -752,8 +830,16 @@ fun PicksRow(
     logoStamp: String,
     actions: HomeActions,
     songLine: SongLine,
+    songTap: SongTap,
 ) {
     val songs = picks.filterIsInstance<QuickPick.Song>().map { it.track }
+    // A tap on a song's line ([SongTap]).
+    val onSong: (CloudTrack) -> Unit = { track ->
+        when (songTap) {
+            SongTap.ThatSong -> actions.onPlay(listOf(track), 0, Tapped.List)
+            SongTap.TheRowFromIt -> actions.onPlay(songs, songs.indexOfFirst { it.rpmId == track.rpmId }.coerceAtLeast(0), Tapped.Song)
+        }
+    }
     val haptics = rememberHaptics()
     val panels = picks.chunked(QUICK_TALL)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -761,7 +847,7 @@ fun PicksRow(
             BasicText(heading, style = display(19f).copy(color = Color.White))
             if (songs.isNotEmpty()) {
                 Box(
-                    Modifier.size(34.dp).clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Button) { haptics.pick(); actions.onPlay(songs) },
+                    Modifier.size(34.dp).clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Button) { haptics.pick(); actions.onPlay(songs, 0, Tapped.List) },
                     contentAlignment = Alignment.Center,
                 ) { BasicText(Glyph.play, style = icon(12f).copy(color = Ink.white(0xB8))) }
             }
@@ -777,14 +863,14 @@ fun PicksRow(
                 modifier = Modifier.height(QUICK_LINE * (panels.maxOfOrNull { it.size } ?: 0)),
                 verticalAlignment = Alignment.Top,
             ) { page ->
-                Column { for (pick in panels[page]) QuickLine(pick, collection, images, logoStamp, actions, songLine) }
+                Column { for (pick in panels[page]) QuickLine(pick, collection, images, logoStamp, actions, songLine, onSong) }
             }
         }
     }
 }
 
 @Composable
-private fun QuickLine(pick: QuickPick, collection: Collection, images: ImageLoader, logoStamp: String, actions: HomeActions, songLine: SongLine) {
+private fun QuickLine(pick: QuickPick, collection: Collection, images: ImageLoader, logoStamp: String, actions: HomeActions, songLine: SongLine, onSong: (CloudTrack) -> Unit) {
     val album: CloudAlbum? = when (pick) {
         is QuickPick.Song -> pick.album
         is QuickPick.Radio -> pick.album
@@ -814,7 +900,7 @@ private fun QuickLine(pick: QuickPick, collection: Collection, images: ImageLoad
         is QuickPick.Radio -> Triple(pick.track.title.orEmpty(), kindLine(stringResource(R.string.Home_QuickMixtape), pick.track.artist), Glyph.mixtape)
     }
     val onClick: (() -> Unit)? = when (pick) {
-        is QuickPick.Song -> { { actions.onPlay(listOf(pick.track)) } }
+        is QuickPick.Song -> { { onSong(pick.track) } }
         is QuickPick.OfAlbum -> { { actions.onOpen(pick.album) } }
         is QuickPick.OfStation -> { { actions.onTune(pick.station) } }
         is QuickPick.OfList -> { { actions.onOpenList(pick.list) } }
@@ -842,7 +928,7 @@ private fun QuickLine(pick: QuickPick, collection: Collection, images: ImageLoad
         if (framed != null) PlaylistSleeve(picture, Glyph.playlists, QUICK_ART, corner = 5.dp, mark = 15f, images, framed)
         // A station's logo on its made ground, in the cover's square (`HomePicksRow.stationSquare` on iPhone).
         else if (pick is QuickPick.OfStation) Box(Modifier.size(QUICK_ART).clip(shape).background(Color.Black.copy(alpha = 0x22 / 255f))) {
-            StationFace(pick.station, logoStamp, images, QUICK_ART, inset = 4.dp, Modifier.fillMaxSize()) {
+            StationFace(pick.station, logoStamp, images, QUICK_ART, inset = QUICK_STATION_INSET, Modifier.fillMaxSize()) {
                 BasicText(Glyph.radio, style = icon(15f).copy(color = Ink.white(0x3A)))
             }
         }

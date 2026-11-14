@@ -1,5 +1,6 @@
 package com.rpm.player.phone.radio
 
+import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -65,14 +66,7 @@ fun StationFace(
 ) {
     val context = LocalContext.current
     val pixels = with(LocalDensity.current) { edge.roundToPx() }.coerceAtLeast(1)
-    val request = remember(logo, pixels) {
-        ImageRequest.Builder(context)
-            .data(logo)
-            .size(pixels)
-            .transformations(StationBadge(logo.uuid, inset / edge, pixels))
-            .crossfade(FADE_MS)
-            .build()
-    }
+    val request = remember(logo, pixels) { stationFaceRequest(context, logo, pixels, inset / edge) }
     var worn by remember(logo) { mutableStateOf(false) }
     Box(modifier, contentAlignment = Alignment.Center) {
         if (!worn) Box(Modifier.fillMaxSize().padding(inset), contentAlignment = Alignment.Center) { fallback() }
@@ -86,6 +80,19 @@ fun StationFace(
         )
     }
 }
+
+/**
+ * The request a [StationFace] makes for [logo], [pixels] on a side, with the logo [inset] by that share of the side.
+ * Home reads its stations' logos early through it ([warmHome][com.rpm.player.phone.home.warmHome]), so the early read is
+ * the same request the face makes later, and the face is answered from the loader's memory.
+ */
+fun stationFaceRequest(context: Context, logo: StationLogo, pixels: Int, inset: Float): ImageRequest =
+    ImageRequest.Builder(context)
+        .data(logo)
+        .size(pixels)
+        .transformations(StationBadge(logo.uuid, inset, pixels))
+        .crossfade(FADE_MS)
+        .build()
 
 /** How long a logo takes to fade in, as the iPhone's 0.25 s ease-out. */
 private const val FADE_MS = 250
