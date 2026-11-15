@@ -416,7 +416,8 @@ fun holding(songs: Int, seconds: Int, missing: Int): String {
     return said
 }
 
-/** Example: "2 songs not uploaded yet". These are songs that the list names but the library cannot find. */
+/** Example: "2 songs can't be found". These are songs that the list names but the library cannot find: not uploaded
+ *  yet, or named by an id the collection no longer has. */
 @Composable
 fun waitingOn(missing: Int): String =
     if (missing == 1) stringResource(R.string.Rpm_Playlist_MissingOne) else stringResource(R.string.Rpm_Playlist_Missing, missing)
