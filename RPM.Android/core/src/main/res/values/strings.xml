@@ -6809,6 +6809,36 @@
     <!-- Import from another app: the Navidrome / Subsonic server choice. -->
     <string name="Migration_SourceNavidrome">Navidrome or Subsonic</string>
 
+    <!-- Import from another app: the iBroadcast choice. A product name. -->
+    <string name="Migration_SourceIBroadcast">iBroadcast</string>
+
+    <!-- Import from another app: the line under an online service's choice (iBroadcast). -->
+    <string name="Migration_HintOnline">Signs in to your account</string>
+
+    <!-- Import from another app: the button that starts the iBroadcast sign-in in the browser. -->
+    <string name="Migration_IBroadcastSignIn">Sign in to iBroadcast</string>
+
+    <!-- Import from another app: shown while waiting for the iBroadcast sign-in in the browser. {0} is the sign-in code, such as BPJWDQTV. -->
+    <string name="Migration_IBroadcastWaiting">Approve rpm in your browser. If iBroadcast asks for a code, enter %1$s. This window continues when you are done.</string>
+
+    <!-- Import from another app: the sign-in button while a code waits; it opens the iBroadcast page with the code again. -->
+    <string name="Migration_IBroadcastOpenAgain">Open iBroadcast again</string>
+
+    <!-- Import from another app: shown on the summary and while importing from iBroadcast. -->
+    <string name="Migration_KeepsOriginalsIBroadcast">rpm only reads from your iBroadcast library. Nothing in it is changed or removed.</string>
+
+    <!-- Import from another app: shown on the summary when the iBroadcast account is free. -->
+    <string name="Migration_IBroadcastFree">Your iBroadcast account is free, so iBroadcast gives 128 kbps MP3 copies of your music, not your original files. With iBroadcast Premium, rpm imports the originals.</string>
+
+    <!-- Import from another app: shown on the summary of an iBroadcast import, listing what does not come along. -->
+    <string name="Migration_IBroadcastNotCarried">Thumbs down and album and artist ratings are not imported. iBroadcast does not keep when a song was last played.</string>
+
+    <!-- Import from another app: why a skipped track is not imported; it is in the iBroadcast trash. Shown after the track name and a colon. -->
+    <string name="Migration_SkipInTrash">In the iBroadcast trash</string>
+
+    <!-- Import from another app: the name of the playlist folder that holds the iBroadcast tags, one playlist per tag. -->
+    <string name="Migration_IBroadcastTagsFolder">Tags</string>
+
     <!-- Import from another app: the choice for .m3u/.pls playlist files. Also the name shown for this source in the report. -->
     <string name="Migration_SourcePlaylistFiles">Playlist files</string>
 

@@ -6809,6 +6809,36 @@
     <!-- Import from another app: the Navidrome / Subsonic server choice. -->
     <string name="Migration_SourceNavidrome">Navidrome 或 Subsonic</string>
 
+    <!-- Import from another app: the iBroadcast choice. A product name. -->
+    <string name="Migration_SourceIBroadcast">iBroadcast</string>
+
+    <!-- Import from another app: the line under an online service's choice (iBroadcast). -->
+    <string name="Migration_HintOnline">登录你的账户</string>
+
+    <!-- Import from another app: the button that starts the iBroadcast sign-in in the browser. -->
+    <string name="Migration_IBroadcastSignIn">登录 iBroadcast</string>
+
+    <!-- Import from another app: shown while waiting for the iBroadcast sign-in in the browser. {0} is the sign-in code, such as BPJWDQTV. -->
+    <string name="Migration_IBroadcastWaiting">请在浏览器中允许 rpm。如果 iBroadcast 要求输入代码，请输入 %1$s。完成后此窗口会继续。</string>
+
+    <!-- Import from another app: the sign-in button while a code waits; it opens the iBroadcast page with the code again. -->
+    <string name="Migration_IBroadcastOpenAgain">再次打开 iBroadcast</string>
+
+    <!-- Import from another app: shown on the summary and while importing from iBroadcast. -->
+    <string name="Migration_KeepsOriginalsIBroadcast">rpm 只读取你的 iBroadcast 音乐库，不会更改或删除其中的任何内容。</string>
+
+    <!-- Import from another app: shown on the summary when the iBroadcast account is free. -->
+    <string name="Migration_IBroadcastFree">你的 iBroadcast 账户是免费账户，因此 iBroadcast 只提供 128 kbps 的 MP3 副本，而不是你的原始文件。使用 iBroadcast Premium 时，rpm 会导入原始文件。</string>
+
+    <!-- Import from another app: shown on the summary of an iBroadcast import, listing what does not come along. -->
+    <string name="Migration_IBroadcastNotCarried">不会导入“踩”以及专辑和艺人的评分。iBroadcast 不记录歌曲上次播放的时间。</string>
+
+    <!-- Import from another app: why a skipped track is not imported; it is in the iBroadcast trash. Shown after the track name and a colon. -->
+    <string name="Migration_SkipInTrash">在 iBroadcast 回收站中</string>
+
+    <!-- Import from another app: the name of the playlist folder that holds the iBroadcast tags, one playlist per tag. -->
+    <string name="Migration_IBroadcastTagsFolder">标签</string>
+
     <!-- Import from another app: the choice for .m3u/.pls playlist files. Also the name shown for this source in the report. -->
     <string name="Migration_SourcePlaylistFiles">播放列表文件</string>
 

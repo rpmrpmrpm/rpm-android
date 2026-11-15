@@ -6809,6 +6809,36 @@
     <!-- Import from another app: the Navidrome / Subsonic server choice. -->
     <string name="Migration_SourceNavidrome">Navidrome o Subsonic</string>
 
+    <!-- Import from another app: the iBroadcast choice. A product name. -->
+    <string name="Migration_SourceIBroadcast">iBroadcast</string>
+
+    <!-- Import from another app: the line under an online service's choice (iBroadcast). -->
+    <string name="Migration_HintOnline">Inicia sesión en tu cuenta</string>
+
+    <!-- Import from another app: the button that starts the iBroadcast sign-in in the browser. -->
+    <string name="Migration_IBroadcastSignIn">Iniciar sesión en iBroadcast</string>
+
+    <!-- Import from another app: shown while waiting for the iBroadcast sign-in in the browser. {0} is the sign-in code, such as BPJWDQTV. -->
+    <string name="Migration_IBroadcastWaiting">Autoriza rpm en tu navegador. Si iBroadcast pide un código, introduce %1$s. Esta ventana continúa cuando termines.</string>
+
+    <!-- Import from another app: the sign-in button while a code waits; it opens the iBroadcast page with the code again. -->
+    <string name="Migration_IBroadcastOpenAgain">Abrir iBroadcast de nuevo</string>
+
+    <!-- Import from another app: shown on the summary and while importing from iBroadcast. -->
+    <string name="Migration_KeepsOriginalsIBroadcast">rpm solo lee tu biblioteca de iBroadcast. No se cambia ni se elimina nada en ella.</string>
+
+    <!-- Import from another app: shown on the summary when the iBroadcast account is free. -->
+    <string name="Migration_IBroadcastFree">Tu cuenta de iBroadcast es gratuita, así que iBroadcast da copias MP3 a 128 kbps de tu música, no tus archivos originales. Con iBroadcast Premium, rpm importa los originales.</string>
+
+    <!-- Import from another app: shown on the summary of an iBroadcast import, listing what does not come along. -->
+    <string name="Migration_IBroadcastNotCarried">Los pulgares abajo y las valoraciones de álbumes y artistas no se importan. iBroadcast no guarda cuándo se reprodujo una canción por última vez.</string>
+
+    <!-- Import from another app: why a skipped track is not imported; it is in the iBroadcast trash. Shown after the track name and a colon. -->
+    <string name="Migration_SkipInTrash">En la papelera de iBroadcast</string>
+
+    <!-- Import from another app: the name of the playlist folder that holds the iBroadcast tags, one playlist per tag. -->
+    <string name="Migration_IBroadcastTagsFolder">Etiquetas</string>
+
     <!-- Import from another app: the choice for .m3u/.pls playlist files. Also the name shown for this source in the report. -->
     <string name="Migration_SourcePlaylistFiles">Archivos de lista</string>
 
