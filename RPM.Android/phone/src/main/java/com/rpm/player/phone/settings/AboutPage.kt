@@ -1,4 +1,4 @@
-package com.rpm.player.phone.profile
+package com.rpm.player.phone.settings
 
 import android.net.Uri
 import androidx.compose.foundation.background

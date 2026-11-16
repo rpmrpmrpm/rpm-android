@@ -16,6 +16,7 @@ import coil3.toBitmap
 import com.rpm.player.core.library.AlbumCredits
 import com.rpm.player.core.library.DiscArt
 import com.rpm.player.phone.ui.RecordDisc
+import com.rpm.player.phone.ui.LocalDiscStandIn
 import com.rpm.player.phone.ui.ScannedDisc
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -198,6 +199,7 @@ fun AlbumPage(
     onMark: ((Boolean) -> Unit)? = null,
     download: DownloadKey? = null,
     canPlay: (CloudTrack) -> Boolean = { true },
+    onPerson: (String) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     val page = rememberBackdrop()
@@ -268,6 +270,7 @@ fun AlbumPage(
                         onSort = { order -> scope.launch { wall.sorted(order) } },
                         onVote = { review, value -> scope.launch { wall.vote(review, value) } },
                         onMore = { scope.launch { wall.more() } },
+                        onAuthor = { onPerson(it.userId) },
                     )
                 }
                 item(key = "foot") { Spacer(Modifier.height(40.dp + bottomRoom)) }
@@ -568,8 +571,9 @@ private fun count(album: CloudAlbum): String {
  * sleeve moves aside to make room, turns slowly for a while, and slides back in ([CASE_OUT_MS], [CASE_HOLD_MS]: eight
  * seconds in all). A tap while it is out puts it back at once.
  *
- * The disc is the record's own when the desktop photographed it ([ScannedDisc]); otherwise it is a CD printed with the
- * sleeve ([ScannedDisc.printed]). It is read when the page opens, so it is ready for the first tap, and it is drawn only
+ * The disc is the record's own when the desktop photographed it ([ScannedDisc]). Otherwise it is the plain CD
+ * ([ScannedDisc.standIn]), or, when the vinyl is chosen in the profile, a CD printed with the sleeve
+ * ([ScannedDisc.printed]). It is read when the page opens, so it is ready for the first tap, and it is drawn only
  * while it is out, so a sleeve at rest costs nothing.
  *
  * The two move only on their layers: the header's layout does not change, so nothing under it moves.
@@ -581,13 +585,15 @@ private fun CaseAndDisc(album: CloudAlbum, cover: Cover?, disc: DiscArt?, images
     val scope = rememberCoroutineScope()
     val diameter = edge * DISC_SHARE
     val pixels = with(density) { diameter.roundToPx() }
+    val standIn = LocalDiscStandIn.current
     // The disc, and the record it was read for, used only while that is the record here: the iPhone's `pictures`. A
     // state produced under new keys keeps its last value until the new one is read, so without the key a page handed
     // another record would take out the last record's disc.
-    val read by produceState<Pair<String, ScannedDisc?>?>(null, album.key, disc, cover, pixels) {
+    val read by produceState<Pair<String, ScannedDisc?>?>(null, album.key, disc, cover, pixels, standIn) {
         val key = album.key
         value = key to (
             disc?.let { ScannedDisc.load(context, it, images, pixels) }
+                ?: ScannedDisc.standIn(context, standIn)
                 ?: cover?.let { sleeve ->
                     val request = ImageRequest.Builder(context).data(sleeve).size(pixels).allowHardware(false).build()
                     (images.execute(request) as? SuccessResult)?.image?.toBitmap()?.asImageBitmap()?.let(ScannedDisc::printed)

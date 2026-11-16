@@ -35,6 +35,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import com.rpm.player.phone.design.PreloadAhead
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -192,8 +193,15 @@ fun ArtistsPage(
                 // view. The wall runs up under the header and fades out over it; the messages start below it.
                 Box(Modifier.fillMaxSize().imePadding()) {
                     val below = Modifier.fillMaxSize().padding(top = top)
+                    if (searching) RememberSearch(asked, settings)
                     when {
                         ready.walls.artists.isEmpty() -> Box(below) { Empty(reading.lender != null) }
+                        searching && asked.isEmpty() && settings.searchHistory.isNotEmpty() -> SearchHistoryList(
+                            settings.searchHistory, top, bottomRoom,
+                            onPick = { asked = it },
+                            onForget = settings::forgetSearch,
+                            onClear = settings::clearSearchHistory,
+                        )
                         shown == null -> Unit
                         shown.isEmpty() -> Box(below) { NoMatch() }
                         else -> PullToRefresh(reading.refreshing, reading.onRefresh, top = top) {
@@ -228,8 +236,8 @@ private fun counts(count: Int): String =
     if (count == 1) stringResource(R.string.Artists_CountOne) else stringResource(R.string.Artists_Count, count)
 
 /**
- * The search box, and the key beside it that closes the search, under the header. The cross inside the box
- * clears the text. The key beside it closes the search, as on iPhone.
+ * The search box, and the key beside it that closes the search, under the header. The box has no clear key of its
+ * own: the key beside it is the one cross on the row.
  */
 @Composable
 internal fun SearchRow(
@@ -277,6 +285,19 @@ private fun Boxes(
     BoxWithConstraints(modifier.fillMaxSize()) {
         val (columns, width) = WallLayout.wall(maxWidth.value.toDouble(), stride, EDGE, BOX_GUTTER, BOX_COLUMNS)
         val grid = rememberLazyGridState()
+        // The photos of the next rows are loaded before they scroll in, at the size the boxes ask for. Only photos whose
+        // address is already known ([Artwork.peek]); the others are asked for when their box appears.
+        val context = LocalContext.current
+        val density = LocalDensity.current
+        val widePx = with(density) { width.dp.roundToPx() }.coerceAtLeast(1)
+        val highPx = with(density) { (width.dp * BOX_SHAPE).roundToPx() }.coerceAtLeast(1)
+        val preload = remember(artists, widePx, highPx) {
+            { index: Int ->
+                artwork.peek(artists[index].name)?.backgrounds?.firstOrNull()
+                    ?.let { ImageRequest.Builder(context).data(it).size(widePx, highPx).build() }
+            }
+        }
+        PreloadAhead(grid, artists.size, columns * 4, images, preload)
         ScrollsToTop(grid)
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),

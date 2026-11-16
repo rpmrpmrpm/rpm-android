@@ -1,4 +1,4 @@
-package com.rpm.player.phone.profile
+package com.rpm.player.phone.settings
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -16,11 +16,13 @@ import com.rpm.player.core.Services
 import com.rpm.player.phone.PhoneApplication
 import com.rpm.player.phone.PhoneSettings
 import com.rpm.player.phone.ui.Ground
+import com.rpm.player.core.cloud.ownPage
+import com.rpm.player.core.cloud.setSharesListening
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 /**
- * The profile tab, wired as the iPhone's `RootView` wires `ProfilePage` (`case .profile:`): the account from the
+ * The settings tab, wired as the iPhone's `RootView` wires `SettingsPage` (`case .settings:`): the account from the
  * session, the plan and the storage from the quota, the settings from [PhoneSettings], and the account's actions from
  * [Account].
  *
@@ -29,7 +31,7 @@ import kotlinx.coroutines.launch
  * @param onFeedback opens Send feedback; null when this build does not offer it.
  */
 @Composable
-fun ProfileTab(
+fun SettingsTab(
     services: Services,
     settings: PhoneSettings,
     controller: Player?,
@@ -45,6 +47,9 @@ fun ProfileTab(
     val links = LocalUriHandler.current
     val scope = rememberCoroutineScope()
     var crashReports by remember { mutableStateOf(services.diagnostics.sendsCrashReports) }
+    // Whether the profile shows what plays. Read from the reader's own profile; true until then, as the server's default.
+    var sharesListening by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) { runCatching { services.community.ownPage() }.onSuccess { sharesListening = it.sharesListening } }
 
     // Each time the tab is shown: how much the kept covers take (it asks the cache), and the plan again if the last
     // read failed.
@@ -53,7 +58,9 @@ fun ProfileTab(
         account.readCacheSize()
     }
 
-    ProfilePage(
+    SettingsPage(
+        section = settings.settingsSection,
+        onSection = settings::changeSettingsSection,
         name = session?.displayName.orEmpty(),
         email = session?.email.orEmpty(),
         quota = quota,
@@ -75,8 +82,16 @@ fun ProfileTab(
         onGround = { settings.changeBackdrop(it.id) },
         nightMode = settings.nightMode,
         onNightMode = settings::changeNightMode,
+        discStandIn = settings.discStandIn,
+        onDiscStandIn = settings::changeDiscStandIn,
         karaoke = settings.karaoke,
         onKaraoke = settings::changeKaraoke,
+        sharesListening = sharesListening,
+        onSharesListening = { on ->
+            val before = sharesListening
+            sharesListening = on
+            scope.launch { runCatching { services.community.setSharesListening(on) }.onFailure { sharesListening = before } }
+        },
         version = account.version,
         onClearCache = { scope.launch { account.clearCache() } },
         onSignOut = { services.scope.launch { account.signOut(controller) } },

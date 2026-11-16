@@ -108,6 +108,26 @@ object Glyph {
     const val mixtape = "\uF8AB"
     const val profile = "\uF007"
 
+    /** A cog, for the settings tab. */
+    const val settings = "\uF013"
+
+    /** Sliders, for the general section of the settings page. The cog is the tab's own mark. */
+    const val general = "\uF1DE"
+
+    /** A speech bubble, for Send feedback. */
+    const val feedback = "\uF075"
+
+    /** Thumbs up and down, for likes and dislikes on a post or a reply, and the arrow of Reply. */
+    const val like = "\uF164"
+    const val dislike = "\uF165"
+    const val reply = "\uF3E5"
+
+    /** A speech balloon, for the replies under a post. */
+    const val comment = "\uF075"
+
+    /** A newspaper, for the Feed tab. */
+    const val feed = "\uF1EA"
+
     /** The cross that closes a search row. The circled one clears a search box. */
     const val close = "\uF00D"
     const val clear = "\uF057"

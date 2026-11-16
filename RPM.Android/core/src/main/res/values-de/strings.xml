@@ -744,6 +744,18 @@
     <!-- Settings > Display: hint under the artist photo toggle. -->
     <string name="Settings_HeaderArtistPhotoHint">Zeigt ein Foto des Künstlers hinter der Cover-Anzeige. Schalte es aus, dann lädt rpm keine Fotos und nimmt stattdessen die Farben des Albums.</string>
 
+    <!-- Settings > Display: label for the choice of what the record looks like when an album has no picture of its own disc. -->
+    <string name="Settings_DiscStandIn">Alben ohne Disc-Bild</string>
+
+    <!-- Settings > Display: hint under the 'Albums without disc art' choice. -->
+    <string name="Settings_DiscStandInHint">Wähle, was sich dreht, wenn ein Album noch kein Bild seiner Disc hat: eine Schallplatte mit dem Cover oder eine schlichte CD.</string>
+
+    <!-- Settings > Display: 'Albums without disc art' option. The app's own drawn vinyl, with the album cover on its label. The default. -->
+    <string name="Settings_DiscStandInVinyl">Schallplatte</string>
+
+    <!-- Settings > Display: 'Albums without disc art' option. A plain silver CD with the rpm hub. -->
+    <string name="Settings_DiscStandInCd">CD</string>
+
     <!-- Settings > Collection: title of the card choosing how multi-disc releases are handled. -->
     <string name="Settings_MultiDisc">Alben mit mehreren CDs</string>
 
@@ -2070,6 +2082,372 @@
 
     <!-- Phone tab bar label for the home screen. The page itself uses Home_Heading, in lower case. -->
     <string name="Rpm_Tab_Home">Start</string>
+
+    <!-- Phone settings page: tab with the app version, crash reports and the cover cache. -->
+    <string name="Rpm_Settings_General">Allgemein</string>
+
+    <!-- Phone settings page: tab with the background, night mode and the disc stand-in. -->
+    <string name="Rpm_Settings_Appearance">Darstellung</string>
+
+    <!-- Phone settings page: tab with the account, cloud storage and the plan. -->
+    <string name="Rpm_Settings_Account">Mein Konto</string>
+
+    <!-- Phone profile page: line under the name. {0} the person, {1} the song, {2} the artist. -->
+    <string name="Rpm_Profile_ListeningTo">%1$s hört gerade %2$s von %3$s</string>
+
+    <!-- Phone profile page: when the account was made. {0} is a month and year. -->
+    <string name="Rpm_Profile_MemberSince">Mitglied seit %1$s</string>
+
+    <!-- Phone profile page: placeholder in the box for a new post on your own page. -->
+    <string name="Rpm_Profile_PostPrompt">Was gibt\'s Neues?</string>
+
+    <!-- Phone profile page: switch under the post box that adds the current song to the post. -->
+    <string name="Rpm_Profile_WithSong">Aktuellen Song hinzufügen</string>
+
+    <!-- Phone profile page: key under a post or reply. -->
+    <string name="Rpm_Profile_Reply">Antworten</string>
+
+    <!-- Phone profile page: count of replies under a post, one. -->
+    <string name="Rpm_Profile_RepliesOne">1 Antwort</string>
+
+    <!-- Phone profile page: count of replies under a post. -->
+    <string name="Rpm_Profile_Replies">%1$s Antworten</string>
+
+    <!-- Phone profile page: placeholder in the reply box. -->
+    <string name="Rpm_Profile_ReplyPrompt">Antwort schreiben</string>
+
+    <!-- Phone profile page: shown in place of a deleted reply that still has replies under it. -->
+    <string name="Rpm_Profile_ReplyDeleted">Gelöschte Antwort</string>
+
+    <!-- Phone profile page: your own page with no posts or reviews. -->
+    <string name="Rpm_Profile_FeedEmptyOwn">Noch nichts hier. Schreib oben deinen ersten Beitrag.</string>
+
+    <!-- Phone profile page: someone else's page with no posts or reviews. -->
+    <string name="Rpm_Profile_FeedEmpty">Noch keine Beiträge oder Rezensionen.</string>
+
+    <!-- Phone profile page: key on a review in the feed, shown when the album is in your collection. -->
+    <string name="Rpm_Profile_OpenAlbum">Album öffnen</string>
+
+    <!-- Phone profile page: the page could not be read. -->
+    <string name="Rpm_Profile_Offline">Dieses Profil konnte nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.</string>
+
+    <!-- Phone profile page: accessibility label of the round menu key at the top right. -->
+    <string name="Rpm_Profile_Menu">Menü</string>
+
+    <!-- Phone profile page: accessibility label of the round back key at the top left of someone else's page. -->
+    <string name="Rpm_Profile_Back">Zurück</string>
+
+    <!-- Phone profile page: menu item that opens the name editor. -->
+    <string name="Rpm_Profile_EditPage">Seite bearbeiten</string>
+
+    <!-- Phone profile page: label of the name field on the edit page. -->
+    <string name="Rpm_Profile_Name">Anzeigename</string>
+
+    <!-- Phone profile page: key that saves the edit page. -->
+    <string name="Rpm_Profile_Save">Speichern</string>
+
+    <!-- Phone profile page: menu item. -->
+    <string name="Rpm_Profile_ChangePhoto">Profilfoto ändern</string>
+
+    <!-- Phone profile page: menu item. -->
+    <string name="Rpm_Profile_RemovePhoto">Foto entfernen</string>
+
+    <!-- Phone profile page: menu item that picks the wide picture at the top of the page. -->
+    <string name="Rpm_Profile_ChooseBanner">Banner wählen</string>
+
+    <!-- Phone profile page: menu item. -->
+    <string name="Rpm_Profile_RemoveBanner">Banner entfernen</string>
+
+    <!-- Phone profile page: a photo or banner upload failed. -->
+    <string name="Rpm_Profile_PictureFailed">Das Bild konnte nicht hochgeladen werden. Versuche ein anderes.</string>
+
+    <!-- Phone profile page: key under someone else's name. -->
+    <string name="Rpm_Profile_AddFriend">Als Freund hinzufügen</string>
+
+    <!-- Phone profile page: key under someone else's name after you asked to be friends. -->
+    <string name="Rpm_Profile_Requested">Anfrage gesendet</string>
+
+    <!-- Phone profile page: menu item while your friend request waits. -->
+    <string name="Rpm_Profile_CancelRequest">Anfrage zurückziehen</string>
+
+    <!-- Phone profile page: key that accepts a friend request. -->
+    <string name="Rpm_Profile_Accept">Annehmen</string>
+
+    <!-- Phone profile page: key that declines a friend request. -->
+    <string name="Rpm_Profile_Decline">Ablehnen</string>
+
+    <!-- Phone profile page: key under the name of someone who is your friend. -->
+    <string name="Rpm_Profile_Friends">Befreundet</string>
+
+    <!-- Phone profile page: menu item. -->
+    <string name="Rpm_Profile_RemoveFriend">Freund entfernen</string>
+
+    <!-- Phone profile page: menu item and confirm key. -->
+    <string name="Rpm_Profile_Block">Blockieren</string>
+
+    <!-- Phone profile page: menu item and key on the page of someone you blocked. -->
+    <string name="Rpm_Profile_Unblock">Blockierung aufheben</string>
+
+    <!-- Phone profile page: question before blocking. {0} is the person's name. -->
+    <string name="Rpm_Profile_BlockConfirm">%1$s blockieren? Ihr seht eure Beiträge und Antworten nicht mehr, und eine Freundschaft zwischen euch endet.</string>
+
+    <!-- Phone profile page: shown in place of the feed on the page of someone you blocked. -->
+    <string name="Rpm_Profile_Blocked">Du hast diese Person blockiert.</string>
+
+    <!-- Phone profile page: menu item on your own post. -->
+    <string name="Rpm_Profile_DeletePost">Beitrag löschen</string>
+
+    <!-- Phone profile page: menu item on a reply you can delete. -->
+    <string name="Rpm_Profile_DeleteReply">Antwort löschen</string>
+
+    <!-- Phone profile page: menu item on someone else's reply. -->
+    <string name="Rpm_Profile_ReportReply">Diese Antwort melden</string>
+
+    <!-- Phone profile page: accessibility text for the badge on the menu key. -->
+    <string name="Rpm_Profile_UnreadCount">%1$s ungelesene Mitteilungen</string>
+
+    <!-- Phone notifications page: title, and the menu item on your own page that opens it. -->
+    <string name="Rpm_Notify_Title">Mitteilungen</string>
+
+    <!-- Phone notifications page: empty list. -->
+    <string name="Rpm_Notify_Empty">Noch keine Mitteilungen. Antworten, Stimmen und Freundschaftsanfragen erscheinen hier.</string>
+
+    <!-- Phone notifications page: someone replied to your post or reply. -->
+    <string name="Rpm_Notify_Reply">%1$s hat dir geantwortet</string>
+
+    <!-- Phone notifications page: one vote on your post or reply. -->
+    <string name="Rpm_Notify_Vote">%1$s hat über deinen Beitrag abgestimmt</string>
+
+    <!-- Phone notifications page: several votes on one post or reply. {0} is the number. -->
+    <string name="Rpm_Notify_Votes">%1$s neue Stimmen zu deinem Beitrag</string>
+
+    <!-- Phone notifications page: a friend request, with Accept and Decline keys. -->
+    <string name="Rpm_Notify_FriendRequest">%1$s möchte mit dir befreundet sein</string>
+
+    <!-- Phone notifications page: a request you sent was accepted. -->
+    <string name="Rpm_Notify_FriendAccepted">%1$s hat deine Freundschaftsanfrage angenommen</string>
+
+    <!-- Phone notifications page: a friend wrote a review. {1} is the album title. -->
+    <string name="Rpm_Notify_FriendReview">%1$s hat %2$s rezensiert</string>
+
+    <!-- Phone settings, My account: switch. -->
+    <string name="Rpm_Settings_ShareListening">Zeigen, was ich höre</string>
+
+    <!-- Phone settings, My account: hint under the switch. -->
+    <string name="Rpm_Settings_ShareListeningHint">Dein Profil zeigt allen, die es öffnen, welchen Song du gerade spielst.</string>
+
+    <!-- Phone profile page: menu item that picks what the page is drawn on, a colour or one of the app's backgrounds. -->
+    <string name="Rpm_Profile_ChooseBackground">Hintergrund wählen</string>
+
+    <!-- Phone profile page: heading over the solid colours in the background picker. -->
+    <string name="Rpm_Profile_Colours">Farben</string>
+
+    <!-- Phone profile page: line above the feed in a test build when the server has no profile pages yet, so sample posts are shown. -->
+    <string name="Rpm_Profile_SampleNote">Beispielbeiträge. Profile sind noch nicht online.</string>
+
+    <!-- Phone collection search: heading over the earlier searches, shown while the search box is empty. -->
+    <string name="Rpm_Search_Recent">Letzte Suchen</string>
+
+    <!-- Phone collection search: key beside 'Recent searches' that removes them all. -->
+    <string name="Rpm_Search_ClearRecent">Löschen</string>
+
+    <!-- Phone collection search: accessibility label of the cross on one earlier search. -->
+    <string name="Rpm_Search_Forget">Aus letzten Suchen entfernen</string>
+
+    <!-- Phone profile page: key beside the box for a new post. -->
+    <string name="Rpm_Profile_Post">Posten</string>
+
+    <!-- Phone profile page: the bar under the name with what the person is playing. {0} the song, {1} the artist. -->
+    <string name="Rpm_Profile_NowPlaying">%1$s von %2$s</string>
+
+    <!-- Phone profile page: accessibility text of the thumbs-up count on a post or reply. -->
+    <string name="Rpm_Profile_Likes">%1$s Likes</string>
+
+    <!-- Phone profile page: accessibility text of the thumbs-down count on a post or reply. -->
+    <string name="Rpm_Profile_Dislikes">%1$s Dislikes</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_FirstSpin">Erste Runde</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_FirstSpin_Need">Füge dein erstes Album hinzu</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_CrateDigger">Plattenwühler</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_CrateDigger_Need">50 Alben haben</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_RecordCollector">Plattensammler</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_RecordCollector_Need">250 Alben haben</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Connoisseur">Musikkenner</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Connoisseur_Need">1.000 Alben haben</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_LivingArchive">Lebendes Archiv</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_LivingArchive_Need">2.500 Alben haben</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_MuseumCurator">Museumskurator</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_MuseumCurator_Need">5.000 Alben haben</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_TenThousand">Zehntausend Songs</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_TenThousand_Need">10.000 Titel haben</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Rock">Felsenfest</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Rock_Need">Ein Fünftel deiner Alben Rock, mindestens 25</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Jazz">Jazzkatze</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Jazz_Need">Ein Fünftel deiner Alben Jazz, mindestens 25</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Classical">Maestro</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Classical_Need">Ein Fünftel deiner Alben Klassik, mindestens 25</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_HipHop">Beat-Kopf</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_HipHop_Need">Ein Fünftel deiner Alben Hip-Hop, mindestens 25</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Electronic">Synth-Zauberer</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Electronic_Need">Ein Fünftel deiner Alben Elektronik, mindestens 25</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Metal">Headbanger</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Metal_Need">Ein Fünftel deiner Alben Metal, mindestens 25</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Pop">Popstar</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Pop_Need">Ein Fünftel deiner Alben Pop, mindestens 25</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Soul">Soul-Seele</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Soul_Need">Ein Fünftel deiner Alben Soul, R&amp;B oder Funk, mindestens 25</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Folk">Folk-Held</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Folk_Need">Ein Fünftel deiner Alben Folk oder Country, mindestens 25</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Blues">Blue Note</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Blues_Need">Ein Fünftel deiner Alben Blues, mindestens 25</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Reggae">Inselzeit</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Reggae_Need">Ein Fünftel deiner Alben Reggae, mindestens 25</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Latin">Latin-Feuer</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Latin_Need">Ein Fünftel deiner Alben Latin, mindestens 25</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_GenreHopper">Genre-Hopper</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_GenreHopper_Need">5 Alben in 10 Genres haben</string>
+
+    <!-- Phone profile badge name, shown in a coloured pill under the person's name. Short and playful. -->
+    <string name="Rpm_Badge_Omnivore">Allesfresser</string>
+
+    <!-- Phone badges page: what unlocks this badge, under a badge not yet unlocked. -->
+    <string name="Rpm_Badge_Omnivore_Need">5 Alben in 20 Genres haben</string>
+
+    <!-- Phone profile page: menu item and title of the page where the person picks the badge under their name. -->
+    <string name="Rpm_Badges_Title">Abzeichen</string>
+
+    <!-- Phone badges page: heading over the colours of the badge. -->
+    <string name="Rpm_Badges_Colour">Farbe</string>
+
+    <!-- Phone badges page: heading over the badges the person has. -->
+    <string name="Rpm_Badges_Unlocked">Freigeschaltet</string>
+
+    <!-- Phone badges page: heading over the badges the person does not have yet. -->
+    <string name="Rpm_Badges_Locked">Noch freizuschalten</string>
+
+    <!-- Phone badges page: choice that shows no badge under the name. -->
+    <string name="Rpm_Badges_NoBadge">Kein Abzeichen</string>
+
+    <!-- Phone notifications page: a badge was unlocked. {0} is the badge's name. -->
+    <string name="Rpm_Notify_Badge">Du hast das Abzeichen %1$s freigeschaltet</string>
+
+    <!-- Phone profile page: choice under Choose banner that picks a photo from the phone. -->
+    <string name="Rpm_Profile_BannerPhoto">Foto wählen</string>
+
+    <!-- Phone profile page: choice under Choose banner. The banner then shows a photo of the artist the person is playing. -->
+    <string name="Rpm_Profile_BannerPlaying">Bild des gerade gespielten Künstlers</string>
+
+    <!-- Phone tab bar label for everyone's posts, in place of Profile. -->
+    <string name="Rpm_Tab_Feed">Feed</string>
+
+    <!-- Phone Feed tab: no posts yet. -->
+    <string name="Rpm_Feed_Empty">Noch nichts hier. Beiträge von allen erscheinen hier.</string>
+
+    <!-- Phone Feed tab: accessibility label of the key at the top right that opens the reader's own profile page. -->
+    <string name="Rpm_Feed_MyProfile">Mein Profil</string>
+
+    <!-- Phone profile edit page: asked when the page is closed with changes not yet saved. The two answers are Rpm_Profile_ApplyChanges and Rpm_Profile_Discard. -->
+    <string name="Rpm_Profile_UnsavedTitle">Änderungen übernehmen?</string>
+
+    <!-- Phone profile edit page: answer that saves the changes and closes the page. -->
+    <string name="Rpm_Profile_ApplyChanges">Übernehmen</string>
+
+    <!-- Phone profile edit page: answer that closes the page without saving the changes. -->
+    <string name="Rpm_Profile_Discard">Verwerfen</string>
+
+    <!-- Phone profile edit page: heading of the card with the profile photo. -->
+    <string name="Rpm_Profile_PhotoTitle">Profilbild</string>
+
+    <!-- Phone profile edit page: heading of the card with the picture across the top of the page. -->
+    <string name="Rpm_Profile_BannerTitle">Banner</string>
+
+    <!-- Phone profile edit page: choice in the Banner card for a photo the person picks, beside Rpm_Profile_BannerPlaying. -->
+    <string name="Rpm_Profile_BannerOwn">Dein eigenes Foto</string>
+
+    <!-- Phone profile page and Feed tab: link under a review card that opens the whole review. -->
+    <string name="Rpm_Profile_ReadReview">Ganze Rezension lesen</string>
+
+    <!-- Phone profile page and Feed tab: a review's text in quotation marks. {0} is the text. Use the language's own quotation marks. -->
+    <string name="Rpm_Profile_Quoted">„%1$s“</string>
     <string name="Rpm_Profile_Subtitle">Dein Konto, dein Speicher und wie sich die App verhält.</string>
     <string name="Rpm_Profile_Account">Konto</string>
     <string name="Rpm_Profile_SignOut">Abmelden</string>

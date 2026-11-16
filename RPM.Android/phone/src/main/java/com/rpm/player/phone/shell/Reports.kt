@@ -22,7 +22,7 @@ import com.rpm.player.phone.design.Ink
 import com.rpm.player.phone.design.Weight
 import com.rpm.player.phone.design.display
 import com.rpm.player.phone.design.displayBold
-import com.rpm.player.phone.profile.FeedbackPage
+import com.rpm.player.phone.settings.FeedbackPage
 
 /**
  * What the reports draw over the app: the Send feedback page while [shot] is set, and the question the first time

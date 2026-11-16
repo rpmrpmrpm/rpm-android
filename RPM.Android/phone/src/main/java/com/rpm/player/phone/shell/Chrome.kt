@@ -43,13 +43,14 @@ import com.rpm.player.phone.design.system
 
 /**
  * The main screens of the app, as on the iPhone (`RPMTab` in RPMUI/RPMTabBar.swift): Home, the library, the
- * radio and the profile. Playlists are a way of reading the library, not a tab.
+ * feed of everyone's posts, the radio and the settings. Playlists are a way of reading the library, not a tab.
  */
 enum class Tab(val glyph: String, @StringRes val label: Int) {
     Home(Glyph.home, R.string.Rpm_Tab_Home),
     Library(Glyph.library, R.string.Settings_Library),
+    Feed(Glyph.feed, R.string.Rpm_Tab_Feed),
     Radio(Glyph.radio, R.string.Rpm_Tab_Radio),
-    Profile(Glyph.profile, R.string.Rpm_Tab_Profile),
+    Settings(Glyph.settings, R.string.Settings_Title),
 }
 
 /**

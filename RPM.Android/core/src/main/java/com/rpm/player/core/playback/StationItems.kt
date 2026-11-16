@@ -26,6 +26,13 @@ object StationItems {
     /** The whole station as JSON, so the service's listen counter knows what it is counting. */
     private const val EXTRA_STATION = "rpm.station"
 
+    /**
+     * What the station's stream announced, as it arrived ("Artist - Title"), in the session's metadata extras. The
+     * session's title and artist are the song's own (see [SessionArtwork]), so a screen that splits the announcement
+     * itself reads it here.
+     */
+    const val EXTRA_ANNOUNCED = "rpm.announced"
+
     fun uuidOf(mediaId: String): String? = mediaId.takeIf { it.startsWith(PREFIX) }?.removePrefix(PREFIX)
 
     fun itemOf(station: RadioStation, logoStamp: String, detail: String?): MediaItem =

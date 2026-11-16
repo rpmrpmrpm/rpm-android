@@ -13,6 +13,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import com.rpm.player.core.playback.AudioLadder
 import androidx.compose.runtime.setValue
 import com.rpm.player.core.library.AlbumOrdering
+import com.rpm.player.core.library.BlankDisc
+import com.rpm.player.core.library.DiscStandIn
 import com.rpm.player.core.library.ArtistOrdering
 import com.rpm.player.core.library.ArtistTrackGrouping
 import com.rpm.player.core.playback.LevelMode
@@ -23,10 +25,11 @@ import com.rpm.player.phone.downloads.Downloads
 import com.rpm.player.core.library.ListOrdering
 import com.rpm.player.phone.library.LibraryLayout
 import com.rpm.player.phone.library.LibraryMode
+import com.rpm.player.phone.settings.SettingsSection
 import com.rpm.player.phone.library.PlaylistLayout
 import com.rpm.player.phone.signin.SignIn
 import com.rpm.player.phone.signin.Said
-import com.rpm.player.phone.profile.Account
+import com.rpm.player.phone.settings.Account
 
 class PhoneApplication : RpmApplication() {
     /**
@@ -140,6 +143,40 @@ class PhoneSettings(context: Context) {
     var libraryOrder by mutableStateOf(AlbumOrdering.of(prefs.getString(KEY_ORDER, null)) ?: AlbumOrdering.Artist)
         private set
 
+    /**
+     * What the collection's search was used for, newest first, at most [SEARCH_HISTORY] entries. Shown under the search
+     * box while it is empty. See [rememberSearch].
+     */
+    var searchHistory by mutableStateOf(prefs.getString(KEY_SEARCH_HISTORY, null)?.split('\n')?.filter { it.isNotBlank() }.orEmpty())
+        private set
+
+    /**
+     * Keeps [asked] at the top of the history. A search that only adds to or takes from the newest entry ("radi", then
+     * "radiohead") replaces it, so the half-typed steps of one search are not kept as separate entries.
+     */
+    fun rememberSearch(asked: String) {
+        val clean = asked.trim().replace('\n', ' ')
+        if (clean.isEmpty()) return
+        val newest = searchHistory.firstOrNull()
+        val rest = if (newest != null && (clean.startsWith(newest, ignoreCase = true) || newest.startsWith(clean, ignoreCase = true))) {
+            searchHistory.drop(1)
+        } else {
+            searchHistory
+        }
+        searchHistory = (listOf(clean) + rest.filterNot { it.equals(clean, ignoreCase = true) }).take(SEARCH_HISTORY)
+        prefs.edit().putString(KEY_SEARCH_HISTORY, searchHistory.joinToString("\n")).apply()
+    }
+
+    fun forgetSearch(asked: String) {
+        searchHistory = searchHistory.filterNot { it == asked }
+        prefs.edit().putString(KEY_SEARCH_HISTORY, searchHistory.joinToString("\n")).apply()
+    }
+
+    fun clearSearchHistory() {
+        searchHistory = emptyList()
+        prefs.edit().remove(KEY_SEARCH_HISTORY).apply()
+    }
+
     var libraryMode by mutableStateOf(LibraryMode.of(prefs.getString(KEY_LIBRARY_MODE, null)) ?: LibraryMode.Albums)
         private set
 
@@ -185,6 +222,15 @@ class PhoneSettings(context: Context) {
     fun changeLibraryMode(mode: LibraryMode) {
         libraryMode = mode
         prefs.edit().putString(KEY_LIBRARY_MODE, mode.stored).apply()
+    }
+
+    /** The section of the settings page that was open last, so the page opens on it again. */
+    var settingsSection by mutableStateOf(SettingsSection.of(prefs.getString(KEY_SETTINGS_SECTION, null)) ?: SettingsSection.General)
+        private set
+
+    fun changeSettingsSection(section: SettingsSection) {
+        settingsSection = section
+        prefs.edit().putString(KEY_SETTINGS_SECTION, section.stored).apply()
     }
 
     /** The size the person pinched the album wall's covers to, and the artists' boxes to, in points: the iPhone's
@@ -306,6 +352,19 @@ class PhoneSettings(context: Context) {
     }
 
     /**
+     * What the record looks like for a record with no disc picture of its own (`look.discStandIn`, as on iPhone): the
+     * plain CD by default, or the vinyl. Read through [com.rpm.player.phone.ui.LocalDiscStandIn]; a change applies to
+     * the next record that is put on or opened.
+     */
+    var discStandIn by mutableStateOf(BlankDisc.read(prefs.getString(BlankDisc.KEY, null)))
+        private set
+
+    fun changeDiscStandIn(choice: DiscStandIn) {
+        discStandIn = choice
+        prefs.edit().putString(BlankDisc.KEY, choice.stored).apply()
+    }
+
+    /**
      * Karaoke lyrics (`lyrics.karaoke`, the iPhone's `KaraokeSetting`): the sung line lights letter by letter as it is
      * sung. On when it was never set, so a supporter sees the feature without looking for it. It is a supporter feature:
      * the switch is kept for everyone, and the player combines it with the plan ([com.rpm.player.phone.player.karaokeOn]).
@@ -351,6 +410,9 @@ class PhoneSettings(context: Context) {
         const val KEY_GOLD = "supporter.gold"
         const val KEY_ORDER = "library.order"
         const val KEY_LIBRARY_MODE = "library.mode"
+        const val KEY_SETTINGS_SECTION = "settings.section"
+        const val KEY_SEARCH_HISTORY = "search.history"
+        const val SEARCH_HISTORY = 10
         const val KEY_LIBRARY_LAYOUT = "library.layout"
         const val KEY_LIST_ORDER = "library.listOrder"
         const val KEY_ARTIST_ORDER = "library.artistOrder"

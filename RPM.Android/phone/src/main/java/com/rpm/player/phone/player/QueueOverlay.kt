@@ -3,7 +3,7 @@ package com.rpm.player.phone.player
 import android.content.Context
 import androidx.compose.ui.platform.LocalContext
 import com.rpm.player.core.playback.SongRadioRuns
-import com.rpm.player.phone.profile.Switch
+import com.rpm.player.phone.settings.Switch
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState

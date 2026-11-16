@@ -1,4 +1,4 @@
-package com.rpm.player.phone.profile
+package com.rpm.player.phone.settings
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.LinearEasing

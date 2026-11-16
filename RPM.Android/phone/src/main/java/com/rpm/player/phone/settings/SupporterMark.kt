@@ -1,4 +1,4 @@
-package com.rpm.player.phone.profile
+package com.rpm.player.phone.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row

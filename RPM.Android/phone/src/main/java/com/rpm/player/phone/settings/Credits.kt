@@ -1,4 +1,4 @@
-package com.rpm.player.phone.profile
+package com.rpm.player.phone.settings
 
 import android.content.Context
 import androidx.annotation.StringRes

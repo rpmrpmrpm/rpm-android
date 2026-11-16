@@ -179,7 +179,8 @@ private fun WallLine(line: WallEntry, mine: Boolean, onMenu: (WallEntry, Rect) -
                     Modifier.weight(1f, fill = false).alignByBaseline(),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = system(14f, FontWeight.SemiBold).copy(color = Color.White),
+                    // A supporter's name is in gold, as on their page.
+                    style = system(14f, FontWeight.SemiBold).copy(color = if (line.authorSupporter) Ink.gold else Color.White),
                 )
                 BasicText(writtenWhen(line), Modifier.alignByBaseline(), maxLines = 1, style = display(11f).copy(color = Ink.white(0x77)))
             }

@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(
                 LocalGround provides Ground.standing(app.settings.backdrop, app.settings.isGold),
                 LocalNightMode provides app.settings.nightMode,
+                com.rpm.player.phone.ui.LocalDiscStandIn provides app.settings.discStandIn,
             ) {
                 Root(services, app.settings, app.signIn, controller.value, sittingFrom.intValue)
             }

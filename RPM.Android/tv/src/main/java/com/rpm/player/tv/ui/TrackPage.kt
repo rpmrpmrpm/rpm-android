@@ -221,6 +221,7 @@ fun TrackPage(page: PageOf, collection: Collection, images: ImageLoader, dossier
                         // fifth of a core on a low-end TV box).
                         turning = false,
                         turnSeconds = RECORD_TURN_SECONDS,
+                        isRecord = page is PageOf.OfAlbum,
                     )
                     // A list's sleeve is its framed picture (the desktop's ListCoverDoor).
                     if (page is PageOf.OfList) {

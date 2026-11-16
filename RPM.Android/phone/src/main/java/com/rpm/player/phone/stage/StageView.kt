@@ -92,6 +92,7 @@ import com.rpm.player.core.cast.CastState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpm.player.phone.ui.RecordDisc
 import com.rpm.player.phone.ui.VinylPressing
+import com.rpm.player.phone.ui.LocalDiscStandIn
 import com.rpm.player.phone.ui.ScannedDisc
 import com.rpm.player.phone.ui.accentOf
 import com.rpm.player.phone.ui.color
@@ -379,6 +380,7 @@ private fun Deck(now: NowPlaying, images: ImageLoader, chromeUp: Boolean, height
     var hue by remember { mutableStateOf<Int?>(VinylPressing.HOUSE_HUE) }
     // The record's own photographed disc, where the cloud keeps one (`RecordFace.cd` on iPhone).
     var cd by remember { mutableStateOf<ScannedDisc?>(null) }
+    val standIn = LocalDiscStandIn.current
     val aloft = remember { Animatable(1f) }
     val away by animateFloatAsState(if (chromeUp) 0f else 1f, tween(300, easing = LinearOutSlowInEasing), label = "disc away")
     // Whether there is a disc picture counts as part of the record, so a disc that arrives is worn.
@@ -390,7 +392,10 @@ private fun Deck(now: NowPlaying, images: ImageLoader, chromeUp: Boolean, height
             val request = ImageRequest.Builder(context).data(cover).size(edge).build()
             (images.execute(request) as? SuccessResult)?.image?.toBitmap()?.asImageBitmap()
         }
+        // A record with no disc picture of its own wears the plain CD, unless the vinyl is chosen. A station keeps the
+        // vinyl.
         val scanned = now.disc?.let { ScannedDisc.load(context, it, images, with(density) { diameter.roundToPx() }) }
+            ?: if (now.station == null) ScannedDisc.standIn(context, standIn) else null
         val accent = now.cover?.let { accentOf(context, it, images) }
         val pressing = accent?.color()?.toArgb() ?: VinylPressing.HOUSE_HUE
         // Press the vinyl first, then change the face, so the record never lands black.

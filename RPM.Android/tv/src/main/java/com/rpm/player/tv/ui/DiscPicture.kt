@@ -15,7 +15,10 @@ import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
+import android.content.Context
+import com.rpm.player.core.library.BlankDisc
 import com.rpm.player.core.library.DiscArt
+import com.rpm.player.core.library.DiscStandIn
 import com.rpm.player.core.library.DiscScan
 
 /**
@@ -31,6 +34,19 @@ class ScannedDisc private constructor(val picture: ImageBitmap, val coversRecord
             val covers = bitmap.config == Bitmap.Config.HARDWARE || !bitmap.hasAlpha() ||
                 DiscScan.coversRecord(bitmap.width, bitmap.height) { x, y -> bitmap.getPixel(x, y) ushr 24 }
             return ScannedDisc(bitmap.asImageBitmap(), covers)
+        }
+
+        @Volatile
+        private var blank: ScannedDisc? = null
+
+        /**
+         * The plain CD ([BlankDisc]) when [choice] is the CD, for a record with no disc picture of its own; null when it
+         * is the vinyl. Read once and kept.
+         */
+        fun standIn(context: Context, choice: DiscStandIn): ScannedDisc? {
+            if (choice != DiscStandIn.Cd) return null
+            blank?.let { return it }
+            return BlankDisc.bitmap(context)?.let(::of)?.also { blank = it }
         }
     }
 }

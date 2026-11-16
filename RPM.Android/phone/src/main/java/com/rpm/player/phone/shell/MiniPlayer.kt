@@ -142,10 +142,14 @@ private fun title(now: NowPlaying): String {
     return (station.said as? Icy.Said.Song)?.title ?: station.name
 }
 
-/** The artist a station announced, else its country and quality: never its name again. The track's artist for a track. */
+/**
+ * The artist a station announced; with a song but no artist, nothing. Only while it announces no song, its country
+ * and quality, never its name: that is the title then. The track's artist for a track.
+ */
 private fun said(now: NowPlaying): String {
     val station = now.station ?: return now.artist
-    return (station.said as? Icy.Said.Song)?.artist ?: station.detail.orEmpty()
+    val sung = station.said as? Icy.Said.Song ?: return station.detail.orEmpty()
+    return sung.artist.orEmpty()
 }
 
 /**
@@ -155,14 +159,27 @@ private fun said(now: NowPlaying): String {
 @Composable
 private fun StationSleeve(station: StationPlaying, images: ImageLoader) {
     val shape = RoundedCornerShape(8.dp)
-    StationFace(
-        station.logo,
-        images,
-        edge = ROW,
-        inset = 3.dp,
-        modifier = Modifier.size(ROW).clip(shape).background(Color.Black.copy(alpha = 0x22 / 255f)).border(1.dp, Ink.cardBorder, shape),
-    ) {
-        BasicText(StationSign.of(station.name), maxLines = 1, style = system(11f, FontWeight.SemiBold).copy(color = Ink.white(0xAA), letterSpacing = 0.5.sp))
+    // The cover of the song the station plays, over its logo, as on the desktop.
+    val cover = com.rpm.player.phone.design.rememberSongCover(station)
+    Box(Modifier.size(ROW).clip(shape)) {
+        StationFace(
+            station.logo,
+            images,
+            edge = ROW,
+            inset = 3.dp,
+            modifier = Modifier.size(ROW).clip(shape).background(Color.Black.copy(alpha = 0x22 / 255f)).border(1.dp, Ink.cardBorder, shape),
+        ) {
+            BasicText(StationSign.of(station.name), maxLines = 1, style = system(11f, FontWeight.SemiBold).copy(color = Ink.white(0xAA), letterSpacing = 0.5.sp))
+        }
+        if (cover != null) {
+            coil3.compose.AsyncImage(
+                model = com.rpm.player.phone.design.rememberPicture(cover, ROW),
+                contentDescription = null,
+                imageLoader = images,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().border(1.dp, Ink.cardBorder, shape),
+            )
+        }
     }
 }
 

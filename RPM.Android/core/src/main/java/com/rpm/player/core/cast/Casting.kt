@@ -39,6 +39,9 @@ data class CastNotice(val text: String, val serial: Long)
 /** Reads a record's cover as a JPEG for the receiver. Returns null if the record has no cover. */
 fun interface CastCovers {
     suspend fun jpegOf(item: MediaItem): ByteArray?
+
+    /** The picture at [address] as a JPEG, for a song a station announced. Null where it cannot be read. */
+    suspend fun jpegOfPicture(address: String): ByteArray? = null
 }
 
 /**

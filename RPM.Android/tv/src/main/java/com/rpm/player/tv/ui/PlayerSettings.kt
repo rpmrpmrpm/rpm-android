@@ -1,5 +1,7 @@
 package com.rpm.player.tv.ui
 
+import com.rpm.player.core.library.BlankDisc
+import com.rpm.player.core.library.DiscStandIn
 import com.rpm.player.core.playback.SongRadioRuns
 import android.content.Context
 import androidx.compose.runtime.getValue
@@ -114,6 +116,17 @@ class PlayerSettings(context: Context) {
         val next = PageBackground.entries[(background.ordinal + 1) % PageBackground.entries.size]
         background = next
         prefs.edit().putString(KEY_BACKGROUND, next.name).apply()
+    }
+
+    /** What the record looks like for a record with no disc picture of its own ([DiscStandIn]): the plain CD by
+     * default, or the vinyl. It applies to the next record that is put on or opened. */
+    var discStandIn by mutableStateOf(BlankDisc.read(prefs.getString(BlankDisc.KEY, null)))
+        private set
+
+    fun nextDiscStandIn() {
+        val next = DiscStandIn.entries[(discStandIn.ordinal + 1) % DiscStandIn.entries.size]
+        discStandIn = next
+        prefs.edit().putString(BlankDisc.KEY, next.stored).apply()
     }
 
     /** Whether the albums screen is the carousel ([AlbumCarousel]) rather than the grid; the grid until changed. */

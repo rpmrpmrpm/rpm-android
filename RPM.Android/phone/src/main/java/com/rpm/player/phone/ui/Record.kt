@@ -11,6 +11,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.produceState
@@ -50,8 +51,10 @@ import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
+import com.rpm.player.core.library.BlankDisc
 import com.rpm.player.core.library.DiscArt
 import com.rpm.player.core.library.DiscScan
+import com.rpm.player.core.library.DiscStandIn
 
 // ── the wordmark ──
 
@@ -385,8 +388,29 @@ class ScannedDisc private constructor(val picture: ImageBitmap, val coversRecord
          * artwork cut to the disc's circle under the CD's rim and hub ([CdDress]), as the desktop dresses a whole CD.
          */
         fun printed(artwork: ImageBitmap): ScannedDisc = ScannedDisc(artwork, coversRecord = true)
+
+        @Volatile
+        private var blank: ScannedDisc? = null
+
+        /**
+         * The plain CD ([com.rpm.player.core.library.BlankDisc]) when [standIn] is the CD, for a record with no disc
+         * picture of its own; null when it is the vinyl. Read once and kept.
+         */
+        fun standIn(context: Context, standIn: DiscStandIn): ScannedDisc? {
+            if (standIn != DiscStandIn.Cd) return null
+            blank?.let { return it }
+            val bitmap = BlankDisc.bitmap(context) ?: return null
+            val covers = DiscScan.coversRecord(bitmap.width, bitmap.height) { x, y -> bitmap.getPixel(x, y) ushr 24 }
+            return ScannedDisc(bitmap.asImageBitmap(), covers).also { blank = it }
+        }
     }
 }
+
+/**
+ * What the record looks like for a record with no disc picture of its own ([DiscStandIn]), from the phone's settings.
+ * Provided once, over the whole app. A change applies to the next record that is put on or opened.
+ */
+val LocalDiscStandIn = compositionLocalOf { BlankDisc.INITIAL }
 
 /**
  * The two pictures the desktop draws over a whole CD (`CdOverlay.cs`, the iPhone's `CdDress`): an even rim with the

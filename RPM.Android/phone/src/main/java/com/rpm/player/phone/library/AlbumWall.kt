@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
+import com.rpm.player.phone.design.PreloadAhead
+import androidx.compose.ui.platform.LocalDensity
 import coil3.request.ImageRequest
 import com.rpm.player.core.library.CloudAlbum
 import com.rpm.player.core.library.Cover
@@ -61,6 +63,9 @@ internal const val EDGE = 20.0
  * be read at arm's length.
  */
 internal const val WALL_COLUMNS = 4
+
+/** How many rows of covers past the edge of the view are loaded ahead. See [PreloadAhead]. */
+private const val PRELOAD_ROWS = 4
 
 /** The gap between the last row of a page and the chrome below it (`RPMLayout.foot` on iPhone). */
 val FOOT = 16.dp
@@ -90,6 +95,13 @@ fun AlbumWall(
         val caption = AlbumCaption.of(art)
         val grid = rememberLazyGridState()
         ScrollsToTop(grid)
+        // The covers of the next rows are loaded before they scroll in, at the size the tiles ask for.
+        val context = LocalContext.current
+        val edgePx = with(LocalDensity.current) { caption.art.dp.roundToPx() }.coerceAtLeast(1)
+        val preload = remember(albums, edgePx) {
+            { index: Int -> coverOf(albums[index])?.let { ImageRequest.Builder(context).data(it).size(edgePx, edgePx).build() } }
+        }
+        PreloadAhead(grid, albums.size, columns * PRELOAD_ROWS, images, preload)
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             state = grid,

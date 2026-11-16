@@ -1,4 +1,4 @@
-package com.rpm.player.phone.profile
+package com.rpm.player.phone.settings
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

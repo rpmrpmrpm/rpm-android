@@ -1,5 +1,6 @@
-package com.rpm.player.phone.profile
+package com.rpm.player.phone.settings
 
+import androidx.annotation.StringRes
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
@@ -36,6 +37,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -69,6 +71,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.rpm.player.core.R
 import com.rpm.player.core.cloud.CloudQuota
+import com.rpm.player.core.library.DiscStandIn
 import com.rpm.player.core.playback.AudioLadder
 import com.rpm.player.core.playback.LevelMode
 import com.rpm.player.phone.design.Backdrop
@@ -77,6 +80,8 @@ import com.rpm.player.phone.design.GlassButton
 import com.rpm.player.phone.design.GlassCard
 import com.rpm.player.phone.design.Glyph
 import com.rpm.player.phone.design.Ink
+import com.rpm.player.phone.design.PageTabs
+import com.rpm.player.phone.design.UnderHeader
 import com.rpm.player.phone.design.PageTitle
 import com.rpm.player.phone.design.backdropSource
 import com.rpm.player.phone.design.display
@@ -85,6 +90,7 @@ import com.rpm.player.phone.design.kicker
 import com.rpm.player.phone.design.rememberBackdrop
 import com.rpm.player.phone.design.system
 import com.rpm.player.phone.library.FOOT
+import com.rpm.player.phone.library.KeyGroup
 import com.rpm.player.phone.ui.Ground
 import com.rpm.player.phone.ui.GroundTile
 import com.rpm.player.phone.ui.VinylGround
@@ -108,11 +114,41 @@ private val TILE_WIDE = 62.dp
 private val TILE_TALL = 116.dp
 
 /**
- * The account, and all the app settings that are choices and not records: the iPhone's `ProfilePage`. It is a tab
- * and not a gear key in a corner, because it holds more than settings: how much cloud storage is used, the plan of the
- * account, and the way to sign out. Every card has the same shape: a glyph and a kicker, then the current value, then
- * the actions.
+ * The parts of the settings page, one tab each in the row under its header: the iPhone's `SettingsSection`.
  *
+ * @param stored the name it is saved under, the same as the iPhone's.
+ */
+enum class SettingsSection(val stored: String, @StringRes val label: Int, val glyph: String) {
+    /** The version, the acknowledgements, crash reports and the cover cache. */
+    General("general", R.string.Rpm_Settings_General, Glyph.general),
+
+    /** The background, night mode and what spins for a record with no disc picture. */
+    Appearance("appearance", R.string.Rpm_Settings_Appearance, Glyph.picture),
+
+    /** The streaming rates, volume levelling and karaoke. */
+    Playback("playback", R.string.Rpm_Profile_Playback, Glyph.speaker),
+
+    /** The albums on the phone and the rate that downloads ask for. */
+    Downloads("downloads", R.string.Rpm_Downloads_Title, Glyph.download),
+
+    /** The account, its cloud storage and its plan. */
+    Account("account", R.string.Rpm_Settings_Account, Glyph.profile);
+
+    companion object {
+        fun of(stored: String?): SettingsSection? = entries.firstOrNull { it.stored == stored }
+    }
+}
+
+/**
+ * The settings tab: the account, and all the app settings that are choices and not records. It is the iPhone's
+ * `SettingsPage`. It is a tab and not a gear key in a corner, because it holds more than settings: how much cloud
+ * storage is used, the plan of the account, and the way to sign out.
+ *
+ * It is laid out like the library tab: the title, a row of tabs ([SettingsSection]), and the cards of the chosen
+ * section under them. Send feedback is the round key beside the title. Every card has the same shape: a glyph and a
+ * kicker, then the current value, then the actions.
+ *
+ * @param section the section that is shown. It is saved, so the page opens on the section used last.
  * @param reachSavesData whether Data Saver holds streaming down. The rate menus then show a note, because a menu that
  * says 320 while the stream is 128, with no reason on the screen, looks like a setting that does nothing.
  * @param downloaded how many albums are downloaded to this phone, and what they take.
@@ -123,7 +159,9 @@ private val TILE_TALL = 116.dp
  * @param bottomRoom how much of the bottom of the screen the chrome covers.
  */
 @Composable
-fun ProfilePage(
+fun SettingsPage(
+    section: SettingsSection,
+    onSection: (SettingsSection) -> Unit,
     name: String,
     email: String,
     quota: CloudQuota?,
@@ -145,6 +183,8 @@ fun ProfilePage(
     onGround: (Ground) -> Unit,
     nightMode: Boolean,
     onNightMode: (Boolean) -> Unit,
+    discStandIn: DiscStandIn,
+    onDiscStandIn: (DiscStandIn) -> Unit,
     version: String,
     onClearCache: () -> Unit,
     onSignOut: () -> Unit,
@@ -156,53 +196,57 @@ fun ProfilePage(
     bottomRoom: Dp,
     karaoke: Boolean,
     onKaraoke: (Boolean) -> Unit,
+    sharesListening: Boolean? = null,
+    onSharesListening: (Boolean) -> Unit = {},
 ) {
-    val density = LocalDensity.current
     val page = rememberBackdrop()
+    // What the header's glass frosts: the background and the cards that scroll under it.
+    val behind = rememberBackdrop()
     val scroll = rememberScrollState()
     ScrollsToTop(scroll)
-    val statusBar = WindowInsets.statusBars.asPaddingValues(density).calculateTopPadding()
-    var heading by remember { mutableStateOf(0.dp) }
     var deletingAccount by remember { mutableStateOf(false) }
     var credits by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf<MenuAsk?>(null) }
     BackHandler(enabled = menu != null) { menu = null }
 
     val cards = Cards(offer, onSupport, onAsk = { menu = it })
+    // Each section opens at its top.
+    LaunchedEffect(section) { scroll.scrollTo(0) }
 
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(page)) {
-            VinylGround()
-            Column(
-                Modifier
-                    .fillMaxSize()
-                    .dissolvesUnder(statusBar + heading, DISSOLVE) { scroll.value.toFloat() }
-                    .verticalScroll(scroll)
-                    .padding(horizontal = MARGIN)
-                    .padding(top = statusBar + heading + 4.dp, bottom = FOOT + bottomRoom),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                cards.Account(name, email, onSignOut, onDelete = { deletingAccount = true })
-                cards.Storage(quota)
-                cards.Downloads(downloaded, onDownloads)
-                if (quota != null) cards.Plan(quota)
-                cards.Backdrops(ground, isGold, onGround, nightMode, onNightMode)
-                cards.Playback(onWifi, onCellular, onDownload, onRates, reachSavesData, quota, karaoke, onKaraoke)
-                cards.Loudness(levelling, levelsClassical, onLevelling, onLevelsClassical)
-                cards.Device(cached, onClearCache)
-                cards.About(version, onCredits = { credits = true }, crashReports, onCrashReports, onFeedback)
-            }
             // The header stays over the scroll, as on iPhone: it is the name of the page, and nobody should have to
             // scroll back to see it.
-            Column(
-                Modifier
-                    .statusBarsPadding()
-                    .padding(start = MARGIN, end = MARGIN, bottom = 8.dp)
-                    .onSizeChanged { heading = with(density) { it.height.toDp() } + 8.dp },
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                PageTitle(stringResource(R.string.Rpm_Tab_Profile))
-                BasicText(stringResource(R.string.Rpm_Profile_Subtitle), style = kicker())
+            UnderHeader(behind, ground = { VinylGround() }, header = { Header(behind, section, onSection, onFeedback) }) { top ->
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .dissolvesUnder(top, DISSOLVE) { scroll.value.toFloat() }
+                        .verticalScroll(scroll)
+                        .padding(horizontal = MARGIN)
+                        .padding(top = top + 4.dp, bottom = FOOT + bottomRoom),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    when (section) {
+                        SettingsSection.General -> {
+                            cards.About(version, onCredits = { credits = true }, crashReports, onCrashReports)
+                            cards.Device(cached, onClearCache)
+                        }
+                        SettingsSection.Appearance ->
+                            cards.Backdrops(ground, isGold, onGround, nightMode, onNightMode, discStandIn, onDiscStandIn)
+                        SettingsSection.Playback -> {
+                            cards.Playback(onWifi, onCellular, onRates, reachSavesData, quota, karaoke, onKaraoke)
+                            cards.Loudness(levelling, levelsClassical, onLevelling, onLevelsClassical)
+                        }
+                        SettingsSection.Downloads -> cards.Downloads(downloaded, onDownloads, onDownload, onRates)
+                        SettingsSection.Account -> {
+                            cards.Account(name, email, supporter = quota?.wearsMark == true, onSignOut, onDelete = { deletingAccount = true })
+                            if (sharesListening != null) cards.Sharing(sharesListening, onSharesListening)
+                            cards.Storage(quota)
+                            if (quota != null) cards.Plan(quota)
+                        }
+                    }
+                }
             }
         }
         menu?.let { ask -> Menu(page, ask, bottomRoom, onClose = { menu = null }) }
@@ -216,6 +260,41 @@ fun ProfilePage(
     if (credits) AboutPage(version, onClose = { credits = false })
 }
 
+/** The title with Send feedback beside it, and the row of sections under them. */
+@Composable
+private fun Header(backdrop: Backdrop, section: SettingsSection, onSection: (SettingsSection) -> Unit, onFeedback: (() -> Unit)?) {
+    Column(Modifier.statusBarsPadding()) {
+        // The key is drawn over the title's line and not in a row with it, as on the library tab: a 40 dp key is taller
+        // than the letters and would set the height of the line.
+        Box(Modifier.fillMaxWidth().padding(start = MARGIN, end = MARGIN, bottom = 10.dp)) {
+            PageTitle(stringResource(R.string.Settings_Title))
+            onFeedback?.let { FeedbackKey(backdrop, it, Modifier.align(Alignment.CenterEnd)) }
+        }
+        PageTabs(SettingsSection.entries, section, onSection, backdrop, label = { it.label }) { choice, ink ->
+            BasicText(choice.glyph, style = icon(14f).copy(color = ink))
+        }
+    }
+}
+
+/** Send feedback: one round glass key, the same size as the library tab's header keys. */
+@Composable
+private fun FeedbackKey(backdrop: Backdrop, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val label = stringResource(R.string.Shell_Feedback)
+    Box(modifier) {
+        KeyGroup(backdrop) {
+            Box(
+                Modifier
+                    .size(40.dp)
+                    .semantics { contentDescription = label }
+                    .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = onClick),
+                contentAlignment = Alignment.Center,
+            ) {
+                BasicText(Glyph.feedback, style = icon(16f).copy(color = Ink.white(0xB8)))
+            }
+        }
+    }
+}
+
 /** The three rate settings' setters. */
 class Rates(val onWifi: (Int) -> Unit, val onCellular: (Int) -> Unit, val onDownload: (Int) -> Unit)
 
@@ -224,17 +303,41 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
 
     // ── account ──
 
+    /**
+     * The switch for "listening to" on the profile page. It applies to every device of the account, because the server
+     * keeps it.
+     */
     @Composable
-    fun Account(name: String, email: String, onSignOut: () -> Unit, onDelete: () -> Unit) {
+    fun Sharing(on: Boolean, onChange: (Boolean) -> Unit) {
+        val haptics = LocalHapticFeedback.current
+        Card(Glyph.play, stringResource(R.string.Rpm_Tab_Profile)) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Switch) {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onChange(!on)
+                    },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BasicText(stringResource(R.string.Rpm_Settings_ShareListening), Modifier.weight(1f), style = display(13f).copy(color = Ink.white(0xB3)))
+                Spacer(Modifier.width(10.dp))
+                Switch(on)
+            }
+        }
+    }
+
+    @Composable
+    fun Account(name: String, email: String, supporter: Boolean, onSignOut: () -> Unit, onDelete: () -> Unit) {
         Card(Glyph.profile, stringResource(R.string.Rpm_Profile_Account)) {
             // No supporter badge here. It is shown in the Supporter card instead.
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                BasicText(name.ifEmpty { email }, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(17f).copy(color = Color.White))
+                // A supporter's name is in gold, as on their profile page.
+                BasicText(name.ifEmpty { email }, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(17f).copy(color = if (supporter) Ink.gold else Color.White))
                 if (name.isNotEmpty()) {
                     BasicText(email, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(13f).copy(color = Ink.white(0x88)))
                 }
             }
-            BasicText(stringResource(R.string.Rpm_Profile_SignOutDetail), style = display(11f).copy(color = Ink.white(0x66)))
             // One row: Sign out takes two thirds and Delete one third, so the action people need most is the larger key
             // and the destructive one is still on the card, easy to find. The sheet it opens asks for the email
             // address, so a tap on Delete deletes nothing by itself.
@@ -292,7 +395,7 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
 
     /** The albums kept on the phone for listening offline, and the way to the list of them. */
     @Composable
-    fun Downloads(downloaded: Pair<Int, Long>, onDownloads: (() -> Unit)?) {
+    fun Downloads(downloaded: Pair<Int, Long>, onDownloads: (() -> Unit)?, onDownload: Int, rates: Rates) {
         val (albums, size) = downloaded
         Card(Glyph.download, stringResource(R.string.Rpm_Downloads_Title)) {
             BasicText(
@@ -303,8 +406,10 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
                 },
                 style = display(17f).copy(color = Color.White),
             )
-            BasicText(stringResource(R.string.Rpm_Downloads_Detail), style = display(11f).copy(color = Ink.white(0x66)))
             Key(stringResource(R.string.Rpm_Downloads_Manage), enabled = onDownloads != null, onClick = { onDownloads?.invoke() })
+            // A download asks for this rate on any network, so it is not with the streaming rates on Playback.
+            Rate(stringResource(R.string.Rpm_Profile_QualityDownload), onDownload, rates.onDownload)
+            Capped()
         }
     }
 
@@ -326,19 +431,6 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
                         style = display(17f).copy(color = Ink.cyan),
                     )
                 }
-                BasicText(
-                    stringResource(
-                        planString(quota, R.string.Rpm_Profile_PlanSupporterDetail, R.string.Rpm_Profile_PlanTesterDetail, R.string.Rpm_Profile_PlanFreeDetail),
-                    ),
-                    style = display(12f).copy(color = Ink.white(0x88)),
-                )
-                BasicText(
-                    stringResource(
-                        planString(quota, R.string.Rpm_Profile_PlanSupporterThanks, R.string.Rpm_Profile_PlanTesterThanks, R.string.Rpm_Profile_PlanFreeAppeal),
-                    ),
-                    Modifier.padding(top = 6.dp),
-                    style = display(12f).copy(color = Ink.white(0xB3)),
-                )
             }
         }
     }
@@ -348,7 +440,15 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
     /** The five built-in backdrops, as a row of the real pictures. The supporter's is shown to everybody and is not
      * greyed out, so people can see it; a tap on it without support opens the page that explains it. */
     @Composable
-    fun Backdrops(standing: Ground, isGold: Boolean, onGround: (Ground) -> Unit, nightMode: Boolean, onNightMode: (Boolean) -> Unit) {
+    fun Backdrops(
+        standing: Ground,
+        isGold: Boolean,
+        onGround: (Ground) -> Unit,
+        nightMode: Boolean,
+        onNightMode: (Boolean) -> Unit,
+        discStandIn: DiscStandIn,
+        onDiscStandIn: (DiscStandIn) -> Unit,
+    ) {
         val haptics = LocalHapticFeedback.current
         Card(Glyph.picture, stringResource(R.string.Settings_Background)) {
             Row(
@@ -376,9 +476,23 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
                 Spacer(Modifier.width(10.dp))
                 Switch(nightMode)
             }
-            BasicText(stringResource(R.string.Settings_NightModeHint), style = display(11f).copy(color = Ink.white(0x88)))
+
+            // What spins for a record with no disc picture (BlankDisc), as on iPhone.
+            BasicText(stringResource(R.string.Settings_DiscStandIn), style = display(13f).copy(color = Ink.white(0xB3)))
+            val standIns = DiscStandIn.entries.map { named(it) }
+            ClosedMenu(named(discStandIn), dimmed = false) { anchor ->
+                onAsk(MenuAsk(anchor, standIns, discStandIn.ordinal) { onDiscStandIn(DiscStandIn.entries[it]) })
+            }
         }
     }
+
+    @Composable
+    private fun named(choice: DiscStandIn): String = stringResource(
+        when (choice) {
+            DiscStandIn.Cd -> R.string.Settings_DiscStandInCd
+            DiscStandIn.Vinyl -> R.string.Settings_DiscStandInVinyl
+        },
+    )
 
     @Composable
     private fun Tile(choice: Ground, picked: Boolean, locked: Boolean, onClick: () -> Unit) {
@@ -432,26 +546,30 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
 
     /**
      * Two settings for listening, not one: the original at home and less on a train. A single setting would often be
-     * wrong. A third is for downloads, which is a choice about space on the phone and not about the network.
+     * wrong. A third is for downloads, on the Downloads card, because it is a choice about space on the phone and not
+     * about the network.
      */
     @Composable
-    fun Playback(onWifi: Int, onCellular: Int, onDownload: Int, rates: Rates, savesData: Boolean, quota: CloudQuota?, karaoke: Boolean, onKaraoke: (Boolean) -> Unit) {
+    fun Playback(onWifi: Int, onCellular: Int, rates: Rates, savesData: Boolean, quota: CloudQuota?, karaoke: Boolean, onKaraoke: (Boolean) -> Unit) {
         Card(Glyph.speaker, stringResource(R.string.Rpm_Profile_Playback)) {
             Rate(stringResource(R.string.Rpm_Profile_QualityWifi), onWifi, rates.onWifi)
             Rate(stringResource(R.string.Rpm_Profile_QualityCellular), onCellular, rates.onCellular)
             // Next to the settings, and only while it applies: Data Saver overrides both menus.
             if (savesData) BasicText(stringResource(R.string.Rpm_Profile_QualityLowData), style = display(11f).copy(color = Ink.white(0x88)))
-            // After the Data Saver note, which is about streaming only. A download asks for this rate on any network.
-            Rate(stringResource(R.string.Rpm_Profile_QualityDownload), onDownload, rates.onDownload)
-            BasicText(stringResource(R.string.Rpm_Profile_QualityDownloadDetail), style = display(11f).copy(color = Ink.white(0x88)))
-            // Directly under the menus, because a greyed-out control needs its reason next to it.
-            if (offer.capped) {
-                BasicText(stringResource(R.string.Rpm_Profile_QualityCapped), style = display(11f).copy(color = Ink.white(0x88)))
-                Key(stringResource(R.string.Cloud_BecomeSupporter), onClick = onSupport)
-            }
-            BasicText(stringResource(R.string.Rpm_Profile_QualityDetail), style = display(11f).copy(color = Ink.white(0x66)))
+            Capped()
             KaraokeSwitch(quota, karaoke, onKaraoke)
         }
+    }
+
+    /**
+     * Why some rates are greyed out, and the way to become a supporter. It goes directly under the rate menus, on
+     * Playback and on Downloads, because a greyed-out control needs its reason next to it.
+     */
+    @Composable
+    private fun Capped() {
+        if (!offer.capped) return
+        BasicText(stringResource(R.string.Rpm_Profile_QualityCapped), style = display(11f).copy(color = Ink.white(0x88)))
+        Key(stringResource(R.string.Cloud_BecomeSupporter), onClick = onSupport)
     }
 
     /**
@@ -513,7 +631,6 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
             ClosedMenu(named(levelling), dimmed = false) { anchor ->
                 onAsk(MenuAsk(anchor, names, levelling.ordinal) { onLevelling(LevelMode.entries[it]) })
             }
-            BasicText(stringResource(R.string.Rpm_Profile_LevellingDetail), style = display(11f).copy(color = Ink.white(0x88)))
             // Hidden while levelling is off, as on the desktop: there is nothing to level.
             if (levelling != LevelMode.Off) {
                 Row(
@@ -526,7 +643,6 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
                     Spacer(Modifier.width(10.dp))
                     Switch(levelsClassical)
                 }
-                BasicText(stringResource(R.string.Settings_NormalizeClassicalHint), style = display(11f).copy(color = Ink.white(0x88)))
             }
         }
     }
@@ -552,19 +668,17 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
                 }
                 Key(stringResource(R.string.Catalog_FanartClear), stretches = false, onClick = onClearCache)
             }
-            BasicText(stringResource(R.string.Rpm_Profile_ArtCacheDetail), style = display(11f).copy(color = Ink.white(0x66)))
         }
     }
 
     // ── about ──
 
     @Composable
-    fun About(version: String, onCredits: () -> Unit, crashReports: Boolean, onCrashReports: (Boolean) -> Unit, onFeedback: (() -> Unit)?) {
+    fun About(version: String, onCredits: () -> Unit, crashReports: Boolean, onCrashReports: (Boolean) -> Unit) {
         Card(Glyph.about, stringResource(R.string.Rpm_Profile_About)) {
             BasicText(stringResource(R.string.Rpm_Profile_Tagline), style = display(13f).copy(color = Ink.white(0xB3)))
             BasicText(stringResource(R.string.Rpm_Profile_Version, version), style = display(11f).copy(color = Ink.white(0x66)))
             Key(stringResource(R.string.About_Acknowledgements), onClick = onCredits)
-            onFeedback?.let { Key(stringResource(R.string.Shell_Feedback), onClick = it) }
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -575,7 +689,6 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
                 Spacer(Modifier.width(10.dp))
                 Switch(crashReports)
             }
-            BasicText(stringResource(R.string.Settings_CrashReportsDesc), style = display(11f).copy(color = Ink.white(0x66)))
         }
     }
 

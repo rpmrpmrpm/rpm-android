@@ -48,6 +48,8 @@ data class WallEntry(
     val hasBody: Boolean = false,
     /** As on [Review.authorDeleted]. */
     val authorDeleted: Boolean = false,
+    /** As on [Review.authorSupporter]: the name is drawn in gold. */
+    val authorSupporter: Boolean = false,
 ) {
     val isPost: Boolean get() = kind.equals("post", ignoreCase = true)
 
@@ -78,4 +80,10 @@ sealed interface ReportTarget {
     data class Comment(val albumId: String, val commentId: String) : ReportTarget
 
     data class WallPost(val artistId: String, val entryId: String) : ReportTarget
+
+    /** A post on a person's page. */
+    data class Post(val ownerId: String, val postId: String) : ReportTarget
+
+    /** A reply under a post on a person's page. */
+    data class Reply(val ownerId: String, val postId: String, val replyId: String) : ReportTarget
 }

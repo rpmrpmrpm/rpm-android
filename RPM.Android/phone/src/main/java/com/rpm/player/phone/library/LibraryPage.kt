@@ -96,6 +96,8 @@ import com.rpm.player.phone.design.OverChrome
 import com.rpm.player.phone.design.PageHeading
 import com.rpm.player.phone.design.backdropSource
 import com.rpm.player.phone.design.chromeGlass
+import com.rpm.player.phone.design.PageTabs
+import com.rpm.player.phone.design.PageTabsMotion
 import com.rpm.player.phone.design.display
 import com.rpm.player.phone.design.icon
 import com.rpm.player.phone.design.rememberBackdrop
@@ -293,8 +295,15 @@ private fun AlbumsPage(
                 // and fades out over it; everything else starts below it.
                 Box(Modifier.fillMaxSize().imePadding()) {
                     val below = Modifier.fillMaxSize().padding(top = top)
+                    if (searching) RememberSearch(asked, settings)
                     when {
                         mode != LibraryMode.Albums -> Unit
+                        searching && asked.isEmpty() && settings.searchHistory.isNotEmpty() -> SearchHistoryList(
+                            settings.searchHistory, top, bottomRoom,
+                            onPick = { asked = it },
+                            onForget = settings::forgetSearch,
+                            onClear = settings::clearSearchHistory,
+                        )
                         searching && asked.isNotEmpty() -> Box(below) {
                             SearchResults(
                                 asked, answer, ready.collection, images, artwork, playing, bottomRoom,
@@ -385,7 +394,7 @@ internal fun HeaderKey(glyph: String, onClick: () -> Unit) {
 /**
  * The library tab: one of its four views (records, artists, playlists, genres), as chosen in the row under the header
  * ([ModeTabs]). A new view fades in over the one it replaces ([MODE_FADE_MS]), and the row's pill slides and its keys
- * open and close across the change ([ModeTabsMotion]), as the iPhone's views do.
+ * open and close across the change ([PageTabsMotion]), as the iPhone's views do.
  *
  * The parameters are the albums view's ([AlbumsPage]) and what the other views need from the same place.
  */
@@ -411,7 +420,7 @@ fun LibraryPage(
     onRetry: () -> Unit = {},
     reading: WallReading,
 ) {
-    val motion = remember { ModeTabsMotion(settings.libraryMode) }
+    val motion = remember { PageTabsMotion(LibraryMode.entries.size, settings.libraryMode.ordinal) }
     CompositionLocalProvider(LocalModeTabs provides motion) {
         Crossfade(settings.libraryMode, animationSpec = tween(MODE_FADE_MS), label = "library view") { mode ->
             when (mode) {
@@ -431,97 +440,25 @@ fun LibraryPage(
 private const val MODE_FADE_MS = 250
 
 /**
- * The row of views under the header. It matches the iPhone's `LibraryModeTabs`. It is the tab capsule at a
- * smaller size. Only the chosen view shows its name beside its icon, so that all four views fit in every
- * language. The pill slides between the views with the same spring as the tab bar, the chosen key opens to show its
- * name as it fades in, and the one left closes as its name fades out.
+ * The row of views under the header: the shared row of tabs ([PageTabs]) with the library's four views.
  *
  * **Each view draws its own row, so the motion is kept outside them** ([LocalModeTabs]). The row of the view that
  * comes in starts where the last one was, and both rows show the same moment while the views fade into one another.
  */
 @Composable
 internal fun ModeTabs(mode: LibraryMode, onMode: (LibraryMode) -> Unit, backdrop: Backdrop) {
-    val motion = LocalModeTabs.current ?: remember { ModeTabsMotion(mode) }
-    LaunchedEffect(mode) { motion.go(mode) }
-    val capsule = RoundedCornerShape(percent = 50)
-    val unlit = 52.dp
-    // A tick under the thumb as the view changes (`Haptics.pick()` on iPhone).
-    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
-    BoxWithConstraints(
-        Modifier
-            .padding(horizontal = 20.dp)
-            .padding(bottom = 16.dp)
-            .fillMaxWidth()
-            .chromeGlass(backdrop, capsule)
-            .padding(3.dp),
-    ) {
-        val lit = maxWidth - unlit * (LibraryMode.entries.size - 1)
-        Box(Modifier.offset(x = unlit * motion.pill.value).width(lit).height(32.dp).clip(capsule).background(Ink.white(0x24)))
-        Row {
-            for (choice in LibraryMode.entries) {
-                val chosen = choice == mode
-                // How far this key is open: 1 for the chosen view, 0 for the others, and between while they change.
-                val open = motion.open[choice.ordinal].value
-                Row(
-                    Modifier
-                        .width(unlit + (lit - unlit) * open)
-                        .height(32.dp)
-                        .clipToBounds()
-                        .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Tab) {
-                            if (!chosen) haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                            onMode(choice)
-                        },
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val ink = lerp(Ink.white(0x99), Color.White, open)
-                    when (choice) {
-                        LibraryMode.Albums -> BasicText(Glyph.record, style = icon(14f).copy(color = ink))
-                        LibraryMode.Artists -> MarkView(ArtistMark, ink, Modifier.size(14.dp))
-                        LibraryMode.Playlists -> BasicText(Glyph.playlists, style = icon(14f).copy(color = ink))
-                        LibraryMode.Genres -> BasicText(Glyph.genres, style = icon(14f).copy(color = ink))
-                    }
-                    if (open > 0.02f) {
-                        Spacer(Modifier.width(6.dp * open))
-                        BasicText(
-                            stringResource(choice.label),
-                            Modifier.graphicsLayer { alpha = open * open },
-                            maxLines = 1,
-                            softWrap = false,
-                            style = system(12f, FontWeight.SemiBold).copy(color = Color.White),
-                        )
-                    }
-                }
-            }
+    PageTabs(LibraryMode.entries, mode, onMode, backdrop, label = { it.label }, motion = LocalModeTabs.current) { choice, ink ->
+        when (choice) {
+            LibraryMode.Albums -> BasicText(Glyph.record, style = icon(14f).copy(color = ink))
+            LibraryMode.Artists -> MarkView(ArtistMark, ink, Modifier.size(14.dp))
+            LibraryMode.Playlists -> BasicText(Glyph.playlists, style = icon(14f).copy(color = ink))
+            LibraryMode.Genres -> BasicText(Glyph.genres, style = icon(14f).copy(color = ink))
         }
-    }
-}
-
-/**
- * Where the row of views stands while it moves: the pill's place, in keys from the left, and how far each key is open.
- * The library page keeps one for all its views ([LibraryPage]), because each view draws its own row, and a row that
- * started fresh with each view would appear already finished.
- */
-internal class ModeTabsMotion(mode: LibraryMode) {
-    val pill = Animatable(mode.ordinal.toFloat())
-    val open = LibraryMode.entries.map { Animatable(if (it == mode) 1f else 0f) }
-
-    /** Moves the row to [to]: the pill slides, that key opens, the others close. A later move takes over at once. */
-    suspend fun go(to: LibraryMode) = coroutineScope {
-        launch { pill.animateTo(to.ordinal.toFloat(), MOVE) }
-        for (choice in LibraryMode.entries) {
-            launch { open[choice.ordinal].animateTo(if (choice == to) 1f else 0f, MOVE) }
-        }
-    }
-
-    private companion object {
-        /** The tab bar's spring. */
-        val MOVE = spring<Float>(dampingRatio = 0.8f, stiffness = 322f)
     }
 }
 
 /** The row's motion for the views of the library page that is on screen. Null outside it: a row then keeps its own. */
-internal val LocalModeTabs = staticCompositionLocalOf<ModeTabsMotion?> { null }
+internal val LocalModeTabs = staticCompositionLocalOf<PageTabsMotion?> { null }
 
 /**
  * The state of the wall, when it is not simply showing records: the iPhone's `ReadStanding`. **An empty list can mean

@@ -35,7 +35,8 @@ val SEARCH_HEIGHT = 38.dp
 
 /**
  * A search field on the face of a text field, as the iPhone's `RPMSearchBox`. The search runs as the user
- * types, so the keyboard's search key only hides the keyboard. The clear key shows only when the box has text.
+ * types, so the keyboard's search key only hides the keyboard. It has no clear key: the search row puts its close key
+ * right beside the box, and a second cross there is one too many.
  *
  * @param focus gives the box focus, which opens the keyboard. The caller requests focus when the box appears.
  */
@@ -50,7 +51,7 @@ fun SearchBox(text: String, onText: (String) -> Unit, prompt: String, focus: Foc
             .clip(shape)
             .background(Ink.ghostFace)
             .border(1.dp, Ink.glassEdge, shape)
-            .padding(start = 12.dp, end = 2.dp),
+            .padding(start = 12.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BasicTextField(
@@ -69,19 +70,5 @@ fun SearchBox(text: String, onText: (String) -> Unit, prompt: String, focus: Foc
                 }
             },
         )
-        if (text.isNotEmpty()) {
-            Box(
-                Modifier
-                    .width(28.dp)
-                    .fillMaxHeight()
-                    .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Button) {
-                        onText("")
-                        focus.requestFocus()
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                BasicText(Glyph.clear, style = icon(13f).copy(color = Ink.white(0x77)))
-            }
-        }
     }
 }

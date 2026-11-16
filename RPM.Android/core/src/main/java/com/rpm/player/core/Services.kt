@@ -46,6 +46,7 @@ import com.rpm.player.core.library.PlaylistPhotoKeyer
 import com.rpm.player.core.lyrics.LrcLib
 import com.rpm.player.core.motion.MotionLadder
 import com.rpm.player.core.net.httpClient
+import com.rpm.player.core.net.pictureClient
 import com.rpm.player.core.playback.AudioTap
 import com.rpm.player.core.playback.Levelling
 import com.rpm.player.core.playback.StreamLinks
@@ -201,11 +202,14 @@ class Services(
     /** What each station is, in a line, for the radio banner. */
     val stationBlurbs = StationBlurbs(http)
 
+    /** The cover of a record the reader does not have, for a review on a profile page. */
+    val albumCovers = com.rpm.player.core.library.AlbumCovers(http) { auth.accessToken() }
+
     /** The cover of the song a station says it is playing, for the player and the mini player. */
     val songCovers = SongCovers(http)
 
-    /** Artist photos and logos for home's banner, from the rpm API. */
-    val artwork = Artwork(http)
+    /** Artist photos and logos, from the rpm API, kept on disk so a photo's address is known at once. */
+    val artwork = Artwork(http, File(context.cacheDir, "artist-artwork.json"), scope)
 
     /** The admin's edits to each act: a description in place of Wikipedia's, and related acts to add or leave out. */
     val artistEdits = ArtistEdits(http)
@@ -228,6 +232,9 @@ class Services(
      * it when it knows the height of its screens. */
     val coverEdge = CoverEdge(coverEdgeFor(Math.round(minOf(context.resources.displayMetrics.widthPixels, context.resources.displayMetrics.heightPixels) * OutputPixels.share(context))))
 
+    /** The client the image loader fetches with: the app key goes to the API's own pictures. See [pictureClient]. */
+    private val pictures = pictureClient(http)
+
     val images: ImageLoader = ImageLoader.Builder(context)
         .components {
             add(CoverKeyer())
@@ -243,7 +250,7 @@ class Services(
             add(SvgDecoder.Factory())
             // After the SVG decoder: the app's own pictures, shrunk with a sharper filter than the loader's own.
             add(SharpDecoder.Factory())
-            add(OkHttpNetworkFetcherFactory(callFactory = { http }))
+            add(OkHttpNetworkFetcherFactory(callFactory = { pictures }))
         }
         // Album covers and discs are kept here by their stamp (StoredPictures), so a launch does not fetch again what
         // the last one drew. In the cache folder, which the system empties when it needs the space.

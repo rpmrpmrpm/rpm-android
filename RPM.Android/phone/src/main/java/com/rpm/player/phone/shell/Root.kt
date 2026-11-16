@@ -1,5 +1,10 @@
 package com.rpm.player.phone.shell
 
+import androidx.compose.runtime.produceState
+import com.rpm.player.core.cloud.Post
+import com.rpm.player.phone.profile.LocalSampleFaces
+import com.rpm.player.phone.profile.FeedScreen
+import com.rpm.player.phone.profile.FeedBook
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -106,7 +111,18 @@ import com.rpm.player.phone.library.AlbumCreditsRead
 import com.rpm.player.phone.library.ArtistPage
 import com.rpm.player.phone.library.GenrePage
 import com.rpm.player.phone.radio.RadioPage
-import com.rpm.player.phone.profile.ProfileTab
+import com.rpm.player.phone.settings.SettingsTab
+import com.rpm.player.phone.profile.ListeningShare
+import com.rpm.player.phone.design.LocalSongCovers
+import com.rpm.player.phone.profile.Notices
+import com.rpm.player.phone.profile.PersonPage
+import com.rpm.player.phone.profile.ProfileScreen
+import com.rpm.player.phone.profile.plain
+import com.rpm.player.phone.profile.reportCounts
+import com.rpm.player.core.cloud.FeedReview
+import com.rpm.player.core.cloud.ProfileSample
+import com.rpm.player.core.cloud.ProfileBadges
+import com.rpm.player.core.cloud.Song
 import com.rpm.player.phone.player.NowPlayingSheet
 import com.rpm.player.phone.player.OnListeningEnded
 import com.rpm.player.phone.player.PutAwayWhenPlayedOut
@@ -297,6 +313,88 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     val downloads = rememberDownloadsHere()
     var showingDownloads by rememberSaveable { mutableStateOf(false) }
 
+    // ── profiles ──
+
+    // The reader's own page behind the profile tab, and their notifications, for the life of the session.
+    // The sample page that the reader's own profile shows while the server has no profile pages yet. Only in a build
+    // signed with the debug key (the handset and debug builds): a listener's build never shows made-up posts.
+    val sampleContext = LocalContext.current.applicationContext
+    val sample: (() -> ProfileSample?)? = remember(sampleContext) {
+        if (!isDebugSigned(sampleContext)) return@remember null
+        {
+            runCatching {
+                val json = sampleContext.resources.openRawResource(com.rpm.player.core.R.raw.profile_sample).bufferedReader().use { it.readText() }
+                ProfileSample.parse(json, System.currentTimeMillis())
+            }.getOrNull()
+        }
+    }
+    val me = remember(session?.userId) { session?.userId?.let { PersonPage(services.community, it, isOwn = true, sample = sample) } }
+    val notices = remember(session?.userId) { Notices(services.community, sample) }
+    // Other people's pages, opened from a name, newest last. They show in one sheet; its back key goes to the page before.
+    var people by remember(session?.userId) { mutableStateOf(listOf<PersonPage>()) }
+    // The reader's own page, risen over the app from the Feed tab's profile key.
+    var showingMe by remember(session?.userId) { mutableStateOf(false) }
+    // Everyone's posts, for the Feed tab.
+    val feed = remember(session?.userId) {
+        FeedBook(services.community, sample) {
+            // The reader's own page is read first, so their sample posts carry their page's name and photo.
+            val own = me ?: return@FeedBook null
+            if (own.profile == null) own.read()
+            val profile = own.profile ?: return@FeedBook null
+            FeedBook.Me(profile.displayName, profile.userId, profile.hasAvatar, services.ownFace.quota.value?.wearsMark == true || own.isSample)
+        }
+    }
+    /** Opens a person's page, and [post] on it with its replies when one is given. */
+    fun openPerson(userId: String, post: Post? = null) {
+        if (userId.isEmpty()) return
+        if (userId == session?.userId) {
+            people = emptyList()
+            me?.pendingPost = post
+            showingMe = true
+        } else {
+            people = people + PersonPage(services.community, userId, isOwn = false, sample = sample).also { it.pendingPost = post }
+        }
+    }
+    // The photos the sample people borrow: an artist's each, found once a sample is shown. Empty in a listener's build.
+    val sampleFaces by produceState(emptyMap<String, String>(), sample) {
+        value = sample?.invoke()?.faces?.mapNotNull { (id, artist) ->
+            services.artwork.of(artist, "")?.let { art -> (art.thumbs.firstOrNull() ?: art.backgrounds.firstOrNull())?.let { id to it } }
+        }?.toMap().orEmpty()
+    }
+    fun openAlbum(album: CloudAlbum) {
+        tab = Tab.Library
+        settings.changeLibraryMode(LibraryMode.Albums)
+        opened = listOf(Step.Record(album.key))
+    }
+    // The reader's own copy of a reviewed album, matched by artist and title.
+    fun albumOf(review: FeedReview): CloudAlbum? {
+        val artist = plain(review.albumArtist)
+        val title = plain(review.albumTitle)
+        if (title.isEmpty()) return null
+        return collection.albums.firstOrNull { plain(it.album) == title && plain(it.artist) == artist }
+    }
+    // The song on this phone now: for the post box's switch, and for "listening to". The radio is not a song.
+    // The reader's plan, for the supporter's mark on their own page: their own profile does not say.
+    val ownQuota by services.ownFace.quota.collectAsStateWithLifecycle()
+    val playingSong = now?.takeIf { it.station == null && it.title.isNotEmpty() }?.let { Song(it.artist, it.title, it.album) }
+    val listening = remember(services) { ListeningShare(services.community, services.scope) }
+    LaunchedEffect(playingSong) { listening.note(playingSong) }
+    // The badges the reader's own collection unlocks, worked out here and sent once the page is read; the server
+    // notifies the reader of each new one.
+    val ownBadges = remember(collection.albums, ready.walls.genres, collection.shelf) {
+        if (collection.shelf != Shelf.Own) emptyList()
+        else ProfileBadges.unlocked(
+            collection.albums.size,
+            collection.albums.sumOf { it.tracks.size },
+            ready.walls.genres.associate { it.name to it.albums.size },
+        )
+    }
+    LaunchedEffect(ownBadges, me?.profile?.userId) { me?.reportBadges(ownBadges) }
+    // The size of the collection, for the counts on the reader's page. Sent again only when it changes.
+    LaunchedEffect(collection.albums.size, collection.shelf) {
+        if (collection.shelf == Shelf.Own) reportCounts(services, collection.albums)
+    }
+
     // ── Send feedback ──
 
     // Only a beta build offers it (ReportScope). The screenshot is taken first, while the screen being reported is still
@@ -387,6 +485,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             onMark = { on -> services.scope.launch { services.albumFavourites.mark(album, on) } },
             download = downloads.key(album, collection.shelf),
             canPlay = downloads.canPlay,
+            onPerson = ::openPerson,
         )
     }
 
@@ -556,7 +655,8 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     // Each tab's way back to the top of the page it shows: a tap on the tab that is already showing, or on an empty part
     // of a page's header ([TopTaps]).
     val topTaps = remember { Tab.entries.associateWith { TopTaps() } }
-    CompositionLocalProvider(LocalPlayable provides downloads.playable, LocalOverChrome provides overChrome) {
+    // The covers of the songs stations announce reach the mini player and the player through LocalSongCovers.
+    CompositionLocalProvider(LocalPlayable provides downloads.playable, LocalOverChrome provides overChrome, LocalSongCovers provides services.songCovers) {
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(backdrop)) {
           CompositionLocalProvider(LocalSongMenu provides songMenu, LocalTopTaps provides topTaps.getValue(tab)) {
@@ -630,7 +730,23 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                     // The saved stations of a shared collection are its owner's, and are never changed from here.
                     onSave = { station -> if (services.radio.saved.value.mine) services.radio.favorites.toggle(station) },
                 )
-                Tab.Profile -> ProfileTab(
+                Tab.Feed -> CompositionLocalProvider(LocalSampleFaces provides sampleFaces) {
+                    FeedScreen(
+                        feed,
+                        images,
+                        session?.userId,
+                        unread = notices.unread,
+                        bottomRoom = chrome,
+                        onMyProfile = { showingMe = true },
+                        onOpenPerson = { openPerson(it) },
+                        onOpenPost = { post -> openPerson(post.ownerId, post) },
+                        albumOf = ::albumOf,
+                        coverOf = { collection.cover(it) },
+                        albumCover = { artist, title -> services.albumCovers.of(artist, title) },
+                        onOpenAlbum = ::openAlbum,
+                    )
+                }
+                Tab.Settings -> SettingsTab(
                     services,
                     settings,
                     controller,
@@ -648,7 +764,11 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             // A tap on the tab that is showing takes its page back to the top.
             onShow = { if (it == tab) topTaps.getValue(it).tap() else tab = it },
             miniPlayer = if (now != null && controller != null) {
-                { MiniPlayer(now, controller, images, backdrop, onOpen = { wiring.leaving = false; playerUp = true }) }
+                {
+                    CompositionLocalProvider(LocalSongCovers provides services.songCovers) {
+                        MiniPlayer(now, controller, images, backdrop, onOpen = { wiring.leaving = false; playerUp = true })
+                    }
+                }
             } else {
                 null
             },
@@ -656,7 +776,6 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                 .align(Alignment.BottomCenter)
                 .onSizeChanged { chrome = with(density) { it.height.toDp() } },
         )
-        OverChromeLayer(overChrome)
         // The wait cover stays over the first frames, then until home has drawn what it opens on, so the app shows a
         // finished page and not one filling in. Taps are held back while it is up.
         WaitCover(covering, words = collection.shelf == Shelf.Own)
@@ -682,38 +801,99 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
         if (playerUp && sheetNow != null && controller != null) {
             val album = playing?.let { collection.albumOf[it] }
             val artist = playing?.let { wiring.artistOf(it, ready) }
-            NowPlayingSheet(
-                sheetNow,
-                controller,
-                images,
-                queue,
-                sittingFrom,
-                lyrics = wiring.lyrics.sheet,
-                lookingUpLyrics = wiring.lyrics.looking,
-                onNeedLyrics = { wiring.readLyrics(sheetNow) },
-                karaoke = com.rpm.player.phone.player.karaokeOn(services, settings),
-                measured = wiring.timing.lines(sheetNow.mediaId),
-                onNeedTiming = { wiring.readTiming(sheetNow) },
-                songMenu = songMenu,
-                marked = wiring.isMarked(playing),
-                onMark = playing?.let { id -> wiring.canMark(sheetNow).takeIf { it }?.let { { on: Boolean -> wiring.mark(id, on) } } },
-                // The playlist picker, over everything, for the song playing. Not for a song on a borrowed shelf: a
-                // playlist names this account's songs.
-                onFile = playing?.let { collection.tracksById[it] }?.takeIf { wiring.canMark(sheetNow) }?.let { track -> { file(track) } },
-                // The records are on the library's albums stack, so the page is pushed there.
-                onAlbum = album?.let { { tab = Tab.Library; settings.changeLibraryMode(LibraryMode.Albums); opened = listOf(Step.Record(it.key)) } },
-                // The artists view of the library, with the artist's page pushed on its stack.
-                onArtist = artist?.let { { tab = Tab.Library; settings.changeLibraryMode(LibraryMode.Artists); opened = listOf(Step.Artist(it.name)) } },
-                speakers = wiring.speakers,
-                sleep = services.sleep,
-                leaving = wiring.leaving,
-                onClosed = {
-                    playerUp = false
-                    wiring.leaving = false
-                },
-            )
+            CompositionLocalProvider(LocalSongCovers provides services.songCovers) {
+                NowPlayingSheet(
+                    sheetNow,
+                    controller,
+                    images,
+                    queue,
+                    sittingFrom,
+                    lyrics = wiring.lyrics.sheet,
+                    lookingUpLyrics = wiring.lyrics.looking,
+                    onNeedLyrics = { wiring.readLyrics(sheetNow) },
+                    karaoke = com.rpm.player.phone.player.karaokeOn(services, settings),
+                    measured = wiring.timing.lines(sheetNow.mediaId),
+                    onNeedTiming = { wiring.readTiming(sheetNow) },
+                    songMenu = songMenu,
+                    marked = wiring.isMarked(playing),
+                    onMark = playing?.let { id -> wiring.canMark(sheetNow).takeIf { it }?.let { { on: Boolean -> wiring.mark(id, on) } } },
+                    // The playlist picker, over everything, for the song playing. Not for a song on a borrowed shelf: a
+                    // playlist names this account's songs.
+                    onFile = playing?.let { collection.tracksById[it] }?.takeIf { wiring.canMark(sheetNow) }?.let { track -> { file(track) } },
+                    // The records are on the library's albums stack, so the page is pushed there.
+                    onAlbum = album?.let { { tab = Tab.Library; settings.changeLibraryMode(LibraryMode.Albums); opened = listOf(Step.Record(it.key)) } },
+                    // The artists view of the library, with the artist's page pushed on its stack.
+                    onArtist = artist?.let { { tab = Tab.Library; settings.changeLibraryMode(LibraryMode.Artists); opened = listOf(Step.Artist(it.name)) } },
+                    speakers = wiring.speakers,
+                    sleep = services.sleep,
+                    leaving = wiring.leaving,
+                    onClosed = {
+                        playerUp = false
+                        wiring.leaving = false
+                    },
+                )
+            }
         }
-        // The downloaded albums, risen over the profile tab as the iPhone's sheet.
+        // The reader's own page, risen over everything from the Feed tab's profile key, under other people's pages.
+        AnimatedVisibility(
+            showingMe && me != null,
+            enter = slideInVertically(tween(320)) { it },
+            exit = slideOutVertically(tween(260)) { it },
+        ) {
+            me?.let { own ->
+                CompositionLocalProvider(LocalSampleFaces provides sampleFaces) {
+                    ProfileScreen(
+                        own,
+                        notices,
+                        images,
+                        session?.userId,
+                        bottomRoom = 0.dp,
+                        playing = playingSong,
+                        albumOf = ::albumOf,
+                        onBack = { showingMe = false },
+                        onOpenPerson = ::openPerson,
+                        onOpenAlbum = { album -> showingMe = false; openAlbum(album) },
+                        ownWearsMark = ownQuota?.wearsMark == true,
+                        ownBadges = ownBadges,
+                        artistPhoto = { artist, album -> services.artwork.of(artist, album)?.backgrounds?.firstOrNull() },
+                        coverOf = { collection.cover(it) },
+                        albumCover = { artist, title -> services.albumCovers.of(artist, title) },
+                    )
+                }
+            }
+        }
+        // Other people's pages, risen over everything as the iPhone's sheet.
+        AnimatedVisibility(
+            people.isNotEmpty(),
+            enter = slideInVertically(tween(320)) { it },
+            exit = slideOutVertically(tween(260)) { it },
+        ) {
+            people.lastOrNull()?.let { page ->
+                key(page.userId) {
+                    CompositionLocalProvider(LocalSampleFaces provides sampleFaces) {
+                        ProfileScreen(
+                            page,
+                            notices = null,
+                            images,
+                            session?.userId,
+                            bottomRoom = 0.dp,
+                            playing = null,
+                            albumOf = ::albumOf,
+                            onBack = { people = people.dropLast(1) },
+                            onOpenPerson = { openPerson(it) },
+                            onOpenAlbum = { album -> people = emptyList(); showingMe = false; openAlbum(album) },
+                            artistPhoto = { artist, album -> services.artwork.of(artist, album)?.backgrounds?.firstOrNull() },
+                            coverOf = { collection.cover(it) },
+                            albumCover = { artist, title -> services.albumCovers.of(artist, title) },
+                        )
+                    }
+                }
+            }
+        }
+        // **Over the pages that rise over the app** (the reader's own page, other people's), so the menus and sheets a
+        // page opens through OverChrome show above that page and not hidden behind it.
+        OverChromeLayer(overChrome)
+        // The downloaded albums, risen over the settings tab as the iPhone's sheet.
         AnimatedVisibility(
             showingDownloads,
             enter = slideInVertically(tween(320)) { it },
@@ -890,3 +1070,14 @@ private fun Waiting(what: String?) {
         }
     }
 }
+
+/** Whether this build is signed with the Android debug key: the handset and debug builds, never a store build. */
+private fun isDebugSigned(context: android.content.Context): Boolean = runCatching {
+    val info = context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES)
+    val signers = info.signingInfo?.apkContentsSigners.orEmpty()
+    val factory = java.security.cert.CertificateFactory.getInstance("X.509")
+    signers.any { signer ->
+        val cert = factory.generateCertificate(signer.toByteArray().inputStream()) as java.security.cert.X509Certificate
+        cert.subjectX500Principal.name.contains("CN=Android Debug")
+    }
+}.getOrDefault(false)

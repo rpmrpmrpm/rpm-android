@@ -499,6 +499,16 @@ private fun settingLines(page: SettingsPage, settings: PlayerSettings, account: 
                 ),
                 settings::nextBackground,
             ),
+            SettingLine(
+                stringResource(R.string.Settings_DiscStandIn),
+                stringResource(
+                    when (settings.discStandIn) {
+                        com.rpm.player.core.library.DiscStandIn.Cd -> R.string.Settings_DiscStandInCd
+                        com.rpm.player.core.library.DiscStandIn.Vinyl -> R.string.Settings_DiscStandInVinyl
+                    },
+                ),
+                settings::nextDiscStandIn,
+            ),
             SettingLine(stringResource(R.string.Tv_SettingsShowStats), if (settings.showStats) on else off, settings::switchStats),
         )
         SettingsPage.Sound -> buildList {

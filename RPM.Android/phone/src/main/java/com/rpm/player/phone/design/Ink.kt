@@ -14,6 +14,9 @@ object Ink {
     /** `#FF6B6B`. The only colour in the app that means something: an error. */
     val red = Color(0xFFFF6B6B)
 
+    /** The supporter's gold: a supporter's name on their page, beside the gold badge ([com.rpm.player.phone.settings.SupporterMark]). */
+    val gold = Color(0xFFEBC65A)
+
     /** The colour of the supporter mark. It is used for nothing else. */
     val cyan = Color(0xFF04C8FF)
 

@@ -74,6 +74,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import com.rpm.player.core.R
 import com.rpm.player.core.library.DiscArt
+import com.rpm.player.tv.playerSettings
 import com.rpm.player.core.radio.Icy
 import com.rpm.player.core.radio.StationLogo
 import kotlin.math.roundToInt
@@ -236,7 +237,7 @@ private fun Art(nowPlaying: NowPlaying?, images: ImageLoader, vinyl: FloatArray,
     if (station != null) {
         StationArt(station.logo, images, frame, cover = rememberSongCover(station))
     } else {
-        RecordArt(nowPlaying?.cover, nowPlaying?.disc, images, vinyl, SleeveLook.Framed(frame), out = 1f, turning = nowPlaying?.playing == true, turnSeconds = TURN_SECONDS)
+        RecordArt(nowPlaying?.cover, nowPlaying?.disc, images, vinyl, SleeveLook.Framed(frame), out = 1f, turning = nowPlaying?.playing == true, turnSeconds = TURN_SECONDS, isRecord = nowPlaying != null)
     }
 }
 
@@ -430,14 +431,16 @@ sealed interface SleeveLook {
  * The record and its sleeve, in a square of the sleeve's side; the disc stands [out] (0 to 1) of the
  * way to 0.312 of the side to the right, drawn outside the square, behind the sleeve. While [turning],
  * the label turns once every [turnSeconds], spinning up and down over a second (RecordDisc). [disc] is the
- * record's own disc picture, or null for a record without one, which wears the drawn record.
+ * record's own disc picture, or null for a record without one. A record without one ([isRecord]) wears the plain CD,
+ * or the drawn record when the vinyl is chosen ([PlayerSettings.discStandIn]); anything else (a list) wears the drawn
+ * record.
  */
 @Composable
-fun RecordArt(cover: Any?, disc: DiscArt?, images: ImageLoader, vinyl: FloatArray, look: SleeveLook, out: Float, turning: Boolean, turnSeconds: Float) {
+fun RecordArt(cover: Any?, disc: DiscArt?, images: ImageLoader, vinyl: FloatArray, look: SleeveLook, out: Float, turning: Boolean, turnSeconds: Float, isRecord: Boolean) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val side = maxWidth
         val angle = rememberTurn(turning, turnSeconds)
-        Disc(cover, disc, images, vinyl, side * 0.96f, angle, Modifier.align(Alignment.Center).offset(x = side * 0.312f * out))
+        Disc(cover, disc, isRecord, images, vinyl, side * 0.96f, angle, Modifier.align(Alignment.Center).offset(x = side * 0.312f * out))
         when (look) {
             is SleeveLook.Framed -> Sleeve(cover, images, side, look.frame)
             is SleeveLook.Bare -> BareSleeve(cover, images, look.corner)
@@ -522,8 +525,15 @@ private const val SPIN_UP_SECONDS = 1f
  * picture fades in over the label when it arrives, and the label is drawn until then.
  */
 @Composable
-private fun Disc(cover: Any?, disc: DiscArt?, images: ImageLoader, vinyl: FloatArray, diameter: Dp, angle: State<Float>, modifier: Modifier) {
-    val scanned = rememberScannedDisc(disc, images, with(LocalDensity.current) { diameter.roundToPx() })
+private fun Disc(cover: Any?, disc: DiscArt?, isRecord: Boolean, images: ImageLoader, vinyl: FloatArray, diameter: Dp, angle: State<Float>, modifier: Modifier) {
+    val context = LocalContext.current
+    val choice = context.playerSettings.discStandIn
+    // The plain CD only where the record has no disc picture at all. One that is still being fetched is waited for, so
+    // the stand-in is never shown on its way to the real disc.
+    val standIn = remember(disc == null, isRecord, choice) {
+        if (disc == null && isRecord) ScannedDisc.standIn(context, choice) else null
+    }
+    val scanned = rememberScannedDisc(disc, images, with(LocalDensity.current) { diameter.roundToPx() }) ?: standIn
     val vinylShown by animateFloatAsState(if (scanned?.coversRecord == true) 0f else 1f, tween(COVER_FADE_MS), label = "vinyl")
     val halo = diameter * 1.06f
     Box(modifier.requiredSize(halo), contentAlignment = Alignment.Center) {

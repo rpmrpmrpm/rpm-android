@@ -6,6 +6,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Dispatcher
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import java.io.IOException
@@ -51,6 +52,25 @@ fun httpClient(): OkHttpClient = OkHttpClient.Builder()
     .readTimeout(20, TimeUnit.SECONDS)
     .dispatcher(Dispatcher().apply { maxRequestsPerHost = PER_HOST })
     .build()
+
+/**
+ * The client the image loader fetches with: [base] with the app key on every request to the API's own host. The API's
+ * pictures (a person's photo and banner) are public reads, and a public read without the key is refused (401), so the
+ * loader showed only the initial where a photo was. Other hosts (cover stores, logos) are not given the key.
+ */
+fun pictureClient(base: OkHttpClient): OkHttpClient {
+    val api = Hosts.API.toHttpUrl().host
+    return base.newBuilder()
+        .addInterceptor { chain ->
+            val request = chain.request()
+            if (request.url.host != api || request.header(AppKey.HEADER) != null) {
+                chain.proceed(request)
+            } else {
+                chain.proceed(request.newBuilder().header(AppKey.HEADER, AppKey.VALUE).build())
+            }
+        }
+        .build()
+}
 
 /** How many requests the cloud client sends to one host at once. */
 private const val PER_HOST = 16

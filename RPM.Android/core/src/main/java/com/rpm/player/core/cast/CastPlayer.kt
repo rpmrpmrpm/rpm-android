@@ -162,6 +162,17 @@ class CoilCastCovers(private val context: Context, private val images: ImageLoad
         }
     }
 
+    override suspend fun jpegOfPicture(address: String): ByteArray? {
+        val request = ImageRequest.Builder(context).data(address).size(EDGE).allowHardware(false).build()
+        val bitmap = (images.execute(request) as? SuccessResult)?.image?.toBitmap() ?: return null
+        return withContext(Dispatchers.Default) {
+            ByteArrayOutputStream().use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, QUALITY, out)
+                out.toByteArray()
+            }
+        }
+    }
+
     private fun pictureOf(item: MediaItem): Any? {
         val extras = item.mediaMetadata.extras
         StationItems.uuidOf(item.mediaId)?.let { uuid ->

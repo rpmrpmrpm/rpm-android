@@ -138,7 +138,8 @@ private fun read(player: Player): NowPlaying? {
         // The player's title is what the stream announces; the station's item carries none to hide it.
         // Media3 starts the player's metadata again from the new item when the item changes, so an old
         // station's announcement is not shown under a new one ("Y × Z").
-        val announced = player.mediaMetadata.title?.toString()
+        // The session gives the song's own title and the whole announcement in an extra; an older session only the title.
+        val announced = player.mediaMetadata.extras?.getString(StationItems.EXTRA_ANNOUNCED) ?: player.mediaMetadata.title?.toString()
         StationPlaying(
             name = name,
             logo = StationLogo(

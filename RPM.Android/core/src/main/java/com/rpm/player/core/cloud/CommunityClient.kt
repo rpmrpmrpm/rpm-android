@@ -82,6 +82,8 @@ class CommunityClient(private val http: OkHttpClient, private val auth: AuthClie
             is ReportTarget.Review -> ReportBody("review", target.albumId, null, target.authorId, reason, note)
             is ReportTarget.Comment -> ReportBody("comment", target.albumId, null, target.commentId, reason, note)
             is ReportTarget.WallPost -> ReportBody("wallpost", null, target.artistId, target.entryId, reason, note)
+            is ReportTarget.Post -> ReportBody("post", null, null, target.postId, reason, note, target.ownerId, target.postId)
+            is ReportTarget.Reply -> ReportBody("reply", null, null, target.replyId, reason, note, target.ownerId, target.postId)
         }
         send<Unit>("POST", "reports", WireJson.encodeToString(ReportBody.serializer(), body), null)
     }
@@ -132,13 +134,21 @@ class CommunityClient(private val http: OkHttpClient, private val auth: AuthClie
         send<Unit>("DELETE", "artists/${escapeSegment(artistId)}/wall/${escapeSegment(entryId)}", null, null)
     }
 
-    private suspend fun <T> get(path: String, reader: DeserializationStrategy<T>): T = send("GET", path, null, reader)!!
+    // Internal and not private: the profile page's calls are in `CommunityProfiles.kt`.
+
+    internal suspend fun <T> get(path: String, reader: DeserializationStrategy<T>): T = send("GET", path, null, reader)!!
 
     /** One call. A null [reader] reads nothing back (a delete). */
-    private suspend fun <T> send(method: String, path: String, json: String?, reader: DeserializationStrategy<T>?): T? {
+    internal suspend fun <T> send(method: String, path: String, json: String?, reader: DeserializationStrategy<T>?): T? =
+        call(method, path, json?.toRequestBody("application/json".toMediaType()), reader)
+
+    /** Bytes as the body, for the routes that take an image and not JSON (`profile/avatar`, `profile/banner`). */
+    internal suspend fun <T> sendBytes(method: String, path: String, bytes: ByteArray, type: String, reader: DeserializationStrategy<T>): T =
+        call(method, path, bytes.toRequestBody(type.toMediaType()), reader)!!
+
+    private suspend fun <T> call(method: String, path: String, given: okhttp3.RequestBody?, reader: DeserializationStrategy<T>?): T? {
         val token = auth.accessToken()
-        val body = json?.toRequestBody("application/json".toMediaType())
-            ?: if (method == "GET") null else ByteArray(0).toRequestBody(null)
+        val body = given ?: if (method == "GET") null else ByteArray(0).toRequestBody(null)
         val request = Request.Builder()
             .url(Hosts.API + path)
             .header(AppKey.HEADER, AppKey.VALUE)
@@ -179,6 +189,8 @@ class CommunityClient(private val http: OkHttpClient, private val auth: AuthClie
         val targetId: String,
         val reason: String?,
         val note: String?,
+        val ownerId: String? = null,
+        val postId: String? = null,
     )
 
     companion object {
@@ -215,6 +227,8 @@ data class Review(
     val myVote: Int = 0,
     /** The author's account was deleted: the name is empty, and the page says "Deleted user". */
     val authorDeleted: Boolean = false,
+    /** The author is a paying supporter: the name is drawn in gold. */
+    val authorSupporter: Boolean = false,
 )
 
 @Serializable

@@ -104,7 +104,9 @@ import com.rpm.player.phone.library.SongMenu
 import com.rpm.player.phone.library.SongMenuLayer
 import com.rpm.player.phone.library.SongMenuShown
 import com.rpm.player.phone.radio.StationFace
+import com.rpm.player.phone.ui.LocalDiscStandIn
 import com.rpm.player.phone.ui.RecordDisc
+import com.rpm.player.phone.ui.ScannedDisc
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -399,7 +401,8 @@ private fun Grip(onDrag: (Float) -> Unit, onLetGo: (Float) -> Unit, onTap: () ->
 /**
  * The cover: square and centred, full size while the record plays and a tenth smaller while it is paused, so a stopped
  * record is a smaller thing and the ground round it shows more. Flick it across for the next or the previous track. With
- * no cover, the record itself, not turning; a station shows its logo on a card.
+ * no cover, the record itself, not turning: the plain CD, or the vinyl when that is chosen in the profile
+ * ([ScannedDisc.standIn]); a station shows its logo on a card.
  */
 @Composable
 private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: Stage) {
@@ -408,6 +411,8 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
     val scale by animateFloatAsState(if (now.playing) 1f else PAUSED_SCALE, spring(dampingRatio = 1f, stiffness = SHEET_STIFFNESS), label = "sleeve")
     val flick = remember { Animatable(0f) }
     val onStation = now.station != null
+    val context = LocalContext.current
+    val standIn = LocalDiscStandIn.current
 
     // Where the cover's box sits across the window, for the spectrum, which runs out to the window's edges.
     val across = remember { FloatArray(2) }
@@ -453,7 +458,7 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
         val station = now.station
         when {
             station != null -> StationCard(station, images)
-            now.cover == null -> RecordDisc(SLEEVE, spinning = false)
+            now.cover == null -> RecordDisc(SLEEVE, spinning = false, disc = remember(standIn) { ScannedDisc.standIn(context, standIn) })
             else -> SleeveSquare(now.cover, SLEEVE, images, radius = 14.dp, glyphSize = 52f)
         }
     }
@@ -467,6 +472,9 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
 @Composable
 private fun StationCard(station: com.rpm.player.core.playback.StationPlaying, images: ImageLoader) {
     val shape = RoundedCornerShape(14.dp)
+    // The cover of the song the station plays, over its logo, as on the desktop.
+    val cover = com.rpm.player.phone.design.rememberSongCover(station)
+    Box(Modifier.size(SLEEVE).clip(shape)) {
     StationFace(
         station.logo,
         images,
@@ -482,6 +490,16 @@ private fun StationCard(station: com.rpm.player.core.playback.StationPlaying, im
             )
         }
     }
+    if (cover != null) {
+        coil3.compose.AsyncImage(
+            model = com.rpm.player.phone.design.rememberPicture(cover, SLEEVE),
+            contentDescription = null,
+            imageLoader = images,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+    }
 }
 
 /** The title a station's announcement gives, else the station's name; the track's title for a track. */
@@ -490,10 +508,14 @@ internal fun NowPlaying.shownTitle(nothing: String): String {
     return (station.said as? Icy.Said.Song)?.title ?: station.name
 }
 
-/** The artist a station announced, else the station's name; the track's artist for a track. */
+/**
+ * The artist a station announced; with a song but no artist, nothing. Only while it announces no song, its country
+ * and quality, never its name: that is the title then. The track's artist for a track.
+ */
 internal fun NowPlaying.shownArtist(): String {
     val station = station ?: return artist
-    return (station.said as? Icy.Said.Song)?.artist ?: station.name
+    val sung = station.said as? Icy.Said.Song ?: return station.detail.orEmpty()
+    return sung.artist.orEmpty()
 }
 
 /**

@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -132,7 +133,8 @@ fun StarRating(value: Double, size: Float, onPick: ((Double) -> Unit)? = null) {
  *
  * @param me the signed-in account, whose own review takes no votes.
  */
-fun LazyListScope.reviewsWall(wall: ReviewWall, me: String?, onRate: (Double) -> Unit, onWrite: () -> Unit, onSort: (ReviewSort) -> Unit, onVote: (Review, Int) -> Unit, onMore: () -> Unit) {
+/** [onAuthor] opens the page of a review's author. */
+fun LazyListScope.reviewsWall(wall: ReviewWall, me: String?, onRate: (Double) -> Unit, onWrite: () -> Unit, onSort: (ReviewSort) -> Unit, onVote: (Review, Int) -> Unit, onMore: () -> Unit, onAuthor: (Review) -> Unit = {}) {
     item(key = "reviews:head", contentType = "reviews:head") {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 22.dp),
@@ -150,7 +152,7 @@ fun LazyListScope.reviewsWall(wall: ReviewWall, me: String?, onRate: (Double) ->
         }
     }
     items(wall.reviews, key = { "review:" + it.userId }, contentType = { "review" }) { review ->
-        ReviewRow(review, mine = review.userId == me, onVote, Modifier.padding(horizontal = 20.dp).padding(top = 14.dp))
+        ReviewRow(review, mine = review.userId == me, onVote, onAuthor, Modifier.padding(horizontal = 20.dp).padding(top = 14.dp))
     }
     item(key = "reviews:foot", contentType = "reviews:foot") {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 14.dp, bottom = 28.dp)) {
@@ -219,7 +221,7 @@ private fun Mine(stars: Double, onRate: (Double) -> Unit, onWrite: () -> Unit) {
  * that is about the record), the name, the stars and when, the votes, and the words.
  */
 @Composable
-private fun ReviewRow(review: Review, mine: Boolean, onVote: (Review, Int) -> Unit, modifier: Modifier) {
+private fun ReviewRow(review: Review, mine: Boolean, onVote: (Review, Int) -> Unit, onAuthor: (Review) -> Unit, modifier: Modifier) {
     Column(
         modifier
             .fillMaxWidth()
@@ -233,11 +235,16 @@ private fun ReviewRow(review: Review, mine: Boolean, onVote: (Review, Int) -> Un
                 BasicText(if (review.authorDeleted) "?" else initial(review.authorName), style = system(14f, FontWeight.SemiBold).copy(color = Ink.white(0xDD)))
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                // The name opens the author's page. A deleted account has no page.
                 BasicText(
                     if (review.authorDeleted) stringResource(R.string.Community_DeletedUser) else review.authorName,
+                    Modifier.clickable(remember { MutableInteractionSource() }, indication = null, enabled = !review.authorDeleted, role = Role.Button) {
+                        onAuthor(review)
+                    },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = system(14f, FontWeight.SemiBold).copy(color = Color.White),
+                    // A supporter's name is in gold, as on their page.
+                    style = system(14f, FontWeight.SemiBold).copy(color = if (review.authorSupporter) Ink.gold else Color.White),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     StarRating(review.rating / 2.0, 11f)
