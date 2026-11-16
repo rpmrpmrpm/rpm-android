@@ -695,9 +695,14 @@ internal fun Quiet(text: String, modifier: Modifier = Modifier) {
 internal fun songLine(song: Song): String =
     if (song.artist.isEmpty()) song.title else stringResource(R.string.Rpm_Profile_NowPlaying, song.title, song.artist)
 
-/** When something was written, in words a person would use. */
-internal fun written(millis: Long): String =
-    if (millis <= 0) "" else DateUtils.getRelativeTimeSpanString(millis, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
+/** When something was written, in words a person would use: "just now" for the last minute, not "0 minutes ago". */
+@Composable
+internal fun written(millis: Long): String {
+    if (millis <= 0) return ""
+    val now = System.currentTimeMillis()
+    if (now - millis < DateUtils.MINUTE_IN_MILLIS) return stringResource(R.string.Rpm_Profile_JustNow)
+    return DateUtils.getRelativeTimeSpanString(millis, now, DateUtils.MINUTE_IN_MILLIS).toString()
+}
 
 // ── the post box, on the own page ──
 

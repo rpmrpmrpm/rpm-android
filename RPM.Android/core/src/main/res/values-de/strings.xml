@@ -2446,6 +2446,9 @@
     <!-- Phone profile page and Feed tab: link under a review card that opens the whole review. -->
     <string name="Rpm_Profile_ReadReview">Ganze Rezension lesen</string>
 
+    <!-- Phone profile page, threads and Feed tab: when a post, reply or review was written less than a minute ago, beside the author's name. -->
+    <string name="Rpm_Profile_JustNow">gerade eben</string>
+
     <!-- Phone profile page and Feed tab: a review's text in quotation marks. {0} is the text. Use the language's own quotation marks. -->
     <string name="Rpm_Profile_Quoted">„%1$s“</string>
     <string name="Rpm_Profile_Subtitle">Dein Konto, dein Speicher und wie sich die App verhält.</string>

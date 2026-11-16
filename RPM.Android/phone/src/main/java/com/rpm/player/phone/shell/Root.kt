@@ -389,7 +389,10 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             ready.walls.genres.associate { it.name to it.albums.size },
         )
     }
-    LaunchedEffect(ownBadges, me?.profile?.userId) { me?.reportBadges(ownBadges) }
+    // A badge sent can be a notification, so the count for the dot is read again after it.
+    LaunchedEffect(ownBadges, me?.profile?.userId) { if (me?.reportBadges(ownBadges) == true) notices.readUnread() }
+    // The Feed tab's profile key has the dot: the count is read each time the tab is shown.
+    LaunchedEffect(tab, session?.userId) { if (tab == Tab.Feed && session != null) notices.readUnread() }
     // The size of the collection, for the counts on the reader's page. Sent again only when it changes.
     LaunchedEffect(collection.albums.size, collection.shelf) {
         if (collection.shelf == Shelf.Own) reportCounts(services, collection.albums)

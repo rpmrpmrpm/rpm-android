@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -215,37 +216,39 @@ private fun ReplyRow(
 ) {
     val name = if (reply.authorDeleted) stringResource(R.string.Community_DeletedUser) else reply.authorName
     var corner by remember { mutableStateOf(Rect.Zero) }
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(start = STEP * minOf(depth, DEEPEST), top = 6.dp, bottom = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        if (depth > 0) Box(Modifier.width(2.dp).height(40.dp).background(Ink.white(0x22)))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (reply.deleted) {
-                BasicText(stringResource(R.string.Rpm_Profile_ReplyDeleted), style = display(13f).copy(color = Ink.white(0x77), fontStyle = FontStyle.Italic))
-            } else {
-                Row(
-                    Modifier.clickable(remember { MutableInteractionSource() }, indication = null, enabled = !reply.authorDeleted) { onPerson(reply.userId) },
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    PersonPicture(if (reply.authorDeleted) null else rememberFace(reply.userId, reply.hasAvatar), name, 26.dp, images)
-                    Byline(name, reply.createdAt, gold = reply.authorSupporter)
-                }
-                BasicText(reply.body, style = display(14f).copy(color = Ink.white(0xE6)))
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    VoteKeys(reply.ups, reply.downs, reply.myVote, enabled = !mine, onVote = onVote)
-                    Spacer(Modifier.weight(1f))
-                    ReplyKey(0, onReply)
+    Box(Modifier.fillMaxWidth().padding(start = STEP * minOf(depth, DEEPEST), top = 6.dp, bottom = 6.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (depth > 0) Box(Modifier.width(2.dp).height(40.dp).background(Ink.white(0x22)))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (reply.deleted) {
+                    BasicText(stringResource(R.string.Rpm_Profile_ReplyDeleted), style = display(13f).copy(color = Ink.white(0x77), fontStyle = FontStyle.Italic))
+                } else {
+                    Row(
+                        Modifier
+                            .padding(end = 30.dp)
+                            .clickable(remember { MutableInteractionSource() }, indication = null, enabled = !reply.authorDeleted) { onPerson(reply.userId) },
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        PersonPicture(if (reply.authorDeleted) null else rememberFace(reply.userId, reply.hasAvatar), name, 26.dp, images)
+                        Byline(name, reply.createdAt, gold = reply.authorSupporter)
+                    }
+                    BasicText(reply.body, style = display(14f).copy(color = Ink.white(0xE6)))
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        VoteKeys(reply.ups, reply.downs, reply.myVote, enabled = !mine, onVote = onVote)
+                        Spacer(Modifier.weight(1f))
+                        ReplyKey(0, onReply)
+                    }
                 }
             }
         }
+        // In the corner, level with the name; the dots end where the replies end, as on a post.
         if (!reply.deleted) {
             val more = stringResource(R.string.Common_MoreOptions)
             Box(
                 Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 10.dp)
                     .size(34.dp, 28.dp)
                     .onGloballyPositioned { corner = it.boundsInRoot() }
                     .semantics { contentDescription = more }

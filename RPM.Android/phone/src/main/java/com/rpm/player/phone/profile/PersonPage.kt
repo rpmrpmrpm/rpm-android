@@ -267,13 +267,14 @@ class PersonPage(
     /**
      * Sends the badges this phone worked out when the server does not hold them all yet. The server notifies the reader
      * of each new one. Only on the reader's own page, once it is read: the badge shown and its colour go with them.
+     * Returns true when the server took new badges, so the caller reads the notification count again.
      */
-    suspend fun reportBadges(unlocked: List<String>) {
-        val shown = profile ?: return
-        if (!isOwn || isSample || unlocked.all { it in shown.badges }) return
-        runCatching { community.setBadges(unlocked, shown.badge, shown.badgeColour) }.onSuccess { stored ->
-            profile = profile?.copy(badges = stored.badges)
-        }
+    suspend fun reportBadges(unlocked: List<String>): Boolean {
+        val shown = profile ?: return false
+        if (!isOwn || isSample || unlocked.all { it in shown.badges }) return false
+        val stored = runCatching { community.setBadges(unlocked, shown.badge, shown.badgeColour) }.getOrNull() ?: return false
+        profile = profile?.copy(badges = stored.badges)
+        return true
     }
 
     /**
