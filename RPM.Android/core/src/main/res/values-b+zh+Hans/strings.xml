@@ -2535,7 +2535,39 @@
     <string name="Settings_NamingSaveHint">保存后，上面的模板就会成为你收藏的默认模板。</string>
     <string name="Naming_ApplyTemplate">模板：%1$s</string>
     <string name="CloudChip_Title">云端</string>
-    <string name="CloudChip_StageWaiting">等待中</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Upload run. -->
+    <string name="CloudChip_CountUpload">已上传 %1$s / %2$s 首</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Upload run of one track ({1} is 1). -->
+    <string name="CloudChip_CountUploadOne">已上传 %1$s / %2$s 首</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Download run. -->
+    <string name="CloudChip_CountRestore">已下载 %1$s / %2$s 首</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Download of one track ({1} is 1). -->
+    <string name="CloudChip_CountRestoreOne">已下载 %1$s / %2$s 首</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Removal from the cloud. -->
+    <string name="CloudChip_CountRemove">已从云端移除 %1$s / %2$s 首</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Removal of one track ({1} is 1). -->
+    <string name="CloudChip_CountRemoveOne">已从云端移除 %1$s / %2$s 首</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Run that mixes uploads and removals. -->
+    <string name="CloudChip_CountDone">已完成 %1$s / %2$s 首</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Mixed run of one track ({1} is 1). -->
+    <string name="CloudChip_CountDoneOne">已完成 %1$s / %2$s 首</string>
+
+    <!-- Cloud chip flyout, count line after the user pauses a run. {0} is the count, for example "12 of 200 tracks uploaded". -->
+    <string name="CloudChip_CountPaused">%1$s（已暂停）</string>
+
+    <!-- Cloud chip flyout, red link under the bar, shown only when tracks failed. {0} is how many. Opens the error list in cloud settings. -->
+    <string name="CloudChip_FailedCount">%1$s 首失败。打开云端设置查看原因。</string>
+
+    <!-- Cloud chip flyout, heading above the tracks that are being uploaded or downloaded now. -->
+    <string name="CloudChip_InProgress">进行中</string>
     <string name="CloudChip_StageTranscoding">转码中</string>
     <string name="CloudChip_StageUploading">上传中</string>
     <string name="CloudChip_StageRemoving">移除中</string>
@@ -2544,15 +2576,9 @@
     <string name="CloudChip_StageFailedUpload">上传失败</string>
     <string name="CloudChip_StageFailedRemove">移除失败</string>
     <string name="CloudChip_StageFailedRestore">下载失败</string>
-    <string name="CloudChip_SummaryRunning">已完成 %1$s / %2$s 首</string>
-    <string name="CloudChip_SummaryDone">已完成 %1$s 首。</string>
-    <string name="CloudChip_SummaryFailed">%2$s 首中有 %1$s 首失败。</string>
     <string name="CloudChip_Pause">暂停</string>
     <string name="CloudChip_PauseTooltip">暂停。不会丢失任何内容，队列会从中断处继续。</string>
     <string name="CloudChip_Dismiss">关闭</string>
-
-    <!-- Cloud chip flyout header after the user pauses an upload run, with the tracks finished and the total expected. -->
-    <string name="CloudChip_SummaryPaused">已完成 %1$s / %2$s 首（已暂停）</string>
 
     <!-- Cloud chip flyout header when an upload run was paused before any track finished, so there are no counts to show. -->
     <string name="CloudChip_Paused">已暂停</string>
@@ -3444,9 +3470,6 @@
 
     <!-- Cloud settings: shown when sending the error report was refused. -->
     <string name="Cloud_ErrorsReportRefused">报告没能发出。请稍后再试。</string>
-
-    <!-- Cloud chip flyout: link to the error list in cloud settings. -->
-    <string name="CloudChip_ErrorsHint">部分曲目未能同步。打开云端设置查看原因。</string>
 
     <!-- Left rail button opening the track info pane. -->
     <string name="LeftNav_TrackInfo">曲目信息</string>

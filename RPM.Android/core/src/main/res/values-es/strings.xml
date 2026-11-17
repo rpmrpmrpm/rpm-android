@@ -2535,7 +2535,39 @@
     <string name="Settings_NamingSaveHint">Guarda para que la plantilla de arriba sea la predeterminada de tu colección.</string>
     <string name="Naming_ApplyTemplate">Plantilla: %1$s</string>
     <string name="CloudChip_Title">Nube</string>
-    <string name="CloudChip_StageWaiting">En espera</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Upload run. -->
+    <string name="CloudChip_CountUpload">%1$s de %2$s pistas subidas</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Upload run of one track ({1} is 1). -->
+    <string name="CloudChip_CountUploadOne">%1$s de %2$s pista subida</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Download run. -->
+    <string name="CloudChip_CountRestore">%1$s de %2$s pistas descargadas</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Download of one track ({1} is 1). -->
+    <string name="CloudChip_CountRestoreOne">%1$s de %2$s pista descargada</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Removal from the cloud. -->
+    <string name="CloudChip_CountRemove">%1$s de %2$s pistas quitadas de la nube</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Removal of one track ({1} is 1). -->
+    <string name="CloudChip_CountRemoveOne">%1$s de %2$s pista quitada de la nube</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Run that mixes uploads and removals. -->
+    <string name="CloudChip_CountDone">%1$s de %2$s pistas listas</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Mixed run of one track ({1} is 1). -->
+    <string name="CloudChip_CountDoneOne">%1$s de %2$s pista lista</string>
+
+    <!-- Cloud chip flyout, count line after the user pauses a run. {0} is the count, for example "12 of 200 tracks uploaded". -->
+    <string name="CloudChip_CountPaused">%1$s (en pausa)</string>
+
+    <!-- Cloud chip flyout, red link under the bar, shown only when tracks failed. {0} is how many. Opens the error list in cloud settings. -->
+    <string name="CloudChip_FailedCount">Con errores: %1$s. Abre los ajustes de la nube para ver por qué.</string>
+
+    <!-- Cloud chip flyout, heading above the tracks that are being uploaded or downloaded now. -->
+    <string name="CloudChip_InProgress">En curso</string>
     <string name="CloudChip_StageTranscoding">Transcodificando</string>
     <string name="CloudChip_StageUploading">Subiendo</string>
     <string name="CloudChip_StageRemoving">Eliminando</string>
@@ -2544,15 +2576,9 @@
     <string name="CloudChip_StageFailedUpload">Error al subir</string>
     <string name="CloudChip_StageFailedRemove">Error al eliminar</string>
     <string name="CloudChip_StageFailedRestore">Error al descargar</string>
-    <string name="CloudChip_SummaryRunning">%1$s de %2$s pistas listas</string>
-    <string name="CloudChip_SummaryDone">%1$s pistas listas.</string>
-    <string name="CloudChip_SummaryFailed">%1$s de %2$s pistas fallaron.</string>
     <string name="CloudChip_Pause">Pausar</string>
     <string name="CloudChip_PauseTooltip">Pausar. No se pierde nada, la cola continúa donde se quedó.</string>
     <string name="CloudChip_Dismiss">Descartar</string>
-
-    <!-- Cloud chip flyout header after the user pauses an upload run, with the tracks finished and the total expected. -->
-    <string name="CloudChip_SummaryPaused">%1$s de %2$s pistas listas (en pausa)</string>
 
     <!-- Cloud chip flyout header when an upload run was paused before any track finished, so there are no counts to show. -->
     <string name="CloudChip_Paused">En pausa</string>
@@ -3444,9 +3470,6 @@
 
     <!-- Cloud settings: shown when sending the error report was refused. -->
     <string name="Cloud_ErrorsReportRefused">No se pudo enviar el informe. Vuelve a intentarlo un poco más tarde.</string>
-
-    <!-- Cloud chip flyout: link to the error list in cloud settings. -->
-    <string name="CloudChip_ErrorsHint">Algunas pistas no se pudieron sincronizar. Abre los ajustes de la nube para ver por qué.</string>
 
     <!-- Left rail button opening the track info pane. -->
     <string name="LeftNav_TrackInfo">Info de pista</string>

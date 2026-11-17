@@ -2535,7 +2535,39 @@
     <string name="Settings_NamingSaveHint">Speichere, um die Vorlage oben zum Standard für deine Sammlung zu machen.</string>
     <string name="Naming_ApplyTemplate">Vorlage: %1$s</string>
     <string name="CloudChip_Title">Cloud</string>
-    <string name="CloudChip_StageWaiting">Wartet</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Upload run. -->
+    <string name="CloudChip_CountUpload">%1$s von %2$s Titeln hochgeladen</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Upload run of one track ({1} is 1). -->
+    <string name="CloudChip_CountUploadOne">%1$s von %2$s Titel hochgeladen</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Download run. -->
+    <string name="CloudChip_CountRestore">%1$s von %2$s Titeln heruntergeladen</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Download of one track ({1} is 1). -->
+    <string name="CloudChip_CountRestoreOne">%1$s von %2$s Titel heruntergeladen</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Removal from the cloud. -->
+    <string name="CloudChip_CountRemove">%1$s von %2$s Titeln aus der Cloud entfernt</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Removal of one track ({1} is 1). -->
+    <string name="CloudChip_CountRemoveOne">%1$s von %2$s Titel aus der Cloud entfernt</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Run that mixes uploads and removals. -->
+    <string name="CloudChip_CountDone">%1$s von %2$s Titeln fertig</string>
+
+    <!-- Cloud chip flyout, line above the bar for the whole run: tracks that went through, out of the total. Mixed run of one track ({1} is 1). -->
+    <string name="CloudChip_CountDoneOne">%1$s von %2$s Titel fertig</string>
+
+    <!-- Cloud chip flyout, count line after the user pauses a run. {0} is the count, for example "12 of 200 tracks uploaded". -->
+    <string name="CloudChip_CountPaused">%1$s (pausiert)</string>
+
+    <!-- Cloud chip flyout, red link under the bar, shown only when tracks failed. {0} is how many. Opens the error list in cloud settings. -->
+    <string name="CloudChip_FailedCount">Fehlgeschlagen: %1$s. Öffnen Sie die Cloud-Einstellungen, um zu sehen, warum.</string>
+
+    <!-- Cloud chip flyout, heading above the tracks that are being uploaded or downloaded now. -->
+    <string name="CloudChip_InProgress">In Bearbeitung</string>
     <string name="CloudChip_StageTranscoding">Wird umgewandelt</string>
     <string name="CloudChip_StageUploading">Wird hochgeladen</string>
     <string name="CloudChip_StageRemoving">Wird entfernt</string>
@@ -2544,15 +2576,9 @@
     <string name="CloudChip_StageFailedUpload">Upload fehlgeschlagen</string>
     <string name="CloudChip_StageFailedRemove">Entfernen fehlgeschlagen</string>
     <string name="CloudChip_StageFailedRestore">Download fehlgeschlagen</string>
-    <string name="CloudChip_SummaryRunning">%1$s von %2$s Titeln fertig</string>
-    <string name="CloudChip_SummaryDone">%1$s Titel fertig.</string>
-    <string name="CloudChip_SummaryFailed">%1$s von %2$s Titeln fehlgeschlagen.</string>
     <string name="CloudChip_Pause">Pause</string>
     <string name="CloudChip_PauseTooltip">Pausieren. Nichts geht verloren, die Warteschlange macht dort weiter, wo sie war.</string>
     <string name="CloudChip_Dismiss">Ausblenden</string>
-
-    <!-- Cloud chip flyout header after the user pauses an upload run, with the tracks finished and the total expected. -->
-    <string name="CloudChip_SummaryPaused">%1$s von %2$s Titeln fertig (pausiert)</string>
 
     <!-- Cloud chip flyout header when an upload run was paused before any track finished, so there are no counts to show. -->
     <string name="CloudChip_Paused">Pausiert</string>
@@ -3444,9 +3470,6 @@
 
     <!-- Cloud settings: shown when sending the error report was refused. -->
     <string name="Cloud_ErrorsReportRefused">Der Bericht konnte nicht gesendet werden. Versuch es bitte etwas später noch einmal.</string>
-
-    <!-- Cloud chip flyout: link to the error list in cloud settings. -->
-    <string name="CloudChip_ErrorsHint">Einige Titel konnten nicht synchronisiert werden. Öffnen Sie die Cloud-Einstellungen, um zu sehen, warum.</string>
 
     <!-- Left rail button opening the track info pane. -->
     <string name="LeftNav_TrackInfo">Titelinfo</string>
