@@ -3622,6 +3622,18 @@
     <!-- Preflight purpose line for the face-detection model. -->
     <string name="Preflight_FaceModel">避免在艺人背景图中裁切到人脸</string>
 
+    <!-- Preflight fault: a value this build of rpm was made without, such as its API key. -->
+    <string name="Preflight_FaultNotSet">未设置</string>
+
+    <!-- Sentence under the preflight heading when only build settings failed (a build from source without its API key). Replaces Preflight_Intro, which talks about the installation. -->
+    <string name="Preflight_BuildIntro">此 rpm 副本在构建时缺少一项必需的设置，因此已停止运行，而不是在缺少该设置的情况下运行。</string>
+
+    <!-- Preflight purpose line for the rpm API key (RPM_APP_KEY) compiled into the build. -->
+    <string name="Preflight_AppKey">将 rpm 连接到其在线服务：专辑和艺人信息、封面、歌词、电台和崩溃报告</string>
+
+    <!-- Preflight line under the API key row: how a developer building rpm from source sets the key. RPM_APP_KEY and the address stay as they are. -->
+    <string name="Preflight_AppKeyFix">将 RPM_APP_KEY 设置为你在 rpmrpmrpm.com/developer 获取的开发者密钥，然后重新构建 rpm。</string>
+
     <!-- Report line note replacing the layer name once the user has typed the answer in themselves. -->
     <string name="Recognize_SourceManual">手动编辑</string>
 
@@ -3915,6 +3927,12 @@
 
     <!-- Tooltip on the heart toggle in the library header that filters the album wall and list. -->
     <string name="Library_FavoritesOnly">仅显示收藏的专辑</string>
+
+    <!-- Tooltip on the heart toggle in the artists wall's header: it narrows the wall to the artists with a hearted record or song. -->
+    <string name="Artists_FavoritesOnly">仅显示收藏的艺人</string>
+
+    <!-- Tooltip on the size slider in the artists and genres walls' headers. -->
+    <string name="Library_CardSize">卡片大小</string>
 
     <!-- Name of the generated playlist listing every song marked as a favorite. -->
     <string name="Playlists_FavoriteTracks">收藏的歌曲</string>
@@ -4848,6 +4866,18 @@
 
     <!-- Explains the artwork cache on the iPhone profile, under its size. -->
     <string name="Rpm_Profile_ArtCacheDetail">封面保存在这台手机上，因此会立即显示。需要时会重新下载。</string>
+
+    <!-- Desktop post thread: a key under a reply six levels deep that opens the replies under it. {0} is how many. -->
+    <string name="Rpm_Profile_ShowMoreReplies">显示另外 %1$s 条回复</string>
+
+    <!-- Desktop post thread: the same key when one reply is hidden under it. -->
+    <string name="Rpm_Profile_ShowMoreRepliesOne">显示另外 1 条回复</string>
+
+    <!-- Desktop profile page and post thread: a post or reply could not be sent. -->
+    <string name="Rpm_Profile_SendFailed">无法发送。请检查网络连接后重试。</string>
+
+    <!-- Desktop profile edit page: Save failed on the server or the connection. -->
+    <string name="Rpm_Profile_SaveFailed">无法保存你的更改。请检查网络连接后重试。</string>
 
     <!-- Subtitle of the iPhone queue panel when one track is left after this one. -->
     <string name="Rpm_Queue_ToComeOne">还有 1 首</string>

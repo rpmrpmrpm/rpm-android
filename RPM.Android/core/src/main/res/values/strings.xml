@@ -3622,6 +3622,18 @@
     <!-- Preflight purpose line for the face-detection model. -->
     <string name="Preflight_FaceModel">Keeps faces out of the crop in artist backdrops</string>
 
+    <!-- Preflight fault: a value this build of rpm was made without, such as its API key. -->
+    <string name="Preflight_FaultNotSet">not set</string>
+
+    <!-- Sentence under the preflight heading when only build settings failed (a build from source without its API key). Replaces Preflight_Intro, which talks about the installation. -->
+    <string name="Preflight_BuildIntro">This copy of rpm was built without a setting it needs, so it has stopped rather than run without it.</string>
+
+    <!-- Preflight purpose line for the rpm API key (RPM_APP_KEY) compiled into the build. -->
+    <string name="Preflight_AppKey">Connects rpm to its online service: album and artist details, artwork, lyrics, radio and crash reports</string>
+
+    <!-- Preflight line under the API key row: how a developer building rpm from source sets the key. RPM_APP_KEY and the address stay as they are. -->
+    <string name="Preflight_AppKeyFix">Set RPM_APP_KEY to your developer key from rpmrpmrpm.com/developer, then build rpm again.</string>
+
     <!-- Report line note replacing the layer name once the user has typed the answer in themselves. -->
     <string name="Recognize_SourceManual">edited manually</string>
 
@@ -3915,6 +3927,12 @@
 
     <!-- Tooltip on the heart toggle in the library header that filters the album wall and list. -->
     <string name="Library_FavoritesOnly">Favourite albums only</string>
+
+    <!-- Tooltip on the heart toggle in the artists wall's header: it narrows the wall to the artists with a hearted record or song. -->
+    <string name="Artists_FavoritesOnly">Favourite artists only</string>
+
+    <!-- Tooltip on the size slider in the artists and genres walls' headers. -->
+    <string name="Library_CardSize">Card size</string>
 
     <!-- Name of the generated playlist listing every song marked as a favorite. -->
     <string name="Playlists_FavoriteTracks">Favourite tracks</string>
@@ -4848,6 +4866,18 @@
 
     <!-- Explains the artwork cache on the iPhone profile, under its size. -->
     <string name="Rpm_Profile_ArtCacheDetail">Album covers kept on this phone so they appear instantly. They are downloaded again when needed.</string>
+
+    <!-- Desktop post thread: a key under a reply six levels deep that opens the replies under it. {0} is how many. -->
+    <string name="Rpm_Profile_ShowMoreReplies">Show %1$s more replies</string>
+
+    <!-- Desktop post thread: the same key when one reply is hidden under it. -->
+    <string name="Rpm_Profile_ShowMoreRepliesOne">Show 1 more reply</string>
+
+    <!-- Desktop profile page and post thread: a post or reply could not be sent. -->
+    <string name="Rpm_Profile_SendFailed">This could not be sent. Check your connection and try again.</string>
+
+    <!-- Desktop profile edit page: Save failed on the server or the connection. -->
+    <string name="Rpm_Profile_SaveFailed">Your changes could not be saved. Check your connection and try again.</string>
 
     <!-- Subtitle of the iPhone queue panel when one track is left after this one. -->
     <string name="Rpm_Queue_ToComeOne">1 track to come</string>
