@@ -33,6 +33,7 @@ object ListSeed {
         "FavoriteTracks" to 8, "MostPlayed" to 0, "OnRepeat" to 1, "RecentlyPlayed" to 2, "RecentlyAdded" to 3,
         "FirstListens" to 4, "LateNight" to 6, "Rediscover" to 7, "LovedAndForgotten" to 8, "PlayedNotLoved" to 9,
         "NeverPlayed" to 5, "KeepSkipping" to 1, "RightNow" to 5,
+        "Melancholy" to 6, "Happy" to 2, "Angry" to 0, "Romantic" to 8, "Zen" to 4, "NewYearsEve" to 2,
     )
 
     /** FNV-1a over the UTF-16 units, kept to 4096 (SmartPlaylistFace.Scatter). */

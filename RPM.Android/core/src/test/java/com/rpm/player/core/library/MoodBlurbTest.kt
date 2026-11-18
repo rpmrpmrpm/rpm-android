@@ -48,6 +48,19 @@ class MoodBlurbTest {
         assertEquals(MoodLine(Mood.Sleep, emptyList()), MoodBlurb.of("Sleep", emptyList()))
     }
 
+    /** Zen and New Year's Eve are cut across every genre too, so they name none either. */
+    @Test fun zenAndNewYearsEveNameNoGenres() {
+        assertEquals(MoodLine(Mood.Zen, emptyList()), MoodBlurb.of("Zen", tags("Ambient" to 10)))
+        assertEquals(MoodLine(Mood.NewYearsEve, emptyList()), MoodBlurb.of("NewYearsEve", tags("Pop" to 10)))
+    }
+
+    /** The four feelings the sound model hears are cut by genre, like Calm, so they say which. */
+    @Test fun theFeelingListsNameTheirGenres() {
+        for (kind in listOf("Melancholy", "Happy", "Angry", "Romantic")) {
+            assertEquals(MoodLine(Mood.valueOf(kind), listOf("jazz")), MoodBlurb.of(kind, tags("Jazz" to 10)))
+        }
+    }
+
     /** A list about listening says what it is in its title. */
     @Test fun onlyTheMoodsAreDescribed() {
         assertNull(MoodBlurb.of("RightNow", tags("Rock" to 10)))

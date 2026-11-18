@@ -32,6 +32,12 @@ fun moodSentence(line: MoodLine): String {
         Mood.Energetic -> stringResource(R.string.Playlists_BlurbEnergetic, named)
         Mood.Danceable -> stringResource(R.string.Playlists_BlurbDanceable, named)
         Mood.Focus -> stringResource(R.string.Playlists_BlurbFocus, named)
+        Mood.Melancholy -> stringResource(R.string.Playlists_BlurbMelancholy, named)
+        Mood.Happy -> stringResource(R.string.Playlists_BlurbHappy, named)
+        Mood.Angry -> stringResource(R.string.Playlists_BlurbAngry, named)
+        Mood.Romantic -> stringResource(R.string.Playlists_BlurbRomantic, named)
+        Mood.Zen -> stringResource(R.string.Playlists_BlurbZen)
+        Mood.NewYearsEve -> stringResource(R.string.Playlists_BlurbNewYearsEve)
     }
 }
 
@@ -59,6 +65,12 @@ private fun moodName(kind: String): Int? = when (kind) {
     "Danceable" -> R.string.Playlists_Danceable
     "Focus" -> R.string.Playlists_Focus
     "Sleep" -> R.string.Playlists_Sleep
+    "Melancholy" -> R.string.Playlists_Melancholy
+    "Happy" -> R.string.Playlists_Happy
+    "Angry" -> R.string.Playlists_Angry
+    "Romantic" -> R.string.Playlists_Romantic
+    "Zen" -> R.string.Playlists_Zen
+    "NewYearsEve" -> R.string.Playlists_NewYearsEve
     "Classical" -> R.string.Playlists_Classical
     else -> null
 }

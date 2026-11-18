@@ -73,6 +73,7 @@ object HomeShelf {
     val HOME_ORDER = listOf(
         "RightNow", "OnRepeat", "FavoriteTracks", "FirstListens", "Rediscover", "LovedAndForgotten",
         "LateNight", "Calm", "Energetic", "Danceable", "Focus", "Sleep",
+        "Melancholy", "Happy", "Angry", "Romantic", "Zen", "NewYearsEve",
     )
 
     fun build(c: Collection, random: Random): Home {

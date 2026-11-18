@@ -189,7 +189,10 @@ object Lists {
     }
 
     /** The kinds that are a mood, as the desktop's `MoodShelf.MoodsByPath` counts them. */
-    private val MOOD_KINDS = setOf("Calm", "Energetic", "Danceable", "Focus", "Sleep")
+    private val MOOD_KINDS = setOf(
+        "Calm", "Energetic", "Danceable", "Focus", "Sleep",
+        "Melancholy", "Happy", "Angry", "Romantic", "Zen", "NewYearsEve",
+    )
 
     /** The person's own playlists, sorted by name, each track found in the catalogue or left out. */
     fun own(playlists: List<CloudPlaylist>, byId: Map<String, CloudTrack>): List<TrackList> =

@@ -2131,6 +2131,18 @@
     <!-- Phone profile page: the page could not be read. -->
     <string name="Rpm_Profile_Offline">This profile could not be loaded. Check your connection and try again.</string>
 
+    <!-- Desktop post thread: a key under a reply six levels deep that opens the replies under it. {0} is how many. -->
+    <string name="Rpm_Profile_ShowMoreReplies">Show %1$s more replies</string>
+
+    <!-- Desktop post thread: the same key when one reply is hidden under it. -->
+    <string name="Rpm_Profile_ShowMoreRepliesOne">Show 1 more reply</string>
+
+    <!-- Desktop profile page and post thread: a post or reply could not be sent. -->
+    <string name="Rpm_Profile_SendFailed">This could not be sent. Check your connection and try again.</string>
+
+    <!-- Desktop profile edit page: Save failed on the server or the connection. -->
+    <string name="Rpm_Profile_SaveFailed">Your changes could not be saved. Check your connection and try again.</string>
+
     <!-- Phone profile page: accessibility label of the round menu key at the top right. -->
     <string name="Rpm_Profile_Menu">Menu</string>
 
@@ -4512,20 +4524,56 @@
     <!-- Generated playlist holding the collection's classical music, in album and track order. -->
     <string name="Playlists_Classical">Classical</string>
 
-    <!-- Description under a mood playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
-    <string name="Playlists_BlurbCalm">The low end of your %1$s. Take a moment to relax.</string>
+    <!-- Name of the generated playlist of the saddest, most melancholy songs of each genre. -->
+    <string name="Playlists_Melancholy">Melancholy</string>
 
-    <!-- Description under a mood playlist name. {0} is a list of genres. -->
-    <string name="Playlists_BlurbEnergetic">The %1$s to get you amped up!</string>
+    <!-- Name of the generated playlist of the happiest, most upbeat songs of each genre. -->
+    <string name="Playlists_Happy">Feel Good</string>
 
-    <!-- Description under a mood playlist name. {0} is a list of genres. -->
-    <string name="Playlists_BlurbDanceable">The %1$s to keep the party going.</string>
+    <!-- Name of the generated playlist of the angriest, most aggressive songs of each genre. -->
+    <string name="Playlists_Angry">Rage</string>
 
-    <!-- Description under a mood playlist name. {0} is a list of genres. -->
-    <string name="Playlists_BlurbFocus">The %1$s to help you focus when you need it.</string>
+    <!-- Name of the generated playlist of tender, romantic love songs from each genre. -->
+    <string name="Playlists_Romantic">Date Night</string>
 
-    <!-- Description under the sleep playlist name. It names no genres because the list is not cut by genre. -->
-    <string name="Playlists_BlurbSleep">Perfect music for the small hours.</string>
+    <!-- Name of the generated playlist of still ambient and new age music, for meditating or unwinding. -->
+    <string name="Playlists_Zen">Zen</string>
+
+    <!-- Name of the generated playlist for New Year's Eve: songs about the new year, then party songs. Shown only around 31 December. -->
+    <string name="Playlists_NewYearsEve">New Year\'s Eve</string>
+
+    <!-- Description under the Chill playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbCalm">Kick back with the softest side of your %1$s. No rush, no noise, just you and the music.</string>
+
+    <!-- Description under the Adrenaline playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbEnergetic">Volume up! The loudest, liveliest %1$s you own, for when you need that extra push.</string>
+
+    <!-- Description under the Dancefloor playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbDanceable">Steady beats and big grooves from your %1$s. Clear some space, this one\'s made for moving!</string>
+
+    <!-- Description under the Focus playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbFocus">Even, unhurried %1$s that stays out of your way, so you can get your head down and get things done.</string>
+
+    <!-- Description under the Lights out playlist name. It names no genres because the list is not cut by genre. -->
+    <string name="Playlists_BlurbSleep">Quiet, gentle and soft, for the end of the day. Put it on, dim the lights and drift off.</string>
+
+    <!-- Description under the Melancholy playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbMelancholy">The saddest side of your %1$s, for the grey days. When you just want to feel it for a while, these songs get it.</string>
+
+    <!-- Description under the Feel Good playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbHappy">A big dose of sunshine from your %1$s. Press play and try not to smile!</string>
+
+    <!-- Description under the Rage playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbAngry">The angriest %1$s you own. Turn it up, let it all out, and feel a whole lot better after!</string>
+
+    <!-- Description under the Date Night playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbRomantic">Tender, warm %1$s for two. Light a candle, pour a glass and let the music set the mood.</string>
+
+    <!-- Description under the Zen playlist name. It names no genres: the list is ambient and new age records only. -->
+    <string name="Playlists_BlurbZen">Ambient and new age to breathe out to. Slow down, close your eyes and let the calm take over.</string>
+
+    <!-- Description under the New Year's Eve playlist name. It names no genres: the list is an occasion, not a cut by genre. -->
+    <string name="Playlists_BlurbNewYearsEve">The countdown is on! Songs to see out the old year and party into the new one.</string>
 
     <!-- Joins the last two genres in a playlist description: 'rock, pop and jazz'. {0} is what came before, {1} is the last one. -->
     <string name="Playlists_GenreAnd">%1$s and %2$s</string>
@@ -4892,18 +4940,6 @@
 
     <!-- Explains the artwork cache on the iPhone profile, under its size. -->
     <string name="Rpm_Profile_ArtCacheDetail">Album covers kept on this phone so they appear instantly. They are downloaded again when needed.</string>
-
-    <!-- Desktop post thread: a key under a reply six levels deep that opens the replies under it. {0} is how many. -->
-    <string name="Rpm_Profile_ShowMoreReplies">Show %1$s more replies</string>
-
-    <!-- Desktop post thread: the same key when one reply is hidden under it. -->
-    <string name="Rpm_Profile_ShowMoreRepliesOne">Show 1 more reply</string>
-
-    <!-- Desktop profile page and post thread: a post or reply could not be sent. -->
-    <string name="Rpm_Profile_SendFailed">This could not be sent. Check your connection and try again.</string>
-
-    <!-- Desktop profile edit page: Save failed on the server or the connection. -->
-    <string name="Rpm_Profile_SaveFailed">Your changes could not be saved. Check your connection and try again.</string>
 
     <!-- Subtitle of the iPhone queue panel when one track is left after this one. -->
     <string name="Rpm_Queue_ToComeOne">1 track to come</string>

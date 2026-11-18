@@ -2131,6 +2131,18 @@
     <!-- Phone profile page: the page could not be read. -->
     <string name="Rpm_Profile_Offline">无法加载此个人主页。请检查网络连接后重试。</string>
 
+    <!-- Desktop post thread: a key under a reply six levels deep that opens the replies under it. {0} is how many. -->
+    <string name="Rpm_Profile_ShowMoreReplies">显示另外 %1$s 条回复</string>
+
+    <!-- Desktop post thread: the same key when one reply is hidden under it. -->
+    <string name="Rpm_Profile_ShowMoreRepliesOne">显示另外 1 条回复</string>
+
+    <!-- Desktop profile page and post thread: a post or reply could not be sent. -->
+    <string name="Rpm_Profile_SendFailed">无法发送。请检查网络连接后重试。</string>
+
+    <!-- Desktop profile edit page: Save failed on the server or the connection. -->
+    <string name="Rpm_Profile_SaveFailed">无法保存你的更改。请检查网络连接后重试。</string>
+
     <!-- Phone profile page: accessibility label of the round menu key at the top right. -->
     <string name="Rpm_Profile_Menu">菜单</string>
 
@@ -4512,20 +4524,56 @@
     <!-- Generated playlist holding the collection's classical music, in album and track order. -->
     <string name="Playlists_Classical">古典</string>
 
-    <!-- Description under a mood playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
-    <string name="Playlists_BlurbCalm">你收藏中安静的一面：%1$s。放松一下吧。</string>
+    <!-- Name of the generated playlist of the saddest, most melancholy songs of each genre. -->
+    <string name="Playlists_Melancholy">忧郁</string>
 
-    <!-- Description under a mood playlist name. {0} is a list of genres. -->
-    <string name="Playlists_BlurbEnergetic">让你热血沸腾的%1$s！</string>
+    <!-- Name of the generated playlist of the happiest, most upbeat songs of each genre. -->
+    <string name="Playlists_Happy">好心情</string>
 
-    <!-- Description under a mood playlist name. {0} is a list of genres. -->
-    <string name="Playlists_BlurbDanceable">让派对继续下去的%1$s。</string>
+    <!-- Name of the generated playlist of the angriest, most aggressive songs of each genre. -->
+    <string name="Playlists_Angry">怒火</string>
 
-    <!-- Description under a mood playlist name. {0} is a list of genres. -->
-    <string name="Playlists_BlurbFocus">需要专注时听的%1$s。</string>
+    <!-- Name of the generated playlist of tender, romantic love songs from each genre. -->
+    <string name="Playlists_Romantic">约会之夜</string>
 
-    <!-- Description under the sleep playlist name. It names no genres because the list is not cut by genre. -->
-    <string name="Playlists_BlurbSleep">适合深夜时分的音乐。</string>
+    <!-- Name of the generated playlist of still ambient and new age music, for meditating or unwinding. -->
+    <string name="Playlists_Zen">禅</string>
+
+    <!-- Name of the generated playlist for New Year's Eve: songs about the new year, then party songs. Shown only around 31 December. -->
+    <string name="Playlists_NewYearsEve">跨年夜</string>
+
+    <!-- Description under the Chill playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbCalm">放松一下，听听你收藏中最柔和的%1$s。不赶时间，没有喧闹，只有你和音乐。</string>
+
+    <!-- Description under the Adrenaline playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbEnergetic">调大音量！你收藏中最响亮、最有活力的%1$s，在你需要一点额外动力的时候。</string>
+
+    <!-- Description under the Dancefloor playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbDanceable">来自你%1$s的稳定节拍与律动。腾出点空间，这份歌单就是为舞动而生！</string>
+
+    <!-- Description under the Focus playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbFocus">平稳、从容的%1$s，不会打扰你，让你专心把事情做完。</string>
+
+    <!-- Description under the Lights out playlist name. It names no genres because the list is not cut by genre. -->
+    <string name="Playlists_BlurbSleep">安静而温柔，献给一天的尾声。播放它，调暗灯光，慢慢入睡。</string>
+
+    <!-- Description under the Melancholy playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbMelancholy">你收藏中最忧郁的%1$s，献给阴沉的日子。当你只想好好感受一下时，这些歌懂你。</string>
+
+    <!-- Description under the Feel Good playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbHappy">来自你%1$s的满满阳光。按下播放，看看你能不能忍住不笑！</string>
+
+    <!-- Description under the Rage playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbAngry">你收藏中最愤怒的%1$s。调大音量，尽情发泄，之后你会感觉好很多！</string>
+
+    <!-- Description under the Date Night playlist name. {0} is a list of genres, like 'rock, pop and jazz'. -->
+    <string name="Playlists_BlurbRomantic">来自你%1$s的温柔与温暖，专属两个人。点上蜡烛，倒一杯酒，让音乐营造氛围。</string>
+
+    <!-- Description under the Zen playlist name. It names no genres: the list is ambient and new age records only. -->
+    <string name="Playlists_BlurbZen">适合深呼吸的氛围与新世纪音乐。放慢脚步，闭上眼睛，让平静将你包围。</string>
+
+    <!-- Description under the New Year's Eve playlist name. It names no genres: the list is an occasion, not a cut by genre. -->
+    <string name="Playlists_BlurbNewYearsEve">倒计时开始啦！用这些歌送走旧年，狂欢迎接新年。</string>
 
     <!-- Joins the last two genres in a playlist description: 'rock, pop and jazz'. {0} is what came before, {1} is the last one. -->
     <string name="Playlists_GenreAnd">%1$s和%2$s</string>
@@ -4892,18 +4940,6 @@
 
     <!-- Explains the artwork cache on the iPhone profile, under its size. -->
     <string name="Rpm_Profile_ArtCacheDetail">封面保存在这台手机上，因此会立即显示。需要时会重新下载。</string>
-
-    <!-- Desktop post thread: a key under a reply six levels deep that opens the replies under it. {0} is how many. -->
-    <string name="Rpm_Profile_ShowMoreReplies">显示另外 %1$s 条回复</string>
-
-    <!-- Desktop post thread: the same key when one reply is hidden under it. -->
-    <string name="Rpm_Profile_ShowMoreRepliesOne">显示另外 1 条回复</string>
-
-    <!-- Desktop profile page and post thread: a post or reply could not be sent. -->
-    <string name="Rpm_Profile_SendFailed">无法发送。请检查网络连接后重试。</string>
-
-    <!-- Desktop profile edit page: Save failed on the server or the connection. -->
-    <string name="Rpm_Profile_SaveFailed">无法保存你的更改。请检查网络连接后重试。</string>
 
     <!-- Subtitle of the iPhone queue panel when one track is left after this one. -->
     <string name="Rpm_Queue_ToComeOne">还有 1 首</string>

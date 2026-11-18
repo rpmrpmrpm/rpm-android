@@ -163,7 +163,8 @@ private data class Colourway(val hot: Rgb, val mid: Rgb, val deep: Rgb, val apar
         private val KINDS = listOf(
             "FavoriteTracks", "MostPlayed", "RecentlyAdded", "RecentlyPlayed", "NeverPlayed", "LovedAndForgotten",
             "PlayedNotLoved", "OnRepeat", "Rediscover", "LateNight", "FirstListens", "KeepSkipping", "Calm",
-            "Energetic", "Danceable", "Focus", "Classical", "Decade", "Sleep", "RightNow",
+            "Energetic", "Danceable", "Focus", "Classical", "Decade", "Sleep", "RightNow", "Melancholy", "Happy",
+            "Angry", "Romantic", "Zen", "NewYearsEve",
         )
 
         private val RING get() = RpmPalette.RING

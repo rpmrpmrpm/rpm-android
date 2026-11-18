@@ -783,10 +783,13 @@ fun listInk(list: TrackList): Color = when ((list.name as? ListName.Mood)?.kind 
     "RightNow", "Calm" -> Color(0xFF0371D0)
     "OnRepeat" -> Color(0xFFCC6E11)
     "FavoriteTracks", "LovedAndForgotten" -> Color(0xFFEA154E)
-    "FirstListens", "Focus" -> Color(0xFF134C27)
+    "FirstListens", "Focus", "Zen" -> Color(0xFF134C27)
     "Rediscover", "Danceable" -> Color(0xFFAC528D)
-    "LateNight", "Sleep" -> Color(0xFF4750AE)
+    "LateNight", "Sleep", "Melancholy" -> Color(0xFF4750AE)
     "Energetic" -> Color(0xFFEE0709)
+    "Romantic" -> Color(0xFFEA154E)
+    "Happy", "NewYearsEve" -> Color(0xFFEFAF12)
+    "Angry" -> Color(0xFFD2310E)
     else -> Color(0xFF0371D0)
 }
 
