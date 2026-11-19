@@ -191,7 +191,7 @@ object Lists {
     /** The kinds that are a mood, as the desktop's `MoodShelf.MoodsByPath` counts them. */
     private val MOOD_KINDS = setOf(
         "Calm", "Energetic", "Danceable", "Focus", "Sleep",
-        "Melancholy", "Happy", "Angry", "Romantic", "Zen", "NewYearsEve",
+        "Melancholy", "Happy", "Angry", "Romantic", "Zen", "NewYearsEve", "Christmas",
     )
 
     /** The person's own playlists, sorted by name, each track found in the catalogue or left out. */

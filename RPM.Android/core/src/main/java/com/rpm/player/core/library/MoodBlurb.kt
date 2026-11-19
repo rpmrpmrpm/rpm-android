@@ -1,7 +1,8 @@
 package com.rpm.player.core.library
 
 /** The moods that carry a sentence under their name, by the kind the computer sends. On screen Happy is
- * "Feel Good", Angry "Rage", Romantic "Date Night" and NewYearsEve "New Year's Eve". */
+ * "Feel Good", Angry "Rage", Romantic "Date Night", NewYearsEve "New Year's Eve" and Christmas "Merry
+ * Christmas". */
 enum class Mood(val kind: String) {
     Calm("Calm"),
     Energetic("Energetic"),
@@ -13,11 +14,13 @@ enum class Mood(val kind: String) {
     Angry("Angry"),
     Romantic("Romantic"),
     Zen("Zen"),
-    NewYearsEve("NewYearsEve");
+    NewYearsEve("NewYearsEve"),
+    Christmas("Christmas");
 
     /** Whether the sentence names no genres: Sleep is cut across every genre, Zen is ambient and new age
-     * records only, and New Year's Eve is a night, not a cut by genre. The desktop's `MoodBlurbText`. */
-    val namesNoGenres: Boolean get() = this == Sleep || this == Zen || this == NewYearsEve
+     * records only, and New Year's Eve and Merry Christmas are occasions, not cuts by genre. The desktop's
+     * `MoodBlurbText`. */
+    val namesNoGenres: Boolean get() = this == Sleep || this == Zen || this == NewYearsEve || this == Christmas
 }
 
 /** The sentence under a mood list's name, as parts: which mood, and the kinds of music it names, as they

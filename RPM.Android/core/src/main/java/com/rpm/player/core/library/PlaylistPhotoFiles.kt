@@ -149,5 +149,6 @@ internal object PlaylistPhotoFiles {
         Cut("Zen", null, 0) to "zen-all.jpg",
         Cut("NewYearsEve", null, 0) to "newyearseve-all.jpg",
         Cut("Romantic", "Latin", 0) to "romantic-latin.jpg",
+        Cut("Christmas", null, 0) to "christmas-all.jpg",
     )
 }

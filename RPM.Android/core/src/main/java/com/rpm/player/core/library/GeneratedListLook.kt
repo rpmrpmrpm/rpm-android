@@ -92,7 +92,7 @@ object GeneratedListLook {
         "FavoriteTracks", "MostPlayed", "RecentlyAdded", "RecentlyPlayed", "NeverPlayed", "LovedAndForgotten",
         "PlayedNotLoved", "OnRepeat", "Rediscover", "LateNight", "FirstListens", "KeepSkipping", "Calm",
         "Energetic", "Danceable", "Focus", "Classical", "Decade", "Sleep", "RightNow",
-        "Melancholy", "Happy", "Angry", "Romantic", "Zen", "NewYearsEve",
+        "Melancholy", "Happy", "Angry", "Romantic", "Zen", "NewYearsEve", "Christmas",
     )
 
     /** The plain weighted sum the trio is sorted by, on 0 to 255 channels as the iPhone has them. */

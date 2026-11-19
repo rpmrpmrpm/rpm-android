@@ -38,6 +38,7 @@ fun moodSentence(line: MoodLine): String {
         Mood.Romantic -> stringResource(R.string.Playlists_BlurbRomantic, named)
         Mood.Zen -> stringResource(R.string.Playlists_BlurbZen)
         Mood.NewYearsEve -> stringResource(R.string.Playlists_BlurbNewYearsEve)
+        Mood.Christmas -> stringResource(R.string.Playlists_BlurbChristmas)
     }
 }
 
@@ -71,6 +72,7 @@ private fun moodName(kind: String): Int? = when (kind) {
     "Romantic" -> R.string.Playlists_Romantic
     "Zen" -> R.string.Playlists_Zen
     "NewYearsEve" -> R.string.Playlists_NewYearsEve
+    "Christmas" -> R.string.Playlists_Christmas
     "Classical" -> R.string.Playlists_Classical
     else -> null
 }

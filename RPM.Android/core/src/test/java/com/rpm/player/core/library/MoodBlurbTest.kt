@@ -48,10 +48,11 @@ class MoodBlurbTest {
         assertEquals(MoodLine(Mood.Sleep, emptyList()), MoodBlurb.of("Sleep", emptyList()))
     }
 
-    /** Zen and New Year's Eve are cut across every genre too, so they name none either. */
+    /** Zen, New Year's Eve and Merry Christmas are cut across every genre too, so they name none either. */
     @Test fun zenAndNewYearsEveNameNoGenres() {
         assertEquals(MoodLine(Mood.Zen, emptyList()), MoodBlurb.of("Zen", tags("Ambient" to 10)))
         assertEquals(MoodLine(Mood.NewYearsEve, emptyList()), MoodBlurb.of("NewYearsEve", tags("Pop" to 10)))
+        assertEquals(MoodLine(Mood.Christmas, emptyList()), MoodBlurb.of("Christmas", tags("Pop" to 10)))
     }
 
     /** The four feelings the sound model hears are cut by genre, like Calm, so they say which. */
