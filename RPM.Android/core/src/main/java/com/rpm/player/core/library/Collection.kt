@@ -216,8 +216,12 @@ object Lists {
             )
         }.sortedBy { (it.name as ListName.Text).text.lowercase() }
 
-    /** The desktop's `SmartPlaylists.OwnerOnly`: the kinds it sends for its owner alone. */
-    private val OWNER_ONLY = setOf("RightNow", "OnRepeat", "FavoriteTracks", "FirstListens", "Rediscover", "LovedAndForgotten", "LateNight")
+    /**
+     * The desktop's `SmartPlaylists.OwnerOnly`: the kinds it sends for its owner alone. They are also every list the
+     * desktop files in its Smart playlists folder, because the desktop sends no other kind that is not a mood
+     * (`SmartPlaylists.SentOut`). [PlaylistBrowse] reads them to take these lists out of that folder.
+     */
+    internal val OWNER_ONLY =setOf("RightNow", "OnRepeat", "FavoriteTracks", "FirstListens", "Rediscover", "LovedAndForgotten", "LateNight")
 
     /**
      * The slice of a run that is one list, as the iPhone's `GeneratedLists.window`: the [reading]th, counting the

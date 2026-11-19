@@ -682,10 +682,6 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                                 onOpenList = { opened = opened + Step.Playlist(it.id) },
                                 onOpenArtist = { opened = opened + Step.Artist(it.name) },
                                 onOpenGenre = { opened = opened + Step.Genre(it.name) },
-                                queue = queue,
-                                onOpenQueue = { opened = opened + Step.Queue },
-                                marked = marked,
-                                onOpenMarked = { opened = opened + Step.Marked },
                                 playing = playing,
                                 // A song found in search plays its record from that song. A single song would be a
                                 // queue of one, and playback would stop after it. Nobody who searches for a song

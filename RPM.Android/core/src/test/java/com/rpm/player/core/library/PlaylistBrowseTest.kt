@@ -80,65 +80,129 @@ class PlaylistBrowseTest {
 
     // ── the browse ──
 
-    private fun list(name: String, folder: List<String> = listOf(), tracks: List<CloudTrack> = listOf(), generated: Boolean = false) = TrackList(
-        id = "own/p-$name",
+    private fun list(
+        name: String,
+        folder: List<String> = listOf(),
+        tracks: List<CloudTrack> = listOf(),
+        generated: Boolean = false,
+        kind: String? = null,
+        decade: Int = 0,
+    ) = TrackList(
+        id = (if (generated) "mood/" else "own/p-") + name,
         storeId = "p-$name",
         name = ListName.Text(name),
         tracks = tracks,
         missing = 0,
         folder = folder,
         generated = generated,
-        kind = null,
+        kind = kind,
         plainMood = false,
         genre = null,
-        decade = 0,
+        decade = decade,
         blurb = null,
     )
 
-    /** A browse with no marked songs' row, as most of the iOS tests are written (`favorites: nil`). */
     private fun browse(at: List<String>, vararg lists: TrackList) =
-        PlaylistBrowse.of(at, lists.toList(), { (it.name as ListName.Text).text }, marked = false)
+        PlaylistBrowse.of(at, lists.toList(), { (it.name as ListName.Text).text })
 
-    /** The queue's row is "", as the iOS tests name it. */
     private fun names(browse: PlaylistBrowse) = browse.rows.map {
         when (it) {
-            PlaylistRow.Queue -> ""
-            PlaylistRow.Marked -> ""
             is PlaylistRow.Folder -> it.folder.name
             is PlaylistRow.Playlist -> it.name
         }
     }
 
-    @Test fun theQueueIsARowWhenThereIsNothingInIt() = assertEquals(listOf<PlaylistRow>(PlaylistRow.Queue), browse(listOf()).rows)
-
-    @Test fun theOwnShelfHasTheMarkedSongsUnderTheQueue() = assertEquals(
-        listOf<PlaylistRow>(PlaylistRow.Queue, PlaylistRow.Marked),
-        PlaylistBrowse.of(listOf(), listOf(), { "" }, marked = true).rows,
-    )
-
-    @Test fun neitherIsDrawnInsideAFolder() {
-        val made = PlaylistBrowse.of(listOf("Mixes"), listOf(list("Late", listOf("Mixes"))), { (it.name as ListName.Text).text }, marked = true)
-        assertEquals(listOf("Late"), names(made))
-    }
-
-    @Test fun theQueueIsNotDrawnInsideAFolder() =
-        assertEquals(listOf("Late"), names(browse(listOf("Mixes"), list("Late", listOf("Mixes")))))
+    @Test fun anAccountWithNoListsShowsNoRowsAtAll() = assertTrue(browse(listOf()).rows.isEmpty())
 
     @Test fun foldersComeAboveThePlaylistsBesideThem() {
         val made = browse(listOf(), list("Aardvark"), list("Zebra", listOf("Mixes")))
-        assertEquals(listOf("", "Mixes", "Aardvark"), names(made))
-        assertTrue(made.rows[1] is PlaylistRow.Folder)
+        assertEquals(listOf("Mixes", "Aardvark"), names(made))
+        assertTrue(made.rows[0] is PlaylistRow.Folder)
     }
 
     @Test fun bothAreAlphabeticalWhateverOrderTheyArriveIn() =
-        assertEquals(listOf("Alpha", "mid", "zoo"), names(browse(listOf(), list("zoo"), list("Alpha"), list("mid"))).drop(1))
+        assertEquals(listOf("Alpha", "mid", "zoo"), names(browse(listOf(), list("zoo"), list("Alpha"), list("mid"))))
 
     @Test fun aFolderRowCountsTheRowsOpeningItShows() {
         val made = browse(listOf(), list("a", listOf("Mixes")), list("b", listOf("Mixes", "Late")), list("c", listOf("Mixes", "Late", "Deeper")))
-        assertEquals(listOf("Mixes"), names(made).drop(1))
+        assertEquals(listOf("Mixes"), names(made))
         // "a", and the folder "Late": not the two playlists filed away beneath it.
-        assertEquals(2, (made.rows[1] as PlaylistRow.Folder).folder.playlists)
+        assertEquals(2, (made.rows[0] as PlaylistRow.Folder).folder.playlists)
     }
+
+    // ── the computer's generated lists ──
+
+    /** The tree the computer sends: its listening lists in Smart playlists, its moods in Moods, its decades in
+     * Decades (`SmartPlaylistFace.FolderChain` on the desktop). */
+    private val sent = arrayOf(
+        list("On repeat", listOf("Smart playlists"), generated = true, kind = "OnRepeat"),
+        list("Favourite tracks", listOf("Smart playlists"), generated = true, kind = "FavoriteTracks"),
+        list("Calm", listOf("Moods"), generated = true, kind = "Calm"),
+        list("Energetic", listOf("Moods"), generated = true, kind = "Energetic"),
+        list("Slow Burn", listOf("Moods", "Calm"), generated = true, kind = "Calm"),
+        list("1980s", listOf("Decades"), generated = true, kind = "Decade", decade = 1980),
+        list("1990s", listOf("Decades"), generated = true, kind = "Decade", decade = 1990),
+        list("Aardvark"),
+        list("Road trip", listOf("Mixes")),
+    )
+
+    @Test fun theListeningListsStandAtTheTopOfTheTree() {
+        val top = browse(listOf(), *sent)
+        assertTrue("On repeat" in names(top))
+        assertTrue("Favourite tracks" in names(top))
+        assertTrue("Smart playlists" !in names(top))
+    }
+
+    @Test fun theDecadesAreNotAFolderAtTheTopOfTheTree() = assertTrue("Decades" !in names(browse(listOf(), *sent)))
+
+    @Test fun theTopOfTheTreeIsMoodsThenTheReadersFoldersThenTheGeneratedListsThenTheReadersOwn() =
+        assertEquals(listOf("Moods", "Mixes", "Favourite tracks", "On repeat", "Aardvark"), names(browse(listOf(), *sent)))
+
+    @Test fun theDecadesAreTheFirstFolderInsideTheMoods() {
+        val moods = browse(listOf("Moods"), *sent)
+        assertEquals(listOf("Decades", "Calm", "Energetic"), names(moods))
+        assertTrue(moods.rows[0] is PlaylistRow.Folder)
+        assertEquals(listOf("Moods", "Decades"), (moods.rows[0] as PlaylistRow.Folder).folder.path)
+    }
+
+    @Test fun theDecadesFolderHoldsTheDecades() =
+        assertEquals(listOf("1980s", "1990s"), names(browse(listOf("Moods", "Decades"), *sent)))
+
+    @Test fun theMoodsFolderIsFoundByWhatIsInItAndNotByItsName() {
+        // A computer set to French names its folders in French.
+        val french = arrayOf(
+            list("Calme", listOf("Ambiances"), generated = true, kind = "Calm"),
+            list("1980s", listOf("Décennies"), generated = true, kind = "Decade", decade = 1980),
+        )
+        assertEquals(listOf("Ambiances"), names(browse(listOf(), *french)))
+        assertEquals(listOf("Décennies", "Calme"), names(browse(listOf("Ambiances"), *french)))
+    }
+
+    @Test fun decadesWithNoMoodsToGoIntoStayWhereTheyWereSent() =
+        assertEquals(listOf("Decades"), names(browse(listOf(), list("1980s", listOf("Decades"), generated = true, kind = "Decade", decade = 1980))))
+
+    @Test fun theMoodsComeAboveAFolderOfTheReadersWhoseNameComesFirst() =
+        assertEquals(listOf("Moods", "Aardvarks"), names(browse(listOf(), list("Calm", listOf("Moods"), generated = true, kind = "Calm"), list("a", listOf("Aardvarks")))))
+
+    // ── what a folder's square shows ──
+
+    private fun faces(browse: PlaylistBrowse) = browse.rows.filterIsInstance<PlaylistRow.Folder>().associate { it.folder.name to it.face }
+
+    @Test fun theMoodsFolderWearsTheMoodsMarkAndTheReadersFolderIsPlain() =
+        assertEquals(mapOf("Moods" to FolderFace.Moods, "Mixes" to FolderFace.Plain), faces(browse(listOf(), *sent)))
+
+    @Test fun insideTheMoodsTheDecadesAndEachMoodWearTheirOwnMarks() =
+        assertEquals(mapOf("Decades" to FolderFace.Decades, "Calm" to FolderFace.Mood("Calm")), faces(browse(listOf("Moods"), *sent)))
+
+    @Test fun aFolderHoldingAListTheReaderMadeIsPlain() {
+        // The reader filed a playlist of their own under the computer's Moods, in a folder of the mood's name.
+        val mixed = arrayOf(list("Calm", listOf("Moods"), generated = true, kind = "Calm"), list("Mine", listOf("Moods", "Calm")))
+        assertEquals(FolderFace.Plain, faces(browse(listOf(), *mixed))["Moods"])
+        assertEquals(FolderFace.Plain, faces(browse(listOf("Moods"), *mixed))["Calm"])
+    }
+
+    @Test fun aStoredPlaylistInAFolderCalledSmartPlaylistsStaysInIt() =
+        assertEquals(listOf("Smart playlists"), names(browse(listOf(), list("Mine", listOf("Smart playlists")))))
 
     @Test fun steppingIntoAFolderShowsWhatIsDirectlyInIt() {
         val made = browse(listOf("Mixes"), list("a", listOf("Mixes")), list("b", listOf("Mixes", "Late")), list("c"))
@@ -155,7 +219,7 @@ class PlaylistBrowseTest {
     @Test fun aTreeThatHasGoneEntirelyPutsTheReaderAtTheTop() {
         val made = browse(listOf("Mixes", "Late"))
         assertTrue(made.at.isEmpty())
-        assertEquals(listOf<PlaylistRow>(PlaylistRow.Queue), made.rows)
+        assertTrue(made.rows.isEmpty())
     }
 
     @Test fun whereYouAreComesBackWithWhatIsOnScreen() {

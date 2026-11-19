@@ -70,6 +70,22 @@ object Glyph {
     // tab that navigates instead of opening something.
     const val folder = "\uF07B"
 
+    // The marks of the computer's mood folders and its decades folder, as the desktop draws them
+    // (SmartPlaylistFace.Glyph and SmartPlaylistFace.DecadesFolderGlyph). The iPhone has no marks for these.
+    const val calm = "\uF52D"        // a feather
+    const val energetic = "\uF0E7"   // a bolt
+    const val danceable = "\uF70C"   // a person running
+    const val focus = "\uF140"       // a bullseye
+    const val sleep = "\uF236"       // a bed
+    const val melancholy = "\uF73D"  // a rain cloud
+    const val happy = "\uF185"       // the sun
+    const val angry = "\uF7E4"       // a curved flame
+    const val romantic = "\uF5CE"    // a wine glass
+    const val zen = "\uF5BB"         // a lotus
+    const val newYearsEve = "\uF79F" // two champagne glasses
+    const val christmas = "\uF1BB"   // a Christmas tree
+    const val decades = "\uF017"     // a clock: the folder is arranged by when, not by what
+
     // A chevron, for a row that opens a deeper screen.
     const val into = "\uF054"
 

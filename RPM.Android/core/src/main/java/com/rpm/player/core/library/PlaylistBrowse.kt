@@ -71,24 +71,17 @@ object PlaylistFolderTree {
 /** Names in the reader's language, ignoring case and not accents, as the iPhone's case-insensitive compare. */
 internal fun collator(): Collator = Collator.getInstance().apply { strength = Collator.SECONDARY }
 
-/** One row of the playlists view. Matches the iPhone's `PlaylistRow`, for the kinds this app has. */
+/**
+ * One row of the playlists view. Matches the iPhone's `PlaylistRow`, without the queue and the marked songs: this
+ * app's playlists view has no row for either. The queue is in the player, and the computer's Favourite tracks list
+ * is one of the generated lists.
+ */
 sealed interface PlaylistRow {
     /** Unique among the rows of one view: a folder's whole path, or the list's own id. */
     val id: String
 
-    /** The queue: what is playing and what comes after it. Always at the top of the tree, empty or not, because
-     * it is where the songs anybody sent up next went. */
-    data object Queue : PlaylistRow {
-        override val id get() = "\u0001queue"
-    }
-
-    /** The songs the person marked as favourites ([MarkedSongs]), under the queue on their own shelf. */
-    data object Marked : PlaylistRow {
-        override val id get() = "\u0001favorites"
-    }
-
-    /** A folder; a press steps into it rather than opening anything. */
-    data class Folder(val folder: PlaylistFolderRow) : PlaylistRow {
+    /** A folder; a press steps into it rather than opening anything. [face] says what its square shows. */
+    data class Folder(val folder: PlaylistFolderRow, val face: FolderFace = FolderFace.Plain) : PlaylistRow {
         override val id get() = "\u0001folder/" + folder.path.joinToString("/")
     }
 
@@ -99,6 +92,25 @@ sealed interface PlaylistRow {
     data class Playlist(val list: TrackList, val name: String, val folder: List<String>) : PlaylistRow {
         override val id get() = list.id
     }
+}
+
+/**
+ * What a folder of the computer's generated lists stands for, so its square can wear the desktop's mark for it in
+ * place of the plain folder. It is worked out from the lists in the folder, not from the folder's name, which is in
+ * the computer's language.
+ */
+sealed interface FolderFace {
+    /** A folder somebody made, or one holding lists of more than one kind. */
+    data object Plain : FolderFace
+
+    /** The folder of the moods (`SmartPlaylistFace.MoodsFolderMark` on the desktop). */
+    data object Moods : FolderFace
+
+    /** The folder of the decades (`SmartPlaylistFace.DecadesFolderGlyph` on the desktop). */
+    data object Decades : FolderFace
+
+    /** One mood and its cuts by genre: [kind] is the mood's kind, such as "Calm". */
+    data class Mood(val kind: String) : FolderFace
 }
 
 /**
@@ -117,30 +129,91 @@ data class PlaylistBrowse(val at: List<String>, val rows: List<PlaylistRow>) {
 
     companion object {
         /**
-         * At the top of the tree the queue and the marked songs, then the folders directly in [at], then the lists directly in it. A
-         * generated list named after the folder it is in is that folder's own list (`GeneratedLists.isPooled`) and
-         * comes first; the rest are by name.
+         * The folders directly in [at], then the lists directly in it.
+         *
+         * The folders that hold the computer's generated lists come before the person's own folders. Among them, the
+         * one that holds the decades comes first. So at the top of the tree Moods is the first row, and inside Moods
+         * the first row is Decades ([regrouped] files the decades there).
+         *
+         * Among the lists, a generated list named after the folder it is in is that folder's own list
+         * (`GeneratedLists.isPooled`) and comes first. Then the generated lists, then the person's own, each by name.
          *
          * @param nameOf the name each list is shown by, which is also what the lists are put in order by.
-         *
-         * @param marked whether the marked songs have a row: on the person's own shelf, and not on a borrowed one,
-         * whose songs this account cannot mark.
          */
-        fun of(at: List<String>, lists: List<TrackList>, nameOf: (TrackList) -> String, marked: Boolean): PlaylistBrowse {
-            val shown = placed(lists.map { PlaylistRow.Playlist(it, nameOf(it), it.folder) })
+        fun of(at: List<String>, lists: List<TrackList>, nameOf: (TrackList) -> String): PlaylistBrowse {
+            val sent = lists.map { PlaylistRow.Playlist(it, nameOf(it), it.folder) }
+            val moods = moodsFolder(sent)
+            val shown = placed(regrouped(sent, moods))
             val folders = shown.map { it.folder }
             val here = PlaylistFolderTree.stillOpen(at, folders)
             val rows = ArrayList<PlaylistRow>()
-            if (here.isEmpty()) {
-                rows += PlaylistRow.Queue
-                if (marked) rows += PlaylistRow.Marked
-            }
-            PlaylistFolderTree.foldersIn(folders, here).mapTo(rows) { PlaylistRow.Folder(it) }
+            // A stable sort, so the folders keep their order by name inside each of the three groups.
+            PlaylistFolderTree.foldersIn(folders, here)
+                .map { folder -> folder to shown.filter { PlaylistFolderTree.isUnder(it.folder, folder.path) } }
+                .sortedBy { (_, inside) ->
+                    when {
+                        inside.any { it.list.generated && it.list.decade > 0 } -> 0
+                        inside.any { it.list.generated } -> 1
+                        else -> 2
+                    }
+                }
+                .mapTo(rows) { (folder, inside) -> PlaylistRow.Folder(folder, faceOf(folder, inside, moods)) }
             val byName = collator()
             shown.filter { PlaylistFolderTree.isIn(it.folder, here) }
-                .sortedWith(compareByDescending<PlaylistRow.Playlist> { isPooled(it) }.thenBy(byName) { it.name })
+                .sortedWith(
+                    compareByDescending<PlaylistRow.Playlist> { isPooled(it) }
+                        .thenByDescending { it.list.generated }
+                        .thenBy(byName) { it.name },
+                )
                 .let(rows::addAll)
             return PlaylistBrowse(here, rows)
+        }
+
+        /**
+         * Two changes to the folders the computer filed its generated lists in. A list the person made is not moved.
+         *
+         * - The lists about listening (Right now, On repeat, Favourite tracks and the others, [Lists.OWNER_ONLY]) stand
+         *   at the top of the tree. The computer files them in its own folder, Smart playlists, and this view has no
+         *   such folder.
+         * - The decades go inside the moods: the folder the computer filed them in becomes a folder in the moods'
+         *   folder.
+         *
+         * Both are found by what the lists are, and not by the folders' names. The names are in the computer's
+         * language, which can be different from the phone's. A computer that sent no folders is left as it is.
+         */
+        private fun regrouped(rows: List<PlaylistRow.Playlist>, moods: String?): List<PlaylistRow.Playlist> =
+            rows.map { row ->
+                val list = row.list
+                when {
+                    !list.generated -> row
+                    list.decade > 0 ->
+                        if (moods == null || row.folder.isEmpty() || same(row.folder.take(1), listOf(moods))) row
+                        else row.copy(folder = listOf(moods) + row.folder)
+                    list.kind in Lists.OWNER_ONLY -> row.copy(folder = emptyList())
+                    else -> row
+                }
+            }
+
+        /**
+         * The name of the folder the computer filed its moods in: the outermost folder of a generated list that is
+         * neither about listening nor a decade. Null when there is none, or when the computer sent no folders.
+         */
+        private fun moodsFolder(rows: List<PlaylistRow.Playlist>): String? = rows.firstOrNull {
+            it.list.generated && it.list.decade == 0 && it.list.kind !in Lists.OWNER_ONLY && it.folder.isNotEmpty()
+        }?.folder?.first()
+
+        /**
+         * What a folder's square shows, from [inside], the lists anywhere under it. The moods' folder is found by
+         * name, but by the name [moodsFolder] found from the lists. A folder that holds a list the person made is
+         * plain, so a folder of their own never wears the computer's marks.
+         */
+        private fun faceOf(folder: PlaylistFolderRow, inside: List<PlaylistRow.Playlist>, moods: String?): FolderFace {
+            if (inside.isEmpty() || inside.any { !it.list.generated }) return FolderFace.Plain
+            if (moods != null && same(folder.path, listOf(moods))) return FolderFace.Moods
+            if (inside.all { it.list.decade > 0 }) return FolderFace.Decades
+            val kinds = inside.map { it.list.kind }.toSet()
+            val kind = kinds.singleOrNull()
+            return if (kind != null && inside.all { it.list.decade == 0 }) FolderFace.Mood(kind) else FolderFace.Plain
         }
 
         /**

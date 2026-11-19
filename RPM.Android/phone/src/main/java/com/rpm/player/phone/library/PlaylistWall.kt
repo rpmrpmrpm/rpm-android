@@ -1,5 +1,6 @@
 package com.rpm.player.phone.library
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -36,7 +37,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
 import com.rpm.player.core.R
+import com.rpm.player.core.library.FolderFace
 import com.rpm.player.core.library.PlaylistRow
+import com.rpm.player.phone.R as PhoneR
 import com.rpm.player.phone.design.Glyph
 import com.rpm.player.phone.design.dissolvesAtTop
 import com.rpm.player.phone.design.scrolled
@@ -134,7 +137,7 @@ private fun PlaylistTile(row: PlaylistRow, title: String, picture: Any?, framed:
             .height(caption.card.dp)
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onPress),
     ) {
-        PlaylistSleeve(picture, row.mark, art, corner = 10.dp, mark = glyphSize, images, framed)
+        PlaylistSleeve(picture, row.mark, art, corner = 10.dp, mark = glyphSize, images, framed, markPicture = row.markPicture)
         Spacer(Modifier.height(AlbumCaption.ART_GAP.dp))
         val nameRoom = (caption.albumLine + AlbumCaption.LINE_GAP + caption.artistLine).dp
         Box(Modifier.width(art).height(nameRoom), contentAlignment = Alignment.TopCenter) {
@@ -148,14 +151,47 @@ private fun PlaylistTile(row: PlaylistRow, title: String, picture: Any?, framed:
     }
 }
 
-/** The mark a row shows when it has no picture of its own (`PlaylistRow.mark` on iPhone). */
+/**
+ * The mark a row shows when it has no picture of its own (`PlaylistRow.mark` on iPhone). A folder of the computer's
+ * moods or decades wears the desktop's mark for it ([FolderFace]); the moods' own folder has a picture for a mark
+ * ([markPicture]).
+ */
 internal val PlaylistRow.mark: String
     get() = when (this) {
-        PlaylistRow.Queue -> Glyph.queue
-        PlaylistRow.Marked -> Glyph.heart
-        is PlaylistRow.Folder -> Glyph.folder
+        is PlaylistRow.Folder -> when (val face = face) {
+            FolderFace.Decades -> Glyph.decades
+            is FolderFace.Mood -> moodMark(face.kind) ?: Glyph.folder
+            FolderFace.Moods, FolderFace.Plain -> Glyph.folder
+        }
         is PlaylistRow.Playlist -> Glyph.record
     }
+
+/**
+ * The picture a row's square shows in place of its [mark], or null. Only the moods' folder has one: the desktop's
+ * `moods-folder.png`, a picture rather than a glyph because it is shaded, and a font draws one colour.
+ */
+@get:DrawableRes
+internal val PlaylistRow.markPicture: Int?
+    get() = if (this is PlaylistRow.Folder && face == FolderFace.Moods) PhoneR.drawable.moods_folder else null
+
+/** The desktop's mark for one mood (`SmartPlaylistFace.Glyph`), by the kind the computer sent, or null for a kind
+ * the desktop has no mark for. */
+private fun moodMark(kind: String): String? = when (kind) {
+    "Calm" -> Glyph.calm
+    "Energetic" -> Glyph.energetic
+    "Danceable" -> Glyph.danceable
+    "Focus" -> Glyph.focus
+    "Sleep" -> Glyph.sleep
+    "Melancholy" -> Glyph.melancholy
+    "Happy" -> Glyph.happy
+    "Angry" -> Glyph.angry
+    "Romantic" -> Glyph.romantic
+    "Zen" -> Glyph.zen
+    "NewYearsEve" -> Glyph.newYearsEve
+    "Christmas" -> Glyph.christmas
+    "Classical" -> Glyph.song
+    else -> null
+}
 
 /**
  * Reports a two-finger pinch as a factor on the distance the fingers started at, and null when they lift. One finger

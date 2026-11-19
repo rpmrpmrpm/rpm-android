@@ -3,6 +3,9 @@ package com.rpm.player.phone.library
 import com.rpm.player.phone.design.rememberPicture
 import com.rpm.player.phone.design.UnderHeader
 import androidx.activity.compose.BackHandler
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -73,7 +76,6 @@ import com.rpm.player.phone.design.OverChrome
 import com.rpm.player.phone.design.icon
 import com.rpm.player.phone.design.rememberBackdrop
 import com.rpm.player.phone.design.scrolled
-import com.rpm.player.phone.player.QueueRead
 import com.rpm.player.phone.ui.VinylGround
 import com.rpm.player.phone.design.ScrollsToTop
 
@@ -98,10 +100,9 @@ private val BESIDE_TITLE = 12.dp
  * The current folder is checked against the lists on every pass. If a folder is emptied while it is open, the
  * reader is moved to the folder that holds it.
  *
- * The queue's row is at the top of the tree and opens the queue. On the person's own shelf, the marked songs'
- * row is under it.
+ * Unlike the iPhone, there is no row for the queue or for the marked songs. The computer's lists about listening
+ * stand at the top of the tree, and its decades are inside its moods ([PlaylistBrowse.of]).
  *
- * @param marked the marked songs, or null on a borrowed shelf, which has no row for them.
  * @param onMake makes a playlist from the panel: its name, its folder and its songs. It returns a sentence when it
  * failed, and null when it is done.
  *
@@ -115,10 +116,6 @@ fun PlaylistsPage(
     settings: PhoneSettings,
     onMode: (LibraryMode) -> Unit,
     bottomRoom: Dp,
-    queue: QueueRead,
-    onOpenQueue: () -> Unit,
-    marked: List<CloudTrack>?,
-    onOpenMarked: () -> Unit,
     onOpen: (TrackList) -> Unit,
     onMake: suspend (name: String, folder: List<String>, tracks: List<CloudTrack>) -> String?,
     onReread: suspend () -> Unit = {},
@@ -137,8 +134,8 @@ fun PlaylistsPage(
     var choosingLayout by remember { mutableStateOf(false) }
     // The size the fingers ask for while they are still down. It is saved only when they lift.
     var pinching by remember { mutableStateOf<Double?>(null) }
-    val browse = remember(at, collection, resources, marked != null) {
-        PlaylistBrowse.of(at, collection.lists, { listName(it.name, resources) }, marked = marked != null)
+    val browse = remember(at, collection, resources) {
+        PlaylistBrowse.of(at, collection.lists, { listName(it.name, resources) })
     }
     val back = browse.back
     BackHandler(enabled = back != null) { if (back != null) at = back }
@@ -148,15 +145,13 @@ fun PlaylistsPage(
     // always agree about what a tap does.
     val haptics = rememberHaptics()
     fun press(row: PlaylistRow) = when (row) {
-        PlaylistRow.Queue -> onOpenQueue()
-        PlaylistRow.Marked -> onOpenMarked()
         is PlaylistRow.Folder -> {
             haptics.pick()
             at = row.folder.path
         }
         is PlaylistRow.Playlist -> onOpen(row.list)
     }
-    val pictureOf = { row: PlaylistRow -> collection.coverModel(row, queue, marked.orEmpty()) }
+    val pictureOf = { row: PlaylistRow -> collection.coverModel(row) }
 
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(page)) {
@@ -189,7 +184,7 @@ fun PlaylistsPage(
                 ) { key(browse.at, settings.playlistLayout) {
                     when (settings.playlistLayout) {
                         PlaylistLayout.List -> Column(Modifier.fillMaxSize()) {
-                            Rows(browse, queue, marked.orEmpty(), pictureOf, images, bottomRoom, top, ::press) {
+                            Rows(browse, pictureOf, images, bottomRoom, top, ::press) {
                                 Footer(browse, empty = collection.lists.isEmpty(), own = own)
                             }
                         }
@@ -250,8 +245,6 @@ fun PlaylistsPage(
 @Composable
 private fun androidx.compose.foundation.layout.ColumnScope.Rows(
     browse: PlaylistBrowse,
-    queue: QueueRead,
-    marked: List<CloudTrack>,
     pictureOf: (PlaylistRow) -> Any?,
     images: ImageLoader,
     bottomRoom: Dp,
@@ -267,19 +260,17 @@ private fun androidx.compose.foundation.layout.ColumnScope.Rows(
         contentPadding = PaddingValues(top = top, bottom = FOOT + bottomRoom),
     ) {
         items(browse.rows, key = { it.id }, contentType = { "row" }) { row ->
-            Line(row, queue, marked, pictureOf(row), framedOf(row), images) { onPress(row) }
+            Line(row, pictureOf(row), framedOf(row), images) { onPress(row) }
         }
         item(key = "footer", contentType = "footer") { footer() }
     }
 }
 
 /**
- * The picture a row shows. A list uses its own picture, or else the cover of the record it opens on. The
- * queue and the marked songs use the cover of their first song. A folder has no picture.
+ * The picture a row shows. A list uses its own picture, or else the cover of the record it opens on. A folder has
+ * no picture.
  */
-private fun com.rpm.player.core.library.Collection.coverModel(row: PlaylistRow, queue: QueueRead, marked: List<CloudTrack>): Any? = when (row) {
-    PlaylistRow.Queue -> queue.entries.firstOrNull()?.cover
-    PlaylistRow.Marked -> marked.firstOrNull()?.let { albumOf[it.rpmId] }?.let { cover(it) }
+private fun com.rpm.player.core.library.Collection.coverModel(row: PlaylistRow): Any? = when (row) {
     is PlaylistRow.Folder -> null
     is PlaylistRow.Playlist -> cover(row.list)
 }
@@ -288,11 +279,8 @@ private fun com.rpm.player.core.library.Collection.coverModel(row: PlaylistRow, 
 @Composable
 private fun framedOf(row: PlaylistRow): FramedList? = (row as? PlaylistRow.Playlist)?.let { FramedList.of(it.list, it.name) }
 
-/** The name a row shows. The queue and the marked songs are named here: no name is stored for either. */
-@Composable
+/** The name a row shows. */
 private fun title(row: PlaylistRow): String = when (row) {
-    PlaylistRow.Queue -> stringResource(R.string.AlbumMenu_PlaylistNowPlaying)
-    PlaylistRow.Marked -> stringResource(R.string.Playlists_FavoriteTracks)
     is PlaylistRow.Folder -> row.folder.name
     is PlaylistRow.Playlist -> row.name
 }
@@ -314,7 +302,7 @@ private fun playlistsCount(count: Int): String =
 
 /** One row: the picture, the name over how much is in it, and the chevron on a folder. The row is lit while pressed. */
 @Composable
-private fun Line(row: PlaylistRow, queue: QueueRead, marked: List<CloudTrack>, picture: Any?, framed: FramedList?, images: ImageLoader, onClick: () -> Unit) {
+private fun Line(row: PlaylistRow, picture: Any?, framed: FramedList?, images: ImageLoader, onClick: () -> Unit) {
     val presses = remember { MutableInteractionSource() }
     val pressed by presses.collectIsPressedAsState()
     Row(
@@ -327,11 +315,9 @@ private fun Line(row: PlaylistRow, queue: QueueRead, marked: List<CloudTrack>, p
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PlaylistSleeve(picture, row.mark, edge = 44.dp, corner = 6.dp, mark = 16f, images, framed)
+        PlaylistSleeve(picture, row.mark, edge = 44.dp, corner = 6.dp, mark = 16f, images, framed, markPicture = row.markPicture)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             val detail = when (row) {
-                PlaylistRow.Queue -> holding(queue.entries.size, queue.seconds, 0)
-                PlaylistRow.Marked -> holding(marked.size, seconds(marked), 0)
                 is PlaylistRow.Folder -> playlistsCount(row.folder.playlists)
                 is PlaylistRow.Playlist -> holding(row.list.tracks.size, seconds(row.list.tracks), row.list.missing)
             }
@@ -373,9 +359,21 @@ private fun Footer(browse: PlaylistBrowse, empty: Boolean, own: Boolean) {
  * icon.
  * @param drifts whether the room behind a roomed list's window moves (`roomDrifts` on iPhone). Every caller says so:
  * it moves only on the list's own page, because each moving square is a room drawn 30 times a second.
+ * @param markPicture a drawable shown in place of [glyph] on a square with no picture, at the glyph's size. It is as
+ * faint as the desktop draws it on its tiles (40%), and it is a grey picture, so it reads as faint as the glyphs.
  */
 @Composable
-fun PlaylistSleeve(picture: Any?, glyph: String, edge: Dp, corner: Dp, mark: Float, images: ImageLoader, framed: FramedList? = null, drifts: Boolean = false) {
+fun PlaylistSleeve(
+    picture: Any?,
+    glyph: String,
+    edge: Dp,
+    corner: Dp,
+    mark: Float,
+    images: ImageLoader,
+    framed: FramedList? = null,
+    drifts: Boolean = false,
+    @DrawableRes markPicture: Int? = null,
+) {
     val shape = RoundedCornerShape(corner)
     Box(
         Modifier.size(edge).clip(shape).background(Color.Black.copy(alpha = 0x22 / 255f)).border(1.dp, Ink.cardBorder, shape),
@@ -395,6 +393,8 @@ fun PlaylistSleeve(picture: Any?, glyph: String, edge: Dp, corner: Dp, mark: Flo
                     modifier = Modifier.fillMaxSize(),
                 )
             }
+            framed == null && markPicture != null ->
+                Image(painterResource(markPicture), contentDescription = null, modifier = Modifier.size(mark.dp), alpha = 0.4f)
             framed == null -> BasicText(glyph, style = icon(mark).copy(color = Ink.white(0x3A)))
         }
         if (framed != null) ListFrameOverlay(framed, Modifier.fillMaxSize())

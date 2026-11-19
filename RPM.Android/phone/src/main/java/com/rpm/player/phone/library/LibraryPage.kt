@@ -84,7 +84,6 @@ import com.rpm.player.core.library.GenreWallItem
 import com.rpm.player.core.library.LibraryState
 import com.rpm.player.core.library.TrackList
 import com.rpm.player.phone.PhoneSettings
-import com.rpm.player.phone.player.QueueRead
 import com.rpm.player.phone.design.Backdrop
 import com.rpm.player.phone.design.GlassButton
 import com.rpm.player.phone.design.GlassCard
@@ -179,10 +178,6 @@ private fun AlbumsPage(
     onOpenList: (TrackList) -> Unit,
     onOpenArtist: (ArtistWallItem) -> Unit,
     onOpenGenre: (GenreWallItem) -> Unit,
-    queue: QueueRead,
-    onOpenQueue: () -> Unit,
-    marked: List<CloudTrack>?,
-    onOpenMarked: () -> Unit,
     playing: String?,
     onPlaySong: (SongSearch.SongHit) -> Unit,
     onMakePlaylist: suspend (name: String, folder: List<String>, tracks: List<CloudTrack>) -> String?,
@@ -409,10 +404,6 @@ fun LibraryPage(
     onOpenList: (TrackList) -> Unit,
     onOpenArtist: (ArtistWallItem) -> Unit,
     onOpenGenre: (GenreWallItem) -> Unit,
-    queue: QueueRead,
-    onOpenQueue: () -> Unit,
-    marked: List<CloudTrack>?,
-    onOpenMarked: () -> Unit,
     playing: String?,
     onPlaySong: (SongSearch.SongHit) -> Unit,
     onMakePlaylist: suspend (name: String, folder: List<String>, tracks: List<CloudTrack>) -> String?,
@@ -424,12 +415,12 @@ fun LibraryPage(
     CompositionLocalProvider(LocalModeTabs provides motion) {
         Crossfade(settings.libraryMode, animationSpec = tween(MODE_FADE_MS), label = "library view") { mode ->
             when (mode) {
-                LibraryMode.Playlists -> PlaylistsPage(ready, images, settings, onMode = settings::changeLibraryMode, bottomRoom = bottomRoom, queue = queue, onOpenQueue = onOpenQueue, marked = marked, onOpenMarked = onOpenMarked, onOpen = onOpenList, onMake = onMakePlaylist, onReread = reading.onReread)
+                LibraryMode.Playlists -> PlaylistsPage(ready, images, settings, onMode = settings::changeLibraryMode, bottomRoom = bottomRoom, onOpen = onOpenList, onMake = onMakePlaylist, onReread = reading.onReread)
                 LibraryMode.Artists -> ArtistsPage(ready, images, artwork, settings, bottomRoom = bottomRoom, onOpen = onOpenArtist, reading = reading)
                 LibraryMode.Genres -> GenresPage(ready, images, settings, bottomRoom = bottomRoom, onOpen = onOpenGenre, reading = reading)
                 LibraryMode.Albums -> AlbumsPage(
-                    ready, images, settings, bottomRoom, artwork, onOpen, onOpenList, onOpenArtist, onOpenGenre, queue,
-                    onOpenQueue, marked, onOpenMarked, playing, onPlaySong, onMakePlaylist, standing, onRetry, reading,
+                    ready, images, settings, bottomRoom, artwork, onOpen, onOpenList, onOpenArtist, onOpenGenre,
+                    playing, onPlaySong, onMakePlaylist, standing, onRetry, reading,
                 )
             }
         }

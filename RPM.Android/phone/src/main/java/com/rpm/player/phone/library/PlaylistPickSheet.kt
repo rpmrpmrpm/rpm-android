@@ -115,9 +115,7 @@ fun PlaylistPickSheet(
     var asking by remember { mutableStateOf<TrackList?>(null) }
 
     val browse = remember(at, playlists) {
-        PlaylistBrowse.of(at, playlists, { listName(it.name, resources) }, marked = false).let { whole ->
-            whole.copy(rows = whole.rows.filter { it != PlaylistRow.Queue })
-        }
+        PlaylistBrowse.of(at, playlists, { listName(it.name, resources) })
     }
     val chosen = picked?.let { id -> playlists.firstOrNull { it.id == id } }
 
@@ -278,7 +276,6 @@ private fun Place(row: PlaylistRow, picked: Boolean, onClick: () -> Unit) {
         is PlaylistRow.Folder -> row.folder.name to
             if (row.folder.playlists == 1) stringResource(R.string.Stats_PlaylistsOne) else stringResource(R.string.Stats_Playlists, row.folder.playlists)
         is PlaylistRow.Playlist -> row.name to holding(row.list.tracks.size, seconds(row.list.tracks), row.list.missing)
-        else -> "" to ""
     }
     Row(
         Modifier
