@@ -1217,9 +1217,6 @@
     <!-- Import pane empty state, under Queue_EmptyTitle. -->
     <string name="Queue_EmptyHint">添加文件夹、抓取 CD 或录制唱片一面：文件会先出现在这里供你检查，然后再加入音乐收藏。</string>
 
-    <!-- Tooltip for the deck's pane pill. -->
-    <string name="Deck_PaneTip">显示或隐藏侧栏</string>
-
     <!-- The pinned playlist the player always plays. -->
     <string name="Playlists_NowPlaying">正在播放</string>
 
@@ -2265,6 +2262,9 @@
 
     <!-- Phone collection search: accessibility label of the cross on one earlier search. -->
     <string name="Rpm_Search_Forget">从最近搜索中移除</string>
+
+    <!-- Placeholder in the search bar that Cmd+F or Ctrl+F opens over the whole window, and the tooltip of the search key beside Home that opens it, on the desktop and in the web app. -->
+    <string name="Rpm_Search_Library">搜索你的音乐库</string>
 
     <!-- Phone profile page: key beside the box for a new post. -->
     <string name="Rpm_Profile_Post">发布</string>

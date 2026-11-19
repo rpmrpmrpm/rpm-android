@@ -1217,9 +1217,6 @@
     <!-- Import pane empty state, under Queue_EmptyTitle. -->
     <string name="Queue_EmptyHint">Ajoutez un dossier, extrayez un CD ou enregistrez une face : les fichiers apparaissent ici pour vérification avant d\'entrer dans la collection.</string>
 
-    <!-- Tooltip for the deck's pane pill. -->
-    <string name="Deck_PaneTip">Afficher ou masquer le volet latéral</string>
-
     <!-- The pinned playlist the player always plays. -->
     <string name="Playlists_NowPlaying">En lecture</string>
 
@@ -2265,6 +2262,9 @@
 
     <!-- Phone collection search: accessibility label of the cross on one earlier search. -->
     <string name="Rpm_Search_Forget">Retirer des recherches récentes</string>
+
+    <!-- Placeholder in the search bar that Cmd+F or Ctrl+F opens over the whole window, and the tooltip of the search key beside Home that opens it, on the desktop and in the web app. -->
+    <string name="Rpm_Search_Library">Rechercher dans votre bibliothèque</string>
 
     <!-- Phone profile page: key beside the box for a new post. -->
     <string name="Rpm_Profile_Post">Publier</string>
