@@ -7770,4 +7770,100 @@
 
     <!-- Setup, last step: shown instead of the album count when the library is a folder of music the person already had. -->
     <string name="Wizard_DoneAdopted">rpm lit votre musique en arrière-plan à l\'ouverture de la bibliothèque. Une grande collection peut prendre quelques minutes.</string>
+
+    <!-- Phone backdrop tile: folds of warm copper light on black, with a fine grain. A name, so untranslated. -->
+    <string name="Settings_BackgroundAero">Aero</string>
+
+    <!-- Phone settings, General: switch for the short sound rpm plays when it opens. -->
+    <string name="Settings_StartupSound">Jouer le son d’ouverture</string>
+
+    <!-- Phone settings, General: the line under the opening sound switch. -->
+    <string name="Settings_StartupSoundHint">Un court carillon à l’ouverture de rpm. Il s’arrête dès que votre musique démarre.</string>
+
+    <!-- Long-press menu on a song, record or playlist (phone): puts it in home's Quick selection, after the suggested mixtapes. 'Quick selection' is the Home_QuickPicks heading. -->
+    <string name="Home_AddToQuick">Ajouter à la sélection rapide</string>
+
+    <!-- Long-press menu on something the user added to home's Quick selection (phone): takes it out again. -->
+    <string name="Home_RemoveFromQuick">Retirer de la sélection rapide</string>
+
+    <!-- Long-press menu and page menu on a playlist (phone): keeps it at the top of the Playlists view, under Recently played. -->
+    <string name="Playlists_Pin">Épingler en haut</string>
+
+    <!-- Long-press menu and page menu on a pinned playlist (phone): it goes back to its own place in the Playlists view. -->
+    <string name="Playlists_Unpin">Détacher</string>
+
+    <!-- Phone settings, General: heading over the choice of language for the Wikipedia texts on artist and record pages. -->
+    <string name="Settings_ArticleLanguage">Descriptions des artistes et des albums</string>
+
+    <!-- Phone settings, General: the line under the description language choice. -->
+    <string name="Settings_ArticleLanguageHint">La langue des textes sur vos artistes et vos albums. S’il n’en existe pas dans cette langue, vous obtenez la version anglaise.</string>
+
+    <!-- Phone settings: the first choice of description language, the phone's own. {0} is that language's name in itself, e.g. 'Nederlands'. -->
+    <string name="Settings_ArticleLanguagePhone">Comme votre téléphone (%1$s)</string>
+
+    <!-- Phone settings, Appearance: switch for the spectrum bars that move with the music beside the cover in the player. -->
+    <string name="Settings_PlayerBars">Barres animées dans le lecteur</string>
+
+    <!-- Phone settings, Appearance: the line under the moving bars switch. -->
+    <string name="Settings_PlayerBarsHint">Les barres à côté de la pochette qui bougent avec la musique.</string>
+
+    <!-- Phone first-run hint pointing at the Home tab. -->
+    <string name="Coach_Phone_Home">Voici l’accueil ! Ce que vous avez écouté en dernier, quoi écouter ensuite et les derniers ajouts, tout au même endroit. Maintenez un titre, un album ou une liste pour en voir plus.</string>
+
+    <!-- Phone first-run hint pointing at the Collection tab. Starts like Coach_Views on the desktop. -->
+    <string name="Coach_Phone_Collection">Parcourez votre collection à votre façon ! Albums, artistes, listes et genres sont tous ici, à portée de doigt.</string>
+
+    <!-- Phone first-run hint pointing at the Radio tab (internet radio). -->
+    <string name="Coach_Phone_Radio">Envie de nouveauté ? Écoutez la radio, avec des stations du monde entier, juste ici.</string>
+
+    <!-- Phone first-run hint pointing at the Feed tab (posts and reviews by rpm users). -->
+    <string name="Coach_Phone_Feed">Découvrez ce que les autres collectionneurs écoutent et critiquent, et partagez vos propres trouvailles.</string>
+
+    <!-- Phone first-run hint pointing at the Settings tab. Starts like Wizard_LookTitle. -->
+    <string name="Coach_Phone_Settings">Faites de rpm le vôtre ! Choisissez un arrière-plan, la qualité du son et gérez vos téléchargements dans les Réglages.</string>
+
+    <!-- Phone first-run hint pointing at the mini player above the tabs. -->
+    <string name="Coach_Phone_MiniPlayer">Ce qui joue se trouve juste ici. Touchez-le pour ouvrir le lecteur.</string>
+
+    <!-- Phone: the card that ends the first-run tour, under Coach_DoneTitle. The phone's Coach_DoneBody, without ripping and recording. -->
+    <string name="Coach_Phone_DoneBody">Vous connaissez maintenant rpm sur le bout des doigts. Écoutez, explorez et faites de votre collection la vôtre. Amusez-vous bien !</string>
+
+    <!-- Phone settings: the line under the button that shows the first-run hints again. The phone's Settings_HintsHint. -->
+    <string name="Settings_Phone_HintsHint">Les petites astuces qui vous font découvrir l’app et le lecteur. Chacune apparaît une fois, puis vous laisse tranquille.</string>
+
+    <!-- Phone first-run hint in the player, pointing at the cover. -->
+    <string name="Coach_Player_Cover">Voici votre disque ! Faites-le glisser à gauche ou à droite pour passer au titre suivant ou revenir en arrière.</string>
+
+    <!-- Phone first-run hint in the player, pointing at the heart beside the title. -->
+    <string name="Coach_Player_Heart">Vous l’adorez ? Touchez le cœur et le voilà dans vos titres favoris.</string>
+
+    <!-- Phone first-run hint in the player, pointing at the lyrics key. -->
+    <string name="Coach_Player_Lyrics">Envie de chanter ? Touchez ici pour voir les paroles au fil de la chanson.</string>
+
+    <!-- Phone first-run hint in the player, pointing at the queue key. -->
+    <string name="Coach_Player_Queue">Voici ce qui arrive ensuite. Réorganisez-le quand vous voulez.</string>
+
+    <!-- Phone first-run hint in the player, pointing at the menu key in the row under the transport. -->
+    <string name="Coach_Player_Menu">Réglez une minuterie de sommeil, ajoutez le titre à une liste, ou allez à l’album ou à l’artiste depuis ici.</string>
+
+    <!-- Phone first-run hint in the player, pointing at the speaker key at the top right. -->
+    <string name="Coach_Player_Speakers">Écoutez sur une autre enceinte, comme votre télé, directement d’ici.</string>
+
+    <!-- Phone first-run hint in the player, pointing at the grip at the top. The last of the player's hints. -->
+    <string name="Coach_Player_Grip">Terminé ? Tirez ceci vers le bas pour ranger le lecteur. Et tournez votre téléphone sur le côté pour le visualiseur !</string>
+
+    <!-- Phone welcome, the look step: the line under Wizard_LookTitle, over the backdrop tiles. The phone's Wizard_LookBackgroundHint. -->
+    <string name="Wizard_Phone_LookHint">Choisissez l’image derrière toute l’app. Vous pourrez la changer à tout moment dans les Réglages.</string>
+
+    <!-- Phone welcome, the player step: heading. A pun on a record spinning is welcome where the language has one. -->
+    <string name="Wizard_Phone_PlayerTitle">Faisons un tour !</string>
+
+    <!-- Phone welcome, the player step: the line under the heading, over the chosen song. -->
+    <string name="Wizard_Phone_PlayerBody">Voici un titre de votre collection. Appuyez sur lecture, et on vous fait visiter le lecteur pendant qu’il joue.</string>
+
+    <!-- Phone welcome, the player step: the button that plays the song and opens the player with its hints. -->
+    <string name="Wizard_Phone_PlayerGo">Lire et me faire visiter</string>
+
+    <!-- Phone welcome, the layout step: the line under Wizard_LayoutTitle. The phone's Wizard_LayoutBody, with two choices. -->
+    <string name="Wizard_Phone_LayoutBody">Choisissez comment vos albums s’affichent dans la collection. Vous pouvez changer à tout moment, en haut de la collection.</string>
 </resources>
