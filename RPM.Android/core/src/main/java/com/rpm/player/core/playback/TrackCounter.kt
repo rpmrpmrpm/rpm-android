@@ -8,10 +8,17 @@ package com.rpm.player.core.playback
  */
 object Listen {
     const val SHORTEST_SECONDS = 30.0
+
+    /** Less than this heard is not written in the listening log at all: a flick past. */
+    const val NOTICED_SECONDS = 5.0
     const val ENOUGH_SECONDS = 4 * 60.0
 
     /** Whether [heard] seconds of a track [length] seconds long is a play. A length of zero (not known)
      * never counts: guessing would count a quick skip past a track whose duration nobody knows. */
+    /** Whether a listen is written in the listening log, as a play or a skip. */
+    fun worthRecording(heard: Double, length: Double): Boolean =
+        length >= SHORTEST_SECONDS && heard >= NOTICED_SECONDS
+
     fun counts(heard: Double, length: Double): Boolean {
         if (length < SHORTEST_SECONDS || heard <= 0) return false
         return heard >= minOf(length / 2, ENOUGH_SECONDS)
@@ -26,25 +33,52 @@ object Listen {
  * Heard time is how far the position moved while playing between two readings, so a seek adds nothing
  * and a stall adds nothing. A move back to the start of the same track (played again, or repeated)
  * ends the listen and starts another, as `ListenTally` treats a restart. A different track ends it
- * too. An ended listen is judged by [Listen.counts] and handed out as a play.
+ * too. An ended listen worth writing down is handed out ([Heard]), and [Listen.counts] says whether it was a play.
  */
-class TrackCounter(private val clockSeconds: () -> Long) {
+class TrackCounter(
+    /** The clock the listen's hour and weekday are read on: this device's own, except in a test. */
+    private val zone: () -> java.time.ZoneId = { java.time.ZoneId.systemDefault() },
+    /** Now, in Unix seconds. Last, so a call can pass it as a trailing lambda. */
+    private val clockSeconds: () -> Long,
+) {
 
     /** A play that counted: the track and when the listen ended, in Unix seconds. */
     data class Counted(val ref: TrackRef, val at: Long)
+
+    /** A listen worth writing in the listening log: a play or a skip. [at] is when it ended, in Unix seconds. The
+     * hour (0 to 23) and the weekday (0 = Sunday) are on this device's clock at that moment. */
+    data class Heard(
+        val ref: TrackRef,
+        val at: Long,
+        val heardSeconds: Double,
+        val lengthSeconds: Double,
+        val counted: Boolean,
+        val localHour: Int,
+        val localDayOfWeek: Int,
+    ) {
+        /** The play it was, or null for a skip. */
+        val play: Counted? get() = if (counted) Counted(ref, at) else null
+    }
 
     private var ref: TrackRef? = null
     private var heard = 0.0
     private var length = 0.0
     private var lastPosition: Double? = null
 
+    /** Takes one reading and returns the play it ended, if it ended one that counted. See [readListen]. */
+    fun read(now: TrackRef?, playing: Boolean, position: Double, duration: Double): Counted? =
+        readListen(now, playing, position, duration)?.play
+
+    /** Ends the listen in progress and returns its play, if it counted. See [settleListen]. */
+    fun settle(): Counted? = settleListen()?.play
+
     /**
      * Takes one reading. [position] and [duration] are in seconds; [duration] zero when not known.
-     * Returns the play the reading ended, if it ended one that counted.
+     * Returns the listen the reading ended, if it ended one worth writing down.
      */
-    fun read(now: TrackRef?, playing: Boolean, position: Double, duration: Double): Counted? {
+    fun readListen(now: TrackRef?, playing: Boolean, position: Double, duration: Double): Heard? {
         if (now != ref) {
-            val ended = settle()
+            val ended = settleListen()
             ref = now
             heard = 0.0
             length = duration
@@ -59,7 +93,7 @@ class TrackCounter(private val clockSeconds: () -> Long) {
         val moved = position - last
         // Back to the start of the same track: a new listen, and the old one is judged first.
         if (position < RESTART_WITHIN && last > RESTART_WITHIN && moved < 0) {
-            val ended = settle()
+            val ended = settleListen()
             ref = now
             heard = 0.0
             return ended
@@ -70,12 +104,25 @@ class TrackCounter(private val clockSeconds: () -> Long) {
         return null
     }
 
-    /** Ends the listen in progress, as the service ends. Returns the play it made, if it counted. */
-    fun settle(): Counted? {
+    /** Ends the listen in progress, as the service ends. Returns it when it is worth writing down: long enough to
+     * judge and heard for a few seconds ([Listen.worthRecording]), as a play or a skip. */
+    fun settleListen(): Heard? {
         val current = ref ?: return null
-        val counted = Listen.counts(heard, length)
+        val heardNow = heard
         heard = 0.0
-        return if (counted) Counted(current, clockSeconds()) else null
+        if (!Listen.worthRecording(heardNow, length)) return null
+        val at = clockSeconds()
+        val local = java.time.Instant.ofEpochSecond(at).atZone(zone())
+        return Heard(
+            ref = current,
+            at = at,
+            heardSeconds = heardNow,
+            lengthSeconds = length,
+            counted = Listen.counts(heardNow, length),
+            localHour = local.hour,
+            // java.time counts Monday as 1 and Sunday as 7. The log counts Sunday as 0, as the desktop does.
+            localDayOfWeek = local.dayOfWeek.value % 7,
+        )
     }
 
     companion object {

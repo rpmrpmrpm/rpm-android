@@ -133,6 +133,37 @@ data class TrackPlaysReport(val deviceId: String, val tracks: List<TrackPlaysEnt
 @Serializable
 data class TrackPlaysWritten(val updatedAt: Long = 0)
 
+/** One finished listen, as the store's listening log keeps it (`cloud/listens`). [listenId] is made on this device,
+ * so a listen sent twice is stored once. [at] is when it ended, Unix seconds. [localHour] (0 to 23) and
+ * [localDayOfWeek] (0 = Sunday) are on this device's clock at that moment. [counted] false is a skip. */
+@Serializable
+data class CloudListen(
+    val listenId: String,
+    val rpmId: String,
+    val at: Long,
+    val heardSeconds: Double,
+    val lengthSeconds: Double,
+    val counted: Boolean,
+    val localHour: Int,
+    val localDayOfWeek: Int,
+)
+
+/** A batch of this device's listens, at most 500. */
+@Serializable
+data class ListensReport(val deviceId: String, val listens: List<CloudListen>)
+
+@Serializable
+data class ListensWritten(val receivedAt: Long = 0)
+
+/** A press of "Generate new" on one generated list: its [id], this device's own count of presses ([reading]), and the
+ * app's language and IANA time zone. */
+@Serializable
+data class ListReadingAsk(val id: String, val reading: Int, val lang: String, val tz: String)
+
+/** The store's new reading of a list: the songs by id, in the order they play, and how many one list shows. */
+@Serializable
+data class ListReading(val id: String = "", val trackIds: List<String> = emptyList(), val shows: Int = 0)
+
 /** A list that the computer generated (a mood, a genre cut, a decade), as `cloud/moodlists` returns it.
  * [trackIds] holds several windows of [shows] tracks each, one after the other. */
 @Serializable

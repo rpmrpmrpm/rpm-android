@@ -149,10 +149,18 @@ object Lists {
      * for Favourite tracks, ten for a whole mood). On a borrowed [shelf] Your mix and the listening lists
      * ([OWNER_ONLY]) are left out too: they are about the owner's own listening. The API leaves them out
      * of a borrowed cut, and the iOS app drops them as well. */
-    fun generated(cut: CloudMoodLists?, byId: Map<String, CloudTrack>, shelf: Shelf, readings: Map<String, Int> = emptyMap()): List<TrackList> =
+    fun generated(
+        cut: CloudMoodLists?,
+        byId: Map<String, CloudTrack>,
+        shelf: Shelf,
+        readings: Map<String, Int> = emptyMap(),
+        /** The store's answers to the current press of each list, by store id. A list with one shows it instead of its
+         * slice of the run. */
+        fresh: Map<String, List<String>> = emptyMap(),
+    ): List<TrackList> =
         cut?.lists.orEmpty().filter { it.trackIds.isNotEmpty() && !(shelf != Shelf.Own && it.kind in OWNER_ONLY) }.map { list ->
             val storeId = storeIdOf(list)
-            val shown = window(list.trackIds, list.shows, readings[storeId] ?: 0)
+            val shown = fresh[storeId] ?: window(list.trackIds, list.shows, readings[storeId] ?: 0)
             val tracks = shown.mapNotNull(byId::get)
             TrackList(
                 id = "mood/$storeId",

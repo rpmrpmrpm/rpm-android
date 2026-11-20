@@ -107,3 +107,59 @@ class TrackCounterTest {
         Unit
     }
 }
+
+/** What goes into the listening log: every listen worth writing down, plays and skips, with the hour and the weekday
+ * on this device's clock. The store cuts the lists that read the log from these. */
+class HeardListenTest {
+    private val a = TrackRef(Shelf.Own, "a")
+    private val b = TrackRef(Shelf.Own, "b")
+
+    /** Thursday 20 August 2026, 21:30 UTC. */
+    private val instant = 1_787_261_400L
+
+    private fun counter(zone: String) = TrackCounter(zone = { java.time.ZoneId.of(zone) }) { instant }
+
+    private fun TrackCounter.hear(ref: TrackRef, seconds: Int, duration: Double = 300.0) {
+        for (i in 0..seconds) readListen(ref, playing = true, position = i.toDouble(), duration = duration)
+    }
+
+    @Test
+    fun `a play is a listen that counted`() {
+        val counter = counter("UTC")
+        counter.hear(a, 200)
+        val heard = counter.readListen(b, playing = true, position = 0.0, duration = 300.0)
+        assertNotNull(heard)
+        assertEquals("a", heard!!.ref.rpmId)
+        assertTrue(heard.counted)
+        assertEquals(200.0, heard.heardSeconds, 0.001)
+        assertEquals(300.0, heard.lengthSeconds, 0.001)
+        assertEquals(instant, heard.at)
+        assertEquals(TrackCounter.Counted(a, instant), heard.play)
+    }
+
+    @Test
+    fun `a skip is a listen that did not count`() {
+        val counter = counter("UTC")
+        counter.hear(a, 20)
+        val heard = counter.readListen(b, playing = true, position = 0.0, duration = 300.0)
+        assertEquals(false, heard?.counted)
+        assertNull(heard?.play)
+    }
+
+    @Test
+    fun `a flick past is not written down`() {
+        val counter = counter("UTC")
+        counter.hear(a, 3)
+        assertNull(counter.readListen(b, playing = true, position = 0.0, duration = 300.0))
+    }
+
+    @Test
+    fun `the hour and the day are the listener's own`() {
+        val counter = counter("Asia/Tokyo")
+        counter.hear(a, 200)
+        val heard = counter.settleListen()
+        // 21:30 UTC on a Thursday is 06:30 on Friday in Tokyo.
+        assertEquals(6, heard?.localHour)
+        assertEquals(5, heard?.localDayOfWeek)
+    }
+}

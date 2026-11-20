@@ -135,11 +135,37 @@ class CloudClient(private val http: OkHttpClient, private val auth: AuthClient) 
     suspend fun putTrackPlays(report: TrackPlaysReport): Long =
         send("PUT", "cloud/track-plays", WireJson.encodeToString(TrackPlaysReport.serializer(), report), TrackPlaysWritten.serializer()).updatedAt
 
-    /** The lists that the computer generated, or null if it has pushed none (404). */
-    suspend fun moodLists(shelf: Shelf): CloudMoodLists? = try {
-        get("cloud/moodlists" + shelf.query(first = true), CloudMoodLists.serializer())
+    /** Writes a batch of this device's listens, at most 500. Returns the server's time of the write. */
+    suspend fun putListens(report: ListensReport): Long =
+        send("PUT", "cloud/listens", WireJson.encodeToString(ListensReport.serializer(), report), ListensWritten.serializer()).receivedAt
+
+    /**
+     * The generated lists, or null if there are none (404). [language] is the app's interface language and [zone] the
+     * device's IANA time zone: the store names the lists it cuts in that language, and cuts Your mix and the holiday
+     * lists on that clock.
+     */
+    suspend fun moodLists(shelf: Shelf, language: String, zone: String): CloudMoodLists? = try {
+        val asked = "cloud/moodlists" + shelf.query(first = true) + (if (shelf == Shelf.Own) "?" else "&") +
+            "lang=" + escapeSegment(language) + "&tz=" + escapeSegment(zone)
+        get(asked, CloudMoodLists.serializer())
     } catch (e: ApiException.NotFound) {
         null
+    }
+
+    /**
+     * A new reading of one of this account's generated lists, cut by the store: the list after [reading] presses of
+     * "Generate new" on this device. Null when the store cannot answer yet: it has not built the account's library
+     * and has started a build (409), or it no longer offers the list (404). The caller then shows the next slice of
+     * the run it was sent.
+     */
+    suspend fun nextReading(listId: String, reading: Int, language: String, zone: String): ListReading? = try {
+        send("POST", "cloud/moodlists/next",
+            WireJson.encodeToString(ListReadingAsk.serializer(), ListReadingAsk(listId, reading, language, zone)),
+            ListReading.serializer())
+    } catch (e: ApiException.NotFound) {
+        null
+    } catch (e: ApiException.Status) {
+        if (e.code == 409) null else throw e
     }
 
     /** The playlists that the shelf's owner made. A borrowed answer that names another owner is refused. */

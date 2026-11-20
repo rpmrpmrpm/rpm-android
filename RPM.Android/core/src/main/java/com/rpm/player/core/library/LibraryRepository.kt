@@ -87,8 +87,10 @@ class LibraryRepository(
     private val auth: AuthClient,
     private val homeCatalogs: HomeCatalogs,
     private val cache: LibraryCache,
-    scope: CoroutineScope,
+    private val scope: CoroutineScope,
     private val clock: () -> Long,
+    /** The app's interface language, one of the five the strings come in. The store names the lists it cuts in it. */
+    private val language: () -> String,
 ) {
     private val current = MutableStateFlow<LibraryState>(LibraryState.SignedOut)
     val state: StateFlow<LibraryState> = current.asStateFlow()
@@ -137,7 +139,27 @@ class LibraryRepository(
      * Which selection of each generated list this phone shows, by the list's store id: how many times "another
      * selection" was pressed on it (the iPhone's `GeneratedListReadings`). Kept for the session, whatever reloads.
      */
-    private val readings = MutableStateFlow<Map<String, Int>>(emptyMap())
+    private val readings = MutableStateFlow(Readings())
+
+    /** How many times "another selection" was pressed on each generated list, by store id, and the store's answer to
+     * the latest press of each (`cloud/moodlists/next`). An answer is shown only while its list is on the press it
+     * answered. */
+    private data class Readings(
+        val pressed: Map<String, Int> = emptyMap(),
+        val fresh: Map<String, Pair<Int, List<String>>> = emptyMap(),
+    ) {
+        /** The store's answers that are for the press each list is on now. */
+        val shown: Map<String, List<String>>
+            get() = fresh.filter { (id, answer) -> pressed[id] == answer.first }.mapValues { it.value.second }
+
+        fun pressedTo(id: String, reading: Int, answer: List<String>?): Readings = copy(
+            pressed = pressed + (id to reading),
+            fresh = if (answer != null) fresh + (id to (reading to answer)) else fresh,
+        )
+    }
+
+    /** The lists whose press is waiting for the store's answer. A press on one of them does nothing. */
+    private val asking: MutableSet<String> = java.util.Collections.synchronizedSet(HashSet())
 
     /** The playlists and the generated lists read again on their own ([rereadLists]), for the shelf they were
      * read for. Laid over each library of that shelf read before them. */
@@ -149,12 +171,30 @@ class LibraryRepository(
     @Volatile private var builtLists: Pair<List<CloudPlaylist>, CloudMoodLists?>? = null
 
     /**
-     * Shows the next selection of the generated [list], when the computer sent more than one ([TrackList.slices]).
-     * Nothing is fetched: the whole run is already held, and the step is arithmetic ([Lists.window]).
+     * Shows a new selection of the generated [list], when the computer sent more than one ([TrackList.slices]).
+     *
+     * On the account's own collection the store cuts it (`cloud/moodlists/next`) from this device's own count of
+     * presses, so every press is a new list, as on a computer. The press is counted when the answer comes. Where the
+     * store cannot answer (offline, or the account's library is not built yet), and on a borrowed collection, the
+     * next slice of the run the cut came with is shown ([Lists.window]).
      */
     fun newList(list: TrackList) {
         if (!list.generated || list.slices <= 1) return
-        readings.update { it + (list.storeId to ((it[list.storeId] ?: 0) + 1)) }
+        val id = list.storeId
+        if (shown?.shelf != Shelf.Own) {
+            readings.update { it.pressedTo(id, (it.pressed[id] ?: 0) + 1, null) }
+            return
+        }
+        if (!asking.add(id)) return
+        val reading = (readings.value.pressed[id] ?: 0) + 1
+        scope.launch(Dispatchers.IO) {
+            try {
+                val answer = orNull { cloud.nextReading(id, reading, language(), java.time.ZoneId.systemDefault().id) }
+                readings.update { it.pressedTo(id, reading, answer?.trackIds?.takeIf { ids -> ids.isNotEmpty() }) }
+            } finally {
+                asking.remove(id)
+            }
+        }
     }
 
     /**
@@ -170,7 +210,7 @@ class LibraryRepository(
         val readAt = clock()
         val read = coroutineScope {
             val own = async(Dispatchers.IO) { orNull { cloud.playlists(shelf) } }
-            val moods = async(Dispatchers.IO) { orNull { cloud.moodLists(shelf) } }
+            val moods = async(Dispatchers.IO) { orNull { cloud.moodLists(shelf, language(), java.time.ZoneId.systemDefault().id) } }
             own.await()?.let { it to moods.await() }
         } ?: return
         if (shown?.let { it.user == user && it.shelf == shelf } != true) return
@@ -371,7 +411,9 @@ class LibraryRepository(
             val plays = async(Dispatchers.IO) {
                 if (shelf == Shelf.Own) orNull { cloud.trackPlays() }.orEmpty().also { took("${it.size} play rows") } else emptyList()
             }
-            val moods = async(Dispatchers.IO) { orNull { cloud.moodLists(shelf) }.also { took("mood lists") } }
+            val moods = async(Dispatchers.IO) {
+                orNull { cloud.moodLists(shelf, language(), java.time.ZoneId.systemDefault().id) }.also { took("mood lists") }
+            }
             val own = async(Dispatchers.IO) { orNull { cloud.playlists(shelf) }.orEmpty().also { took("${it.size} playlists") } }
             CloudLibrary(tracks, coverKeys = null, coverStamps = covers.await(), plays = plays.await(), moods = moods.await(), playlists = own.await(), readAt = readAt)
         }
@@ -382,7 +424,7 @@ class LibraryRepository(
         val library: Held,
         val here: Map<String, HeldCatalog>,
         val edited: OwnEdits,
-        val chosen: Map<String, Int>,
+        val chosen: Readings,
         val lists: ListsRead?,
     )
 
@@ -407,13 +449,13 @@ class LibraryRepository(
         return Base(library.tracks, emptyMap(), here, byId, albums, walls)
     }
 
-    private fun build(library: CloudLibrary, base: Base, seed: Long, shelf: Shelf, readings: Map<String, Int>, took: (String) -> Unit): LibraryState.Ready {
+    private fun build(library: CloudLibrary, base: Base, seed: Long, shelf: Shelf, readings: Readings, took: (String) -> Unit): LibraryState.Ready {
         val collection = Collection.of(
             shelf = shelf,
             albums = base.albums,
             tracksById = base.byId,
             plays = Lists.plays(library.plays),
-            lists = Lists.generated(library.moods, base.byId, shelf, readings) + Lists.own(library.playlists, base.byId),
+            lists = Lists.generated(library.moods, base.byId, shelf, readings.pressed, readings.shown) + Lists.own(library.playlists, base.byId),
             index = library.coverIndex,
             moods = Lists.moods(library.moods),
         )

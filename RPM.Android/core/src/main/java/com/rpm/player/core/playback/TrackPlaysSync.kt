@@ -3,6 +3,7 @@ package com.rpm.player.core.playback
 import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.auth.AuthClient
 import com.rpm.player.core.cloud.CloudClient
+import com.rpm.player.core.cloud.ListensReport
 import com.rpm.player.core.cloud.TrackPlaysEntry
 import com.rpm.player.core.cloud.TrackPlaysReport
 import kotlinx.coroutines.CancellationException
@@ -29,6 +30,8 @@ class TrackPlaysSync(
     private val cloud: CloudClient,
     private val auth: AuthClient,
     private val log: TrackPlayLog,
+    /** The listens not yet sent, which go in the same pass under the same device id. */
+    private val listens: ListenLog,
     private val scope: CoroutineScope,
     private val clock: () -> Long,
 ) {
@@ -68,11 +71,23 @@ class TrackPlaysSync(
             // A full report may leave more behind it, so the next one goes at once.
             while (true) {
                 val (device, due) = log.forSync { deviceFor(userId) to unsent(MAX_ROWS) }
-                if (device == null || due.isEmpty()) return@withLock
+                if (device == null || due.isEmpty()) break
                 cloud.putTrackPlays(TrackPlaysReport(device, due.map { TrackPlaysEntry(it.rpmId, it.plays, it.lastPlayedAt) }))
                 log.forSync { noteSent(due) }
                 Diag.i(TAG, "sent ${due.size} play totals")
-                if (due.size < MAX_ROWS) return@withLock
+                if (due.size < MAX_ROWS) break
+            }
+
+            // The listens, under the device id the play totals go under. A device that has never counted a play has
+            // no id yet, and its listens wait for one: each listen that counted is also a play.
+            val device = log.forSync { deviceFor(userId) } ?: return@withLock
+            repeat(MAX_LISTEN_REPORTS) {
+                val due = listens.unsent(userId, MAX_LISTENS)
+                if (due.isEmpty()) return@withLock
+                cloud.putListens(ListensReport(device, due))
+                listens.noteSent(due)
+                Diag.i(TAG, "sent ${due.size} listens")
+                if (due.size < MAX_LISTENS) return@withLock
             }
         } catch (e: CancellationException) {
             throw e
@@ -84,6 +99,12 @@ class TrackPlaysSync(
     companion object {
         /** The API's `TrackPlayStore.MaxRowsPerReport`. A report over it is refused whole. */
         const val MAX_ROWS = 200
+
+        /** Listens per report, the store's own limit. */
+        const val MAX_LISTENS = 500
+
+        /** Listen reports per pass. A device that was away for a long time catches up over several passes. */
+        const val MAX_LISTEN_REPORTS = 10
         const val AFTER_A_PLAY_MS = 5 * 60_000L
 
         /** For `adb logcat -s rpm.plays`. */
