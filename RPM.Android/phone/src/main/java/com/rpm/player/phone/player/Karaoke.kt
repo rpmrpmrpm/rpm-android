@@ -23,6 +23,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpm.player.core.Services
+import com.rpm.player.core.lyrics.KaraokeClock
 import com.rpm.player.core.lyrics.KaraokeLight
 import com.rpm.player.core.lyrics.LyricSheet
 import com.rpm.player.core.lyrics.MeasuredLine
@@ -135,10 +136,10 @@ class KaraokeTiming(private val measured: MeasuredLyrics) {
  * works out the letters' strengths and, where one moved, paints each row of the text with a gradient through its
  * letters' centres. The space between two words is part of the gradient between the letters either side, so the light
  * does not drop between words. The time comes from the player's last report carried forward
- * ([NowPlaying.positionAt]), which is what the iPhone's line works out from its own readings.
+ * ([NowPlaying.positionAt]) and made steady by [clock], the one the lyric view moves its lines by.
  */
 @Composable
-internal fun SweptLine(text: String, spans: List<WordSpan>, now: NowPlaying, style: TextStyle, modifier: Modifier = Modifier) {
+internal fun SweptLine(text: String, spans: List<WordSpan>, now: NowPlaying, clock: KaraokeClock, style: TextStyle, modifier: Modifier = Modifier) {
     val sweep = remember(text, spans) { Sweep(spans) }
     // Kept apart from the sweep: measured words that arrive while the line is sung make a new sweep for the same text,
     // which is not laid out again.
@@ -155,7 +156,8 @@ internal fun SweptLine(text: String, spans: List<WordSpan>, now: NowPlaying, sty
             // Read here, so a new frame redraws this line and nothing else.
             frame
             val layout = laid[0] ?: return@drawWithContent drawContent()
-            sweep.draw(this, layout, now.positionAt(SystemClock.uptimeMillis()) / 1000.0)
+            val up = SystemClock.uptimeMillis()
+            sweep.draw(this, layout, clock.seconds(now.positionAt(up), now.advancing, up))
         },
     )
 }

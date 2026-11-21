@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rpm.player.core.cloud.Shelf
+import com.rpm.player.core.lyrics.KaraokeClock
 import com.rpm.player.core.lyrics.KaraokeLines
 import com.rpm.player.core.lyrics.LrcLib
 import com.rpm.player.core.lyrics.LyricScore
@@ -188,12 +189,16 @@ internal fun LyricView(sheet: LyricSheet, now: NowPlaying, karaoke: Boolean, mea
     val heard = remember(score, measured, karaoke) { if (karaoke) KaraokeLines.heard(score, measured) else emptyList() }
     // With karaoke, a line stays up while its last measured word is still sung ([KaraokeLines.held]).
     fun piece(seconds: Double): Int? = KaraokeLines.held(score, score.index(seconds), seconds, heard)
-    val at by produceState(piece(now.positionAt(SystemClock.uptimeMillis()) / 1000.0), score, now, heard) {
+    // The line and its words are timed by one steady clock, so the light does not step back when the reported position
+    // does.
+    val clock = remember(now.mediaId) { KaraokeClock() }
+    fun seconds(): Double = SystemClock.uptimeMillis().let { up -> clock.seconds(now.positionAt(up), now.advancing, up) }
+    val at by produceState(piece(seconds()), score, now, heard) {
         // Measured words move the line on between the stamps as well, so then the playhead is looked at a few times a
         // second. A value that did not change recomposes nothing.
         val measuring = heard.any { it != null }
         while (true) {
-            val seconds = now.positionAt(SystemClock.uptimeMillis()) / 1000.0
+            val seconds = seconds()
             val index = piece(seconds)
             value = index
             if (!now.advancing) break
@@ -238,7 +243,7 @@ internal fun LyricView(sheet: LyricSheet, now: NowPlaying, karaoke: Boolean, mea
             modifier = Modifier.fillMaxSize(),
         ) {
             itemsIndexed(score.parts, key = { _, part -> part.id }, contentType = { _, part -> part.isRest }) { _, part ->
-                ScoreRow(part, score, at, size, now, karaoke, heard)
+                ScoreRow(part, score, at, size, now, clock, karaoke, heard)
             }
         }
 
@@ -252,7 +257,7 @@ internal fun LyricView(sheet: LyricSheet, now: NowPlaying, karaoke: Boolean, mea
 
 /** One piece of the score: a line of words, or the dots of the rest that closes a stretch. */
 @Composable
-private fun ScoreRow(part: LyricScore.Part, score: LyricScore, at: Int?, size: Float, now: NowPlaying, karaoke: Boolean, heard: List<List<WordSpan>?>) {
+private fun ScoreRow(part: LyricScore.Part, score: LyricScore, at: Int?, size: Float, now: NowPlaying, clock: KaraokeClock, karaoke: Boolean, heard: List<List<WordSpan>?>) {
     val here = at?.let { score.parts[it] }
     val distance = abs(part.id - (at ?: 0))
     val sung = part.id == at
@@ -277,7 +282,7 @@ private fun ScoreRow(part: LyricScore.Part, score: LyricScore, at: Int?, size: F
             if (sung && karaoke) {
                 // Its measured words where they fit the line, else its time shared between its words by length.
                 val spans = remember(part.id, heard) { KaraokeLines.spans(part, score, heard) }
-                SweptLine(piece.line.text, spans, now, style.copy(color = Color.White), shape)
+                SweptLine(piece.line.text, spans, now, clock, style.copy(color = Color.White), shape)
             } else {
                 BasicText(piece.line.text, shape, style = style.copy(color = if (sung) Color.White else LINE))
             }
