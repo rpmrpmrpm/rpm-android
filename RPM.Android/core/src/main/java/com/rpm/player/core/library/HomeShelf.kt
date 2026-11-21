@@ -106,10 +106,13 @@ object HomeShelf {
             .sortedWith(compareByDescending<CloudAlbum> { addedAt.getValue(it.key) }.thenBy { it.key })
         // The launch's draw: one order of the worked-out rows per launch, as the desktop's launch number gives.
         val draw = random.nextInt()
+        // The banner's mood list, on the person's own shelf with a clock to read ([bannerList]).
+        val picked = if (moment != null && c.shelf == Shelf.Own) bannerList(c.lists, moment) else null
         val madeForYou = when (c.shelf) {
             Shelf.Own -> c.lists
                 .filter { it.generated && it.plainMood && it.kind in HOME_ORDER }
                 .sortedBy { HOME_ORDER.indexOf(it.kind) }
+                .let { plain -> if (moment == null) plain else cutToListening(plain, c.lists, moment, picked) }
             is Shelf.Borrowed -> moodsDrawn(c.lists, draw)
         }
 
@@ -134,7 +137,7 @@ object HomeShelf {
 
         // The banner's one list: on the person's own shelf the mood the hour asks for, cut to what they play at this
         // time of day, or the first of Made for you where no mood list fits (the desktop's `banner ?? offered.First`).
-        val bannerLists = if (moment != null && c.shelf == Shelf.Own) listOfNotNull(bannerList(c.lists, moment) ?: madeForYou.firstOrNull()) else madeForYou
+        val bannerLists = if (moment != null && c.shelf == Shelf.Own) listOfNotNull(picked ?: madeForYou.firstOrNull()) else madeForYou
 
         return Home(
             banner = banner(listened, added, played, suggested, bannerLists, random),
@@ -156,6 +159,16 @@ object HomeShelf {
      */
     fun bannerList(lists: List<TrackList>, moment: HomeMoment): TrackList? =
         MoodPick.pick(MoodClock.order(moment.hour), moment.genres, MoodPick.offered(lists), moment.dayOfYear)
+
+    /**
+     * Made for you with each mood that is cut to genres opening the cut this listener plays at this time of day
+     * ([MoodPick.cut]), as the desktop's row does, and never the list the banner shows ([taken]) where there is
+     * another. Each list keeps its place in the row.
+     */
+    private fun cutToListening(plain: List<TrackList>, lists: List<TrackList>, moment: HomeMoment, taken: TrackList?): List<TrackList> {
+        val offered = MoodPick.offered(lists)
+        return plain.map { MoodPick.cut(it, moment.genres, offered, taken) }
+    }
 
     /** One card from each source in turn, never the same record twice, and never a compilation of
      * various artists, which has no face to put on a banner. */

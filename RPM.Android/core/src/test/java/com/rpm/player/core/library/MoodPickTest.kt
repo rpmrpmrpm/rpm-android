@@ -95,7 +95,7 @@ class MoodPickTest {
                 lists = listOf(
                     CloudMoodList(kind = "Calm", decade = 1990, trackIds = ids),
                     CloudMoodList(kind = "RightNow", trackIds = ids),
-                    CloudMoodList(kind = "Melancholy", trackIds = ids),
+                    CloudMoodList(kind = "Classical", trackIds = ids),
                 ),
             ),
             tracks.associateBy { it.rpmId },

@@ -163,6 +163,23 @@ class HomeShelfTest {
         assertEquals(listOf("mood/Calm||0"), HomeShelf.build(c, Random(1), HomeMoment(hour = 8, dayOfYear = 7, genres = listOf("Jazz"))).bannerLists())
     }
 
+    @Test fun madeForYouOpensTheCutsPlayedAtThisHourAndNotTheBannersList() {
+        val tracks = (1..12).map { track("t$it", "A") }
+        val lists = moodLists(tracks, "Calm" to null, "Calm" to "Jazz", "Calm" to "Rock", "Focus" to null, "Focus" to "Jazz", "Sleep" to null, "Melancholy" to null, "Melancholy" to "Rock")
+        val c = collection(tracks, lists = lists)
+        val home = HomeShelf.build(c, Random(1), HomeMoment(hour = 8, dayOfYear = 3, genres = listOf("Jazz", "Rock")))
+        // The banner holds up the quiet jazz, so the row's Calm opens the next cut; Focus opens its jazz; Sleep has no cut;
+        // Melancholy has no jazz cut, so it opens the rock.
+        assertEquals(listOf("mood/Calm|Jazz|0"), home.bannerLists())
+        assertEquals(
+            listOf("mood/RightNow||0", "mood/Calm|Rock|0", "mood/Focus|Jazz|0", "mood/Sleep||0", "mood/Melancholy|Rock|0"),
+            home.madeForYou.map { it.id },
+        )
+        // With no clock the row keeps the plain moods.
+        assertEquals(listOf("RightNow", "Calm", "Focus", "Sleep", "Melancholy"), HomeShelf.build(c, Random(1)).madeForYou.map { it.kind })
+        assertTrue(HomeShelf.build(c, Random(1)).madeForYou.all { it.plainMood })
+    }
+
     @Test fun withNoMoodListTheBannerShowsTheFirstOfMadeForYou() {
         val tracks = (1..12).map { track("t$it", "A") }
         val home = HomeShelf.build(collection(tracks, lists = moodLists(tracks)), Random(1), HomeMoment(hour = 23, dayOfYear = 3, genres = emptyList()))
