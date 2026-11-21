@@ -26,6 +26,7 @@ import com.rpm.player.core.Services
 import com.rpm.player.core.lyrics.KaraokeClock
 import com.rpm.player.core.lyrics.KaraokeLight
 import com.rpm.player.core.lyrics.LyricSheet
+import com.rpm.player.core.lyrics.LyricVoices
 import com.rpm.player.core.lyrics.MeasuredLine
 import com.rpm.player.core.lyrics.MeasuredLyrics
 import com.rpm.player.core.lyrics.WordSpan
@@ -139,8 +140,17 @@ class KaraokeTiming(private val measured: MeasuredLyrics) {
  * ([NowPlaying.positionAt]) and made steady by [clock], the one the lyric view moves its lines by.
  */
 @Composable
-internal fun SweptLine(text: String, spans: List<WordSpan>, now: NowPlaying, clock: KaraokeClock, style: TextStyle, modifier: Modifier = Modifier) {
-    val sweep = remember(text, spans) { Sweep(spans) }
+internal fun SweptLine(
+    text: String,
+    spans: List<WordSpan>,
+    now: NowPlaying,
+    clock: KaraokeClock,
+    style: TextStyle,
+    modifier: Modifier = Modifier,
+    light: List<WordSpan> = spans,
+    letters: IntArray? = null,
+) {
+    val sweep = remember(text, spans, light, letters) { Sweep(spans, light, letters) }
     // Kept apart from the sweep: measured words that arrive while the line is sung make a new sweep for the same text,
     // which is not laid out again.
     val laid = remember(text) { arrayOfNulls<TextLayoutResult>(1) }
@@ -166,9 +176,14 @@ internal fun SweptLine(text: String, spans: List<WordSpan>, now: NowPlaying, clo
  * Where each letter of one [SweptLine] sits, and the brushes it was last painted with. The places are read off the
  * layout once; a frame where no letter changed strength (a held note, a pause, a line done) reuses the brushes and
  * allocates nothing.
+ *
+ * The letters are lit as the letters of [light], the words of the whole line, and [letters] says which of those each
+ * letter of [spans] is (null when [spans] are the whole line). So a line cut into its verse and its second voice
+ * ([LyricVoices.split]) is lit as one line: the light goes from one row to the other as the words do.
  */
-private class Sweep(private val spans: List<WordSpan>) {
+private class Sweep(private val spans: List<WordSpan>, private val light: List<WordSpan>, private val letters: IntArray?) {
     private val strength = FloatArray(KaraokeLight.letters(spans))
+    private val whole = if (letters == null) strength else FloatArray(KaraokeLight.letters(light))
     private val painted = FloatArray(strength.size) { -1f }
     private var layout: TextLayoutResult? = null
     private var centres = FloatArray(0)
@@ -198,7 +213,8 @@ private class Sweep(private val spans: List<WordSpan>) {
     fun draw(scope: DrawScope, result: TextLayoutResult, now: Double) = with(scope) {
         measure(result)
         // The sung line does not fade after its last word: it stays lit until the next line takes over.
-        KaraokeLight.light(spans, now, strength, fades = false)
+        KaraokeLight.light(light, now, whole, fades = false)
+        if (letters != null) for (k in strength.indices) strength[k] = whole.getOrElse(letters[k]) { KaraokeLight.REST }
         val moved = !strength.contentEquals(painted)
         if (moved) strength.copyInto(painted)
         var first = 0

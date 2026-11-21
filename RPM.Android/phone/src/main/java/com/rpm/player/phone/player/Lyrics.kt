@@ -9,7 +9,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,10 +32,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -46,6 +49,7 @@ import com.rpm.player.core.lyrics.KaraokeClock
 import com.rpm.player.core.lyrics.KaraokeLines
 import com.rpm.player.core.lyrics.LrcLib
 import com.rpm.player.core.lyrics.LyricScore
+import com.rpm.player.core.lyrics.LyricVoices
 import com.rpm.player.core.lyrics.LyricSheet
 import com.rpm.player.core.lyrics.MeasuredLine
 import com.rpm.player.core.lyrics.MeasuredLyrics
@@ -181,10 +185,16 @@ private const val LEADING = 0.62f
  * With [karaoke] (the setting, for a supporter), the sung line lights letter by letter ([SweptLine]), from the words the
  * cloud [measured] off the recording where they fit the line ([KaraokeLines]), and a line stays up while its last
  * measured word is still sung.
+ *
+ * Words a sheet puts in brackets are a second voice, shown as on the desktop ([LyricVoices]): on a smaller row under
+ * their line while it is sung, folded away after. A line bracketed from end to end has no row of its own: it comes in
+ * under the line before it while it is sung and folds away when it is done, and the lyrics move on as if it were not
+ * there.
  */
 @Composable
 internal fun LyricView(sheet: LyricSheet, now: NowPlaying, karaoke: Boolean, measured: List<MeasuredLine>) {
-    val score = remember(sheet) { LyricScore.of(sheet) }
+    // A line bracketed from end to end goes with the line before it, and takes no row of its own ([LyricVoices]).
+    val score = remember(sheet) { LyricScore.of(sheet, asides = true) }
     // Each piece's measured words, worked out once per answer. Empty without karaoke, which leaves the stamps to decide.
     val heard = remember(score, measured, karaoke) { if (karaoke) KaraokeLines.heard(score, measured) else emptyList() }
     // With karaoke, a line stays up while its last measured word is still sung ([KaraokeLines.held]).
@@ -231,9 +241,24 @@ internal fun LyricView(sheet: LyricSheet, now: NowPlaying, karaoke: Boolean, mea
                 list.scrollBy(placed.size / 2f)
                 return@LaunchedEffect
             }
-            val centre = seen.offset + seen.size / 2f - list.layoutInfo.viewportStartOffset
-            val delta = centre - heightPx / 2
-            if (abs(delta) > 1f) list.animateScrollBy(delta, tween(450, easing = FastOutSlowInEasing))
+            // The scroll follows the line where it is on each frame, not where it was when the scroll began: the second
+            // voice of the line before it folds away during the scroll and moves it up by that much.
+            fun off(): Float? = list.layoutInfo.visibleItemsInfo.firstOrNull { it.index == target }?.let {
+                it.offset + it.size / 2f - list.layoutInfo.viewportStartOffset - heightPx / 2
+            }
+            if (abs(off() ?: 0f) <= 1f) return@LaunchedEffect
+            var moved = 0f
+            val start = withFrameMillis { it }
+            while (true) {
+                val time = withFrameMillis { it } - start
+                val left = off() ?: break
+                if (time >= SCROLL_MS + SETTLE_MS || (time >= SCROLL_MS && abs(left) <= 0.5f)) {
+                    list.scrollBy(left)
+                    break
+                }
+                val wanted = if (time < SCROLL_MS) (moved + left) * FastOutSlowInEasing.transform(time / SCROLL_MS.toFloat()) - moved else left
+                moved += list.scrollBy(wanted)
+            }
         }
 
         LazyColumn(
@@ -243,7 +268,7 @@ internal fun LyricView(sheet: LyricSheet, now: NowPlaying, karaoke: Boolean, mea
             modifier = Modifier.fillMaxSize(),
         ) {
             itemsIndexed(score.parts, key = { _, part -> part.id }, contentType = { _, part -> part.isRest }) { _, part ->
-                ScoreRow(part, score, at, size, now, clock, karaoke, heard)
+                ScoreRow(part, score, at, size, now, clock, karaoke, heard, measured)
             }
         }
 
@@ -257,7 +282,17 @@ internal fun LyricView(sheet: LyricSheet, now: NowPlaying, karaoke: Boolean, mea
 
 /** One piece of the score: a line of words, or the dots of the rest that closes a stretch. */
 @Composable
-private fun ScoreRow(part: LyricScore.Part, score: LyricScore, at: Int?, size: Float, now: NowPlaying, clock: KaraokeClock, karaoke: Boolean, heard: List<List<WordSpan>?>) {
+private fun ScoreRow(
+    part: LyricScore.Part,
+    score: LyricScore,
+    at: Int?,
+    size: Float,
+    now: NowPlaying,
+    clock: KaraokeClock,
+    karaoke: Boolean,
+    heard: List<List<WordSpan>?>,
+    measured: List<MeasuredLine>,
+) {
     val here = at?.let { score.parts[it] }
     val distance = abs(part.id - (at ?: 0))
     val sung = part.id == at
@@ -278,17 +313,117 @@ private fun ScoreRow(part: LyricScore.Part, score: LyricScore, at: Int?, size: F
             // The same weight on every line, sung or not: a bolder sung line would wrap again and move the lines under
             // it. Only the brightness shows which line is sung.
             val style = system(size, FontWeight.SemiBold).copy(textAlign = TextAlign.Center)
-            val shape = Modifier.fillMaxWidth().graphicsLayer { this.alpha = alpha }
-            if (sung && karaoke) {
-                // Its measured words where they fit the line, else its time shared between its words by length.
-                val spans = remember(part.id, heard) { KaraokeLines.spans(part, score, heard) }
-                SweptLine(piece.line.text, spans, now, clock, style.copy(color = Color.White), shape)
-            } else {
-                BasicText(piece.line.text, shape, style = style.copy(color = if (sung) Color.White else LINE))
+            val small = system(size * LyricVoices.SCALE, FontWeight.SemiBold).copy(textAlign = TextAlign.Center)
+            val text = piece.line.text
+            // Its measured words where they fit the line, else its time shared between its words by length.
+            val spans = remember(part.id, heard) { KaraokeLines.spans(part, score, heard) }
+            // The words in brackets, taken out of the line onto a smaller row under it ([LyricVoices.split]).
+            val split = remember(text, spans) { LyricVoices.split(text, spans) }
+            val ink = if (sung) Color.White else LINE
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                val shape = Modifier.fillMaxWidth().graphicsLayer { this.alpha = alpha }
+                val verse = split?.verse
+                when {
+                    sung && karaoke && verse != null ->
+                        SweptLine(verse.text, verse.spans, now, clock, style.copy(color = Color.White), shape, spans, verse.letters)
+                    sung && karaoke -> SweptLine(text, spans, now, clock, style.copy(color = Color.White), shape)
+                    else -> BasicText(verse?.text ?: text, shape, style = style.copy(color = ink))
+                }
+                // The second voice is read with its line: it shows only while the line is sung, and at the line's own
+                // strength. It folds away when the line is done, and the lines under it close up.
+                split?.voice?.let { voice ->
+                    Fold(sung, size) { open ->
+                        val faded = Modifier.fillMaxWidth().graphicsLayer { this.alpha = alpha * open() }
+                        if (sung && karaoke) {
+                            SweptLine(voice.text, voice.spans, now, clock, small.copy(color = Color.White), faded, spans, voice.letters)
+                        } else {
+                            BasicText(voice.text, faded, style = small.copy(color = ink))
+                        }
+                    }
+                }
+                // The backing lines that go with this line pop in under it while they are sung, and fold away after.
+                for (aside in piece.asides) Aside(aside, measured, now, clock, karaoke, size, small)
             }
         }
     }
 }
+
+/**
+ * A backing line ([LyricScore.Aside]) under the line it goes with: shown while it is sung ([KaraokeLines.voice]),
+ * lit word by word with karaoke, and folded away when it is done. It has no row of its own, so the lyrics move on as if
+ * it were not there.
+ */
+@Composable
+private fun Aside(
+    aside: LyricScore.Aside,
+    measured: List<MeasuredLine>,
+    now: NowPlaying,
+    clock: KaraokeClock,
+    karaoke: Boolean,
+    size: Float,
+    style: TextStyle,
+) {
+    val voice = remember(aside, measured, karaoke) { KaraokeLines.voice(aside, if (karaoke) measured else emptyList()) }
+    val shown by produceState(false, voice, now) {
+        while (true) {
+            val up = SystemClock.uptimeMillis()
+            val seconds = clock.seconds(now.positionAt(up), now.advancing, up)
+            value = seconds >= voice.from && seconds < voice.until
+            if (!now.advancing) break
+            val next = when {
+                seconds < voice.from -> voice.from
+                seconds < voice.until -> voice.until
+                else -> break
+            }
+            delay(((next - seconds) * 1000).roundToInt().toLong().coerceAtLeast(16))
+        }
+    }
+    // The words as the row shows them: the line without the brackets round it.
+    val row = remember(aside, voice) { LyricVoices.unbracketed(aside.line.text, voice.spans) }
+    Fold(shown, size) { open ->
+        val faded = Modifier.fillMaxWidth().graphicsLayer { this.alpha = open() }
+        if (karaoke) {
+            SweptLine(row.text, row.spans, now, clock, style.copy(color = Color.White), faded, voice.spans, row.letters)
+        } else {
+            BasicText(row.text, faded, style = style.copy(color = Color.White))
+        }
+    }
+}
+
+/**
+ * A row that opens under a line and folds away again. While [open] it takes its full height and shows; otherwise it
+ * takes none and is not drawn. Between the two it eases over [FOLD_MS], its height and its strength together, so the
+ * lines under it move with it and do not jump. [content] reads how open it is, from 0 to 1, in its drawing only.
+ */
+@Composable
+private fun Fold(open: Boolean, size: Float, content: @Composable (open: () -> Float) -> Unit) {
+    val amount by animateFloatAsState(if (open) 1f else 0f, tween(FOLD_MS, easing = FastOutSlowInEasing), label = "fold")
+    if (!open && amount == 0f) return
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .clipToBounds()
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                layout(placeable.width, (placeable.height * amount).roundToInt()) { placeable.place(0, 0) }
+            }
+            .padding(top = (size * GAP).dp),
+    ) {
+        content { amount }
+    }
+}
+
+/** How long a second voice takes to open or fold away, in milliseconds. Quicker than the scroll: it is a thing
+ * finishing, and a slow fold would look like the lyrics were still deciding. */
+private const val FOLD_MS = 250
+
+/** The gap between a line and the second voice under it, as a share of the type's own size. */
+private const val GAP = 0.2f
+
+/** How long the scroll to the next line takes, in milliseconds, and how long it may go on after that to take up a fold
+ * that moved the line while it scrolled. */
+private const val SCROLL_MS = 450L
+private const val SETTLE_MS = 300L
 
 /** How often the playhead is looked at while measured words can move the sung line between stamps, in milliseconds. */
 private const val HELD_LOOK_MS = 100L

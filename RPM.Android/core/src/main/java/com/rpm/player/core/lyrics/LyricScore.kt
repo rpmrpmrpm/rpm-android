@@ -12,7 +12,8 @@ package com.rpm.player.core.lyrics
 class LyricScore private constructor(val parts: List<Part>) {
 
     sealed interface Piece {
-        data class Words(val line: LyricLine) : Piece
+        /** A line of words, and the backing lines sung after it that [of] put under it ([Aside]). */
+        data class Words(val line: LyricLine, val asides: List<Aside> = emptyList()) : Piece
 
         /** Nothing is sung between these two moments; [until] is infinite after the last line. */
         data class Rest(val from: Double, val until: Double) : Piece
@@ -29,6 +30,10 @@ class LyricScore private constructor(val parts: List<Part>) {
             }
         val isRest: Boolean get() = piece is Piece.Rest
     }
+
+    /** A line bracketed from end to end ([LyricVoices.isAside]), a backing vocal: its [line], and [until], when the
+     * line after it in the sheet starts (infinite after the last). */
+    data class Aside(val line: LyricLine, val until: Double)
 
     /** Which piece the playhead is in, or null before the first line (an intro is part of the song).
      * Binary search, because this is asked once per frame. */
@@ -57,7 +62,12 @@ class LyricScore private constructor(val parts: List<Part>) {
          * [REST], so it can never fill a whole rest. */
         const val SUNG = 8.0
 
-        fun of(sheet: LyricSheet): LyricScore {
+        /**
+         * The score of [sheet]. With [asides], a line bracketed from end to end ([LyricVoices.isAside]) is not a piece of
+         * its own: it goes with the line of words before it ([Piece.Words.asides]), and the score moves on as if it
+         * were not there. A backing line with no line of words before it in its stretch stays a piece of its own.
+         */
+        fun of(sheet: LyricSheet, asides: Boolean = false): LyricScore {
             val parts = mutableListOf<Part>()
             var section = 0
             var lastSang: Double? = null
@@ -67,6 +77,12 @@ class LyricScore private constructor(val parts: List<Part>) {
                     parts += Part(parts.size, section, Piece.Rest(line.seconds, next))
                     section += 1
                     lastSang = null
+                    return@forEachIndexed
+                }
+                val held = (parts.lastOrNull()?.piece as? Piece.Words)?.takeIf { lastSang != null }
+                if (asides && held != null && LyricVoices.isAside(line.text) && line.seconds - lastSang!! < REST) {
+                    parts[parts.lastIndex] = parts.last().copy(piece = held.copy(asides = held.asides + Aside(line, next)))
+                    lastSang = line.seconds
                     return@forEachIndexed
                 }
                 val sang = lastSang

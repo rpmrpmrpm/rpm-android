@@ -50,9 +50,30 @@ object KaraokeLines {
         return LyricTiming.sweep(piece.line.text, piece.line.seconds, next(part, score))
     }
 
-    /** When the piece after [part] starts, or infinity after the last piece. */
-    fun next(part: LyricScore.Part, score: LyricScore): Double =
-        score.parts.getOrNull(part.id + 1)?.seconds ?: Double.POSITIVE_INFINITY
+    /** When the piece after [part] starts, or its first backing line ([LyricScore.Aside]) where that is sooner; infinity
+     * after the last piece. */
+    fun next(part: LyricScore.Part, score: LyricScore): Double {
+        val after = score.parts.getOrNull(part.id + 1)?.seconds ?: Double.POSITIVE_INFINITY
+        val aside = (part.piece as? LyricScore.Piece.Words)?.asides?.firstOrNull()?.line?.seconds ?: return after
+        return minOf(after, aside)
+    }
+
+    /** When a backing line is shown and how its words are lit: [spans] over its text, shown from [from] until [until]. */
+    class Voice(val spans: List<WordSpan>, val from: Double, val until: Double)
+
+    /**
+     * When the backing line [aside] is shown under its line, and its words. With measured words that fit it, it comes
+     * in [LEAD] before its first word, as a line does ([held]), but no earlier than [EARLIEST] before its stamp; else at
+     * its stamp, with its time shared between its words by length. It goes when its last word has been sung.
+     */
+    fun voice(aside: LyricScore.Aside, measured: List<MeasuredLine>): Voice {
+        val line = aside.line
+        heard(measured, line.text, line.seconds, aside.until)?.let { words ->
+            return Voice(words, maxOf(words.first().from - LEAD, line.seconds - EARLIEST), words.last().to)
+        }
+        val swept = LyricTiming.sweep(line.text, line.seconds, aside.until)
+        return Voice(swept, line.seconds, swept.lastOrNull()?.to ?: line.seconds)
+    }
 
     /**
      * The piece to show at [seconds], given the piece that the time stamps say ([piece]; null before the first).
