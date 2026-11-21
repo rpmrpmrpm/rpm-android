@@ -51,6 +51,12 @@ import kotlin.math.sin
  * picture, as the iPhone's paused room keeps its frame; it is drawn once more only when its size or colours change.
  * While a room that covers the screen runs ([PaintedRoom.covers]: the now playing sheet), every other room stops.
  *
+ * **While the phone saves power** ([saving]) the rooms cost less. Each new picture makes the whole window draw again,
+ * and the glass over the room blurs it again, so a running room keeps the render thread busy even when nothing else
+ * moves. Battery saver often runs the processor and the GPU slower, and then a scroll or a tap waits behind that work.
+ * So a card's room keeps its picture, as a stopped room does, and the stage room is drawn on every [SAVING_EVERY]th
+ * frame.
+ *
  * A stage room ([stage]) is lit by the music: the three levels and the spectrum's run are read from [tap] on every
  * display frame, because their envelopes are tuned to the display's rate (RoomLevels), even when the room itself is
  * drawn on every other one.
@@ -103,6 +109,14 @@ class RoomPainter(private val tap: AudioTap) {
      * corners, and lit by the music that is playing. Its spectrum's run comes with each picture. */
     fun stage(seed: String): PaintedRoom = open(PaintedRoom(this, true, seed, System.nanoTime()))
 
+    /** Whether the phone saves power (battery saver): see the class comment. Set it from any thread. */
+    @Volatile var saving: Boolean = false
+        set(value) {
+            if (value == field) return
+            field = value
+            wake()
+        }
+
     private fun open(room: PaintedRoom): PaintedRoom {
         open.add(room)
         gl.post { rooms.add(room) }
@@ -127,13 +141,15 @@ class RoomPainter(private val tap: AudioTap) {
         if (!ready()) return
         frames++
         val now = System.nanoTime()
+        val saving = saving
+        val every = if (saving) SAVING_EVERY else EVERY
         var covered = false
         for (room in rooms) if (room.covers && room.running) covered = true
         var again = false
         var heard = false
         var painted = false
         for (room in rooms) {
-            val active = room.running && (room.covers || !covered)
+            val active = room.running && (room.covers || !covered) && (room.stage || !saving)
             if (active && room.stage && !heard) {
                 listen(now)
                 heard = true
@@ -141,7 +157,7 @@ class RoomPainter(private val tap: AudioTap) {
             if (room.wide <= 0 || room.high <= 0) continue
             if (active) {
                 // A running room is drawn on every EVERYth frame, and at once when it has no picture for its size.
-                if (room.fresh() || frames % EVERY == 0L) painted = paint(room, now, true) || painted
+                if (room.fresh() || frames % every == 0L) painted = paint(room, now, true) || painted
                 again = true
             } else if (room.owed()) {
                 painted = paint(room, now, false) || painted
@@ -349,6 +365,9 @@ class RoomPainter(private val tap: AudioTap) {
 
         /** Rooms are drawn on every second display frame: 30 a second at 60 Hz. */
         const val EVERY = 2L
+
+        /** While the phone saves power, the stage room is drawn on every fourth display frame: 15 a second at 60 Hz. */
+        const val SAVING_EVERY = 4L
 
         /** How much quicker a card's room runs than the stage's (`CardRoomBreath.rate`). */
         private const val CARD_RATE = 2.2

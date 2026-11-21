@@ -45,7 +45,8 @@ class Stage {
  * The sheet's background: the room, lit by the record that is playing (the iPhone's `NowPlayingSheet.ground`). It is the
  * one room in the app that IS the record being played, so the music lights it and it does not breathe on its own. Its
  * colours are the cover's, or the station's logo's while a station plays, dissolving to the next record's. It runs while
- * the sheet is up, and while the sheet covers the screen every other room stops ([covers]).
+ * the sheet is up, at half its rate while the phone saves power ([com.rpm.player.core.room.RoomPainter.saving]), and while
+ * the sheet covers the screen every other room stops ([covers]).
  */
 @Composable
 fun StageGround(now: NowPlaying, images: ImageLoader, stage: Stage, covers: Boolean, modifier: Modifier) {

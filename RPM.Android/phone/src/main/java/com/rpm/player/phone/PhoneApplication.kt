@@ -1,9 +1,13 @@
 package com.rpm.player.phone
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.PowerManager
+import androidx.core.content.ContextCompat
 import com.rpm.player.core.RpmApplication
 import com.rpm.player.core.Services
 import com.rpm.player.core.SessionOpening
@@ -68,8 +72,27 @@ class PhoneApplication : RpmApplication() {
     /** Artists' photographs, cropped around their faces. Kept for the life of the app. */
     val portraits: Portraits by lazy { Portraits(this, services.images, services.artwork) }
 
-    /** The moving rooms inside pages: one thread and one GL context for all of them ([com.rpm.player.phone.ui.LiveRoom]). */
-    val rooms: com.rpm.player.core.room.RoomPainter by lazy { com.rpm.player.core.room.RoomPainter(services.audioTap) }
+    /**
+     * The moving rooms inside pages: one thread and one GL context for all of them ([com.rpm.player.phone.ui.LiveRoom]).
+     * They follow the phone's battery saver ([com.rpm.player.core.room.RoomPainter.saving]), told by the system's
+     * broadcast whenever it is turned on or off.
+     */
+    val rooms: com.rpm.player.core.room.RoomPainter by lazy {
+        com.rpm.player.core.room.RoomPainter(services.audioTap).also { painter ->
+            val power = getSystemService(PowerManager::class.java)
+            painter.saving = power?.isPowerSaveMode == true
+            ContextCompat.registerReceiver(
+                this,
+                object : BroadcastReceiver() {
+                    override fun onReceive(context: Context, intent: Intent) {
+                        painter.saving = power?.isPowerSaveMode == true
+                    }
+                },
+                IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+        }
+    }
 
     /** Artists' logos, trimmed and kept for the life of the app. */
     val logos: Logos by lazy { Logos(this, services.images, services.artwork) }
