@@ -112,7 +112,8 @@ class PlaybackService : MediaSessionService() {
 
         // The sink is wrapped so the room can read what is being heard, at the moment it is heard, and so the
         // audio can go to a Cast device instead of the TV.
-        // Outside both, the volume levelling, so the room, the cast and the TV all hear the levelled sound.
+        // Outside both, the volume levelling and then the equaliser, so the room, the cast and the TV all hear the
+        // levelled and equalised sound.
         val classical = services.classicalMarks
         val renderers = object : DefaultRenderersFactory(this) {
             override fun buildAudioSink(
@@ -120,13 +121,16 @@ class PlaybackService : MediaSessionService() {
                 enableFloatOutput: Boolean,
                 enableAudioTrackPlaybackParams: Boolean,
             ): AudioSink = LevelSink(
-                TapSink(
-                    CastingSink(
-                        super.buildAudioSink(context, enableFloatOutput, enableAudioTrackPlaybackParams)
-                            ?: DefaultAudioSink.Builder(context).build(),
-                        services.casting.route,
+                EqSink(
+                    TapSink(
+                        CastingSink(
+                            super.buildAudioSink(context, enableFloatOutput, enableAudioTrackPlaybackParams)
+                                ?: DefaultAudioSink.Builder(context).build(),
+                            services.casting.route,
+                        ),
+                        services.audioTap,
                     ),
-                    services.audioTap,
+                    services.equalizing,
                 ),
                 services.levelling,
                 classical = { item ->

@@ -79,6 +79,9 @@ class Services(
     tunerOpensOn: com.rpm.player.core.radio.TunerOpensOn,
     /** The tracks downloaded to this device, which play from their files. The phone's downloads; none on the TV. */
     val copies: com.rpm.player.core.playback.LocalCopies = com.rpm.player.core.playback.LocalCopies.None,
+    /** The equaliser curve, which the playback service's sink reads for every buffer, as it reads [levelling]. The phone
+     * keeps it with its settings; the TV has no equaliser, and its curve stays off. */
+    val equalizing: com.rpm.player.core.playback.Equalizing = com.rpm.player.core.playback.Equalizing(),
 ) {
     /**
      * The settled network reading of an app that keeps downloads, which the player follows offline

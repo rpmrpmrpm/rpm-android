@@ -21,6 +21,8 @@ import com.rpm.player.core.library.BlankDisc
 import com.rpm.player.core.library.DiscStandIn
 import com.rpm.player.core.library.ArtistOrdering
 import com.rpm.player.core.library.ArtistTrackGrouping
+import com.rpm.player.core.playback.EqCurve
+import com.rpm.player.core.playback.Equalizing
 import com.rpm.player.core.playback.LevelMode
 import com.rpm.player.core.playback.Levelling
 import com.rpm.player.phone.art.Logos
@@ -29,6 +31,8 @@ import com.rpm.player.phone.downloads.Downloads
 import com.rpm.player.core.library.ListOrdering
 import com.rpm.player.phone.library.LibraryLayout
 import com.rpm.player.phone.library.LibraryMode
+import com.rpm.player.phone.settings.EqOutput
+import com.rpm.player.phone.settings.EqOutputs
 import com.rpm.player.phone.settings.SettingsSection
 import com.rpm.player.phone.library.PlaylistLayout
 import com.rpm.player.phone.signin.SignIn
@@ -67,6 +71,8 @@ class PhoneApplication : RpmApplication() {
         // The player follows the same reading as the offline bar: offline, only what is on the phone plays. Set here,
         // before the playback service can start.
         services.line = line
+        // The equaliser follows the speakers even while no screen is open, as the playback service plays on without one.
+        EqOutputs(this, services.casting.state, services.scope, settings::useEqOutput).start()
     }
 
     /** Artists' photographs, cropped around their faces. Kept for the life of the app. */
@@ -113,7 +119,14 @@ class PhoneApplication : RpmApplication() {
     override fun makeServices(): Services {
         settings = PhoneSettings(this)
         downloadBook = Downloads.book(this)
-        return Services(this, "android", settings.levelling, com.rpm.player.core.radio.TunerOpensOn.EveryCountry, copies = downloadBook)
+        return Services(
+            this,
+            "android",
+            settings.levelling,
+            com.rpm.player.core.radio.TunerOpensOn.EveryCountry,
+            copies = downloadBook,
+            equalizing = settings.equalizing,
+        )
             .also { it.dossiers.languages = settings.articleLanguages() }
     }
 
@@ -326,6 +339,40 @@ class PhoneSettings(context: Context) {
         levelsClassical = on
         levelling.includeClassical = on
         prefs.edit().putBoolean(KEY_CLASSICAL, on).apply()
+    }
+
+    /**
+     * The equaliser, as on the desktop (EqService): one curve for each set of speakers ([EqOutput]), each stored under
+     * `eq.curve.` and the speakers' key. A set of speakers seen for the first time starts flat and off. [equalizing] is
+     * the one object the playback service's sink reads for every buffer, so a change is heard on the music already
+     * playing.
+     */
+    val equalizing = Equalizing()
+
+    /** The speakers the music goes to now, whose curve is on the faders. Null until [EqOutputs] first says. */
+    var eqOutput by mutableStateOf<EqOutput?>(null)
+        private set
+
+    /** The curve of [eqOutput], as on the faders. */
+    var eqCurve by mutableStateOf(EqCurve.OFF)
+        private set
+
+    /** The music goes to [output] now: its own curve is shown and heard. */
+    fun useEqOutput(output: EqOutput) {
+        val before = eqOutput
+        eqOutput = output
+        if (before?.key == output.key) return
+        eqCurve = EqCurve.parse(prefs.getString(KEY_EQ + output.key, null))
+        equalizing.curve = eqCurve
+    }
+
+    /** The curve is changed only here, so what is stored, what is shown and what is heard cannot disagree. */
+    fun changeEq(curve: EqCurve) {
+        val output = eqOutput ?: return
+        if (curve == eqCurve) return
+        eqCurve = curve
+        equalizing.curve = curve
+        prefs.edit().putString(KEY_EQ + output.key, curve.stored()).apply()
     }
 
     /** The rate asked for on a network that costs nothing. [AudioLadder.ORIGINAL] is the untranscoded file. */
@@ -552,6 +599,7 @@ class PhoneSettings(context: Context) {
         const val ALL_SEEN = "*"
         const val KEY_MODE = "levelling.mode"
         const val KEY_CLASSICAL = "levelling.classical"
+        const val KEY_EQ = "eq.curve."
         const val KEY_RATE_WIFI = "rate.wifi"
         const val KEY_RATE_CELLULAR = "rate.cellular"
         const val KEY_RATE_DOWNLOAD = "rate.download"

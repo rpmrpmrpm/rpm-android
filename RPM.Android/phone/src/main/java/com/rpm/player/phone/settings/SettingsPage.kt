@@ -7,9 +7,12 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,7 +56,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
@@ -61,7 +67,10 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -73,6 +82,9 @@ import com.rpm.player.core.R
 import com.rpm.player.core.cloud.CloudQuota
 import com.rpm.player.core.library.DiscStandIn
 import com.rpm.player.core.playback.AudioLadder
+import com.rpm.player.core.playback.EqCurve
+import com.rpm.player.core.playback.EqPreset
+import com.rpm.player.core.playback.Equalizer
 import com.rpm.player.core.playback.LevelMode
 import com.rpm.player.phone.design.Backdrop
 import com.rpm.player.phone.design.OverChrome
@@ -109,6 +121,9 @@ private val KEYS_APART = 10.dp
 /** The height of a key on this screen. Smaller than the app's standard key: none of them is a screen's main action. */
 private val KEY_HEIGHT = 34.dp
 
+/** The height of an equaliser fader: the desktop's 110 plus room for the knob. */
+private val FADER_TALL = 130.dp
+
 /** A backdrop tile has the shape of the phone screen, small enough that five and part of a sixth fit across. */
 private val TILE_WIDE = 62.dp
 private val TILE_TALL = 116.dp
@@ -125,7 +140,7 @@ enum class SettingsSection(val stored: String, @StringRes val label: Int, val gl
     /** The background, night mode and what spins for a record with no disc picture. */
     Appearance("appearance", R.string.Rpm_Settings_Appearance, Glyph.picture),
 
-    /** The streaming rates, volume levelling and karaoke. */
+    /** The streaming rates, volume levelling, the equaliser and karaoke. */
     Playback("playback", R.string.Rpm_Profile_Playback, Glyph.speaker),
 
     /** The albums on the phone and the rate that downloads ask for. */
@@ -205,6 +220,7 @@ fun SettingsPage(
     playerBars: Boolean = true,
     onPlayerBars: (Boolean) -> Unit = {},
     onReplayHints: () -> Unit = {},
+    equalizer: EqControls? = null,
 ) {
     val page = rememberBackdrop()
     // What the header's glass frosts: the background and the cards that scroll under it.
@@ -249,6 +265,7 @@ fun SettingsPage(
                         SettingsSection.Playback -> {
                             cards.Playback(onWifi, onCellular, onRates, reachSavesData, quota, karaoke, onKaraoke)
                             cards.Loudness(levelling, levelsClassical, onLevelling, onLevelsClassical)
+                            equalizer?.let { cards.Eq(it) }
                         }
                         SettingsSection.Downloads -> cards.Downloads(downloaded, onDownloads, onDownload, onRates)
                         SettingsSection.Account -> {
@@ -306,6 +323,12 @@ private fun FeedbackKey(backdrop: Backdrop, onClick: () -> Unit, modifier: Modif
         }
     }
 }
+
+/**
+ * The equaliser card's state: the speakers the music goes to, their curve, and what a change does. [onCurve] is given
+ * the whole new curve.
+ */
+class EqControls(val output: EqOutput, val curve: EqCurve, val onCurve: (EqCurve) -> Unit)
 
 /** The three rate settings' setters. */
 class Rates(val onWifi: (Int) -> Unit, val onCellular: (Int) -> Unit, val onDownload: (Int) -> Unit)
@@ -743,6 +766,139 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
         },
     )
 
+    // ── the equaliser ──
+
+    /**
+     * The equaliser, laid out as the desktop's Sound settings lay it out (the iPhone app has none): whose curve it is,
+     * the switch, the presets and Flat, then the pre-amp and the ten bands as faders from -12 to +12 dB in steps of 1.
+     */
+    @Composable
+    fun Eq(eq: EqControls) {
+        val curve = eq.curve
+        val names = EqPreset.ALL.map { stringResource(it.name) }
+        val preset = curve.preset()
+        Card(Glyph.equalizer, stringResource(R.string.Settings_Eq)) {
+            Hint(stringResource(R.string.Settings_EqHint))
+            // Whose curve this is. The faders move by themselves when the music moves to other speakers. Without this
+            // line, that would look like the app forgetting the settings.
+            BasicText(
+                eq.output.label?.let { stringResource(R.string.Settings_EqFor, it) } ?: stringResource(R.string.Settings_EqForCast),
+                style = display(13f).copy(color = Ink.white(0xCC)),
+            )
+            Toggle(stringResource(R.string.Settings_EqOn), curve.on) { eq.onCurve(curve.copy(on = it)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(KEYS_APART), verticalAlignment = Alignment.CenterVertically) {
+                ClosedMenu(preset?.let { stringResource(it.name) } ?: stringResource(R.string.Settings_EqPreset), dimmed = false, Modifier.weight(1f)) { anchor ->
+                    onAsk(
+                        MenuAsk(anchor, names, EqPreset.ALL.indexOf(preset)) { at ->
+                            // A preset is a curve worth hearing, so choosing one turns the equaliser on, as on the
+                            // desktop. Picking Bass boost and hearing no change would look like a broken control.
+                            eq.onCurve(curve.withPreset(EqPreset.ALL[at]).copy(on = true))
+                        },
+                    )
+                }
+                Key(stringResource(R.string.Settings_EqReset), stretches = false) { eq.onCurve(curve.flattened()) }
+            }
+            Faders(curve, eq.onCurve)
+        }
+    }
+
+    /**
+     * The pre-amp, then the ten bands, one column each with its label under it, as on the desktop. Dimmed while the
+     * equaliser is off: the values are kept but not heard. They can still be moved, as on the desktop.
+     */
+    @Composable
+    private fun Faders(curve: EqCurve, onCurve: (EqCurve) -> Unit) {
+        val labels = listOf(stringResource(R.string.Settings_EqPre)) + Equalizer.BANDS.map { Equalizer.bandLabel(it) }
+        val values = listOf(curve.preamp) + curve.gains
+        Row(Modifier.fillMaxWidth().alpha(if (curve.on) 1f else 0.55f)) {
+            labels.forEachIndexed { at, label ->
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Fader(values[at], label) { db -> onCurve(if (at == 0) curve.withPreamp(db) else curve.withBand(at - 1, db)) }
+                    BasicText(label, maxLines = 1, style = display(9f).copy(color = Ink.white(0x99)))
+                }
+            }
+        }
+    }
+
+    /**
+     * One upright fader, from +12 dB at the top to -12 at the bottom, with a line from 0 dB to the knob. A drag or a
+     * tap sets the value under the finger, in whole dB. A drag that starts on a fader moves the fader and not the page.
+     */
+    @Composable
+    private fun Fader(db: Double, label: String, onChange: (Double) -> Unit) {
+        val haptics = LocalHapticFeedback.current
+        val change by rememberUpdatedState(onChange)
+        val current by rememberUpdatedState(db)
+        // The value sent last in this touch, so one step is sent once even before the page has drawn it.
+        val last = remember { doubleArrayOf(Double.NaN) }
+        val max = Equalizer.MAX_GAIN_DB
+        val knob = 7.dp
+        val track = Ink.white(0x26)
+        val lit = Ink.white(0xCC)
+
+        fun send(value: Double) {
+            val v = value.coerceIn(-max, max)
+            if (v == current || v == last[0]) return
+            last[0] = v
+            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            change(v)
+        }
+
+        Canvas(
+            Modifier
+                .fillMaxWidth()
+                .height(FADER_TALL)
+                .pointerInput(Unit) {
+                    val inset = knob.toPx()
+                    detectTapGestures {
+                        last[0] = Double.NaN
+                        send(faderValue(it.y, inset, size.height.toFloat(), max))
+                    }
+                }
+                .pointerInput(Unit) {
+                    val inset = knob.toPx()
+                    detectVerticalDragGestures(
+                        onDragStart = {
+                            last[0] = Double.NaN
+                            send(faderValue(it.y, inset, size.height.toFloat(), max))
+                        },
+                        onDragEnd = { last[0] = Double.NaN },
+                        onDragCancel = { last[0] = Double.NaN },
+                    ) { pointer, _ ->
+                        pointer.consume()
+                        send(faderValue(pointer.position.y, inset, size.height.toFloat(), max))
+                    }
+                }
+                .semantics {
+                    contentDescription = label
+                    progressBarRangeInfo = ProgressBarRangeInfo(db.toFloat(), -max.toFloat()..max.toFloat(), steps = (2 * max).toInt() - 1)
+                    setProgress { target ->
+                        last[0] = Double.NaN
+                        send(Math.round(target).toDouble())
+                        true
+                    }
+                },
+        ) {
+            val inset = knob.toPx()
+            val x = size.width / 2
+            val span = size.height - 2 * inset
+            fun y(value: Double): Float = inset + ((max - value) / (2 * max)).toFloat() * span
+            val stroke = 2.dp.toPx()
+            drawLine(track, Offset(x, inset), Offset(x, size.height - inset), stroke, StrokeCap.Round)
+            // The 0 dB mark, a short line across.
+            val tick = 5.dp.toPx()
+            drawLine(track, Offset(x - tick, y(0.0)), Offset(x + tick, y(0.0)), stroke / 2)
+            drawLine(lit, Offset(x, y(0.0)), Offset(x, y(db)), stroke, StrokeCap.Round)
+            drawCircle(Color.White, radius = knob.toPx(), center = Offset(x, y(db)))
+        }
+    }
+
+    /** The value in whole dB at height [y] of a fader [height] tall whose ends are [inset] in from its edges. */
+    private fun faderValue(y: Float, inset: Float, height: Float, max: Double): Double {
+        val share = ((y - inset) / (height - 2 * inset)).coerceIn(0f, 1f)
+        return Math.round(max - share * 2 * max).toDouble()
+    }
+
     // ── what is on the phone itself ──
 
     @Composable
@@ -832,12 +988,12 @@ private fun Key(title: String, modifier: Modifier = Modifier, stretches: Boolean
  * shows it opens. [onOpen] is told where the well is on the page, so the menu opens over it.
  */
 @Composable
-private fun ClosedMenu(text: String, dimmed: Boolean, onOpen: (Rect) -> Unit) {
+private fun ClosedMenu(text: String, dimmed: Boolean, modifier: Modifier = Modifier, onOpen: (Rect) -> Unit) {
     val shape = RoundedCornerShape(8.dp)
     val ink = if (dimmed) Ink.white(0x59) else Ink.white(0xF0)
     var bounds by remember { mutableStateOf(Rect.Zero) }
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
             .height(40.dp)
             .onGloballyPositioned { bounds = it.boundsInRoot() }

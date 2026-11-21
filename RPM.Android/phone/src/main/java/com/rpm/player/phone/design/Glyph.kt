@@ -130,6 +130,10 @@ object Glyph {
     /** Sliders, for the general section of the settings page. The cog is the tab's own mark. */
     const val general = "\uF1DE"
 
+    /** Upright sliders, for the equaliser, whose faders stand upright too. The desktop's equaliser uses the sliders on
+     * their side, which here already mark the general section. */
+    const val equalizer = "\uF3F1"
+
     /** A light bulb, for the first-run hints: the desktop's mark for them. */
     const val hint = "\uF0EB"
 
