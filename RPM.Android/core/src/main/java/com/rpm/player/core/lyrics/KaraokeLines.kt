@@ -2,10 +2,9 @@ package com.rpm.player.core.lyrics
 
 /**
  * Which words of the score are lit when, for karaoke: the measured words a line takes, and the line that is shown while
- * the last one is still being sung. These are the rules of the TV app's lyric column, which the iPhone ported as
- * `KaraokeLines` (RPMKit/Lyrics/KaraokeLight.swift); the phone uses them from here. Keep the three the same, except
- * that here a line also takes over before its stamp when its measured words start earlier ([held]); the TV's
- * `LyricColumn` and the iPhone do not do that.
+ * the last one is still being sung. The iPhone has the same rules as `KaraokeLines` (RPMKit/Lyrics/KaraokeLight.swift);
+ * the phone's lyric view and the TV's `LyricColumn` use them from here. Keep the two the same, except that here a line
+ * also takes over before its stamp when its measured words start earlier ([held]); the iPhone does not do that.
  */
 object KaraokeLines {
     /** How far before its stamp a line's last measured word may end and still be taken, in seconds. */
