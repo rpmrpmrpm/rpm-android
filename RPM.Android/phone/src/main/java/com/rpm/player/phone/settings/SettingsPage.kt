@@ -526,7 +526,6 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
     fun Player(bars: Boolean, onBars: (Boolean) -> Unit) {
         Card(Glyph.play, stringResource(R.string.Playlists_NowPlaying)) {
             Toggle(stringResource(R.string.Settings_PlayerBars), bars, onBars)
-            Hint(stringResource(R.string.Settings_PlayerBarsHint))
         }
     }
 
@@ -537,7 +536,6 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
     fun Opening(on: Boolean, onChange: (Boolean) -> Unit) {
         Card(Glyph.speaker, stringResource(R.string.Settings_Sound)) {
             Toggle(stringResource(R.string.Settings_StartupSound), on, onChange)
-            Hint(stringResource(R.string.Settings_StartupSoundHint))
         }
     }
 
@@ -554,7 +552,6 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
         val chosen = codes.indexOf(code).coerceAtLeast(0)
         Card(Glyph.globe, stringResource(R.string.Settings_ArticleLanguage)) {
             ClosedMenu(names[chosen], dimmed = false) { anchor -> onAsk(MenuAsk(anchor, names, chosen) { onPick(codes[it]) }) }
-            Hint(stringResource(R.string.Settings_ArticleLanguageHint))
         }
     }
 
@@ -563,7 +560,6 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
     fun Hints(onReplay: () -> Unit) {
         var back by remember { mutableStateOf(false) }
         Card(Glyph.hint, stringResource(R.string.Settings_Hints)) {
-            Hint(stringResource(R.string.Settings_Phone_HintsHint))
             Key(stringResource(if (back) R.string.Settings_HintsBack else R.string.Settings_ShowHintsAgain), enabled = !back) {
                 back = true
                 onReplay()
@@ -588,12 +584,6 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
             Spacer(Modifier.width(10.dp))
             Switch(on)
         }
-    }
-
-    /** The quiet line under a setting that says what it does. */
-    @Composable
-    private fun Hint(text: String) {
-        BasicText(text, style = display(11f).copy(color = Ink.white(0x88)))
     }
 
     @Composable
@@ -778,7 +768,6 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
         val names = EqPreset.ALL.map { stringResource(it.name) }
         val preset = curve.preset()
         Card(Glyph.equalizer, stringResource(R.string.Settings_Eq)) {
-            Hint(stringResource(R.string.Settings_EqHint))
             // Whose curve this is. The faders move by themselves when the music moves to other speakers. Without this
             // line, that would look like the app forgetting the settings.
             BasicText(
