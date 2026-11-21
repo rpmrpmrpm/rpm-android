@@ -103,8 +103,10 @@ private val SHADE = Color.Black.copy(alpha = 0x33 / 255f)
  * @property id what `backdrop.picture` holds. The desktop stores the same ids.
  * @property file the picture. Vinyl and Gold are two colourings of one picture.
  * @property nameKey its name in the picker.
+ * @property shade how much black is laid over the picture, so white text reads on it. A light picture takes more than
+ * the usual [SHADE], so that it ends about as dark as the others.
  */
-enum class Ground(val id: String, @DrawableRes val file: Int, @StringRes val nameKey: Int) {
+enum class Ground(val id: String, @DrawableRes val file: Int, @StringRes val nameKey: Int, val shade: Float = SHADE.alpha) {
     /** The default: RPaMp's ground, bands of cyan light in deep blue. */
     Standard("", R.drawable.background_rpamp, CoreR.string.Settings_BackgroundDefault),
 
@@ -118,7 +120,7 @@ enum class Ground(val id: String, @DrawableRes val file: Int, @StringRes val nam
     SheetMusic("sheet-music", R.drawable.background_sheet_music, CoreR.string.Settings_BackgroundSheetMusic),
 
     /** Folds of warm copper light on black, with a fine grain. */
-    Aero("aero", R.drawable.background_aero, CoreR.string.Settings_BackgroundAero),
+    Aero("aero", R.drawable.background_aero, CoreR.string.Settings_BackgroundAero, shade = 0.45f),
 
     /** The same three records pressed in gold. The supporter's. */
     Gold("gold", R.drawable.background_vinyl_gold, CoreR.string.Settings_BackgroundGold);
@@ -160,10 +162,10 @@ private object Plates {
     suspend fun ground(context: Context, choice: Ground, window: IntSize): ImageBitmap? {
         held(choice, window)?.let { return it }
         if (window.width <= 0 || window.height <= 0) return null
-        return withContext(Dispatchers.IO) { plate(context, choice.file, window) }?.also { kept = Triple(choice, window, it) }
+        return withContext(Dispatchers.IO) { plate(context, choice.file, choice.shade, window) }?.also { kept = Triple(choice, window, it) }
     }
 
-    private fun plate(context: Context, @DrawableRes file: Int, window: IntSize): ImageBitmap? {
+    private fun plate(context: Context, @DrawableRes file: Int, shade: Float, window: IntSize): ImageBitmap? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeResource(context.resources, file, bounds)
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
@@ -180,7 +182,7 @@ private object Plates {
         canvas.scale(scale, scale)
         canvas.drawBitmap(source, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG))
         canvas.setMatrix(null)
-        canvas.drawColor(SHADE.toArgb())
+        canvas.drawColor(Color.Black.copy(alpha = shade).toArgb())
         source.recycle()
         out.prepareToDraw()
         return out.asImageBitmap()

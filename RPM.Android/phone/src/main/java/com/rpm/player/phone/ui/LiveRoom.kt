@@ -185,8 +185,12 @@ private val COLOURS = LruCache<Any, RoomPalette>(64)
  * fading out as `mirrorFade` fades the photographs' reflections ([RunOff]). It is what the iPhone's one room program
  * draws below its fold (`RoomView.fold`): the home banner's cards and an artist's band cast it. Reading
  * [PaintedRoom.frame] here redraws only this drawing when the room moves.
+ *
+ * [shade] is how dark the card is at a share of its height from its top. It must be the shade the card itself is drawn
+ * with, or the card's foot and the first row of the reflection differ and show as a hard line where the card ends. It
+ * is the night foot wash unless the caller says otherwise.
  */
-fun DrawScope.roomReflection(room: PaintedRoom, x: Int, platePx: Float) {
+fun DrawScope.roomReflection(room: PaintedRoom, x: Int, platePx: Float, shade: (Float) -> Float = ::footWash) {
     room.frame
     val picture = room.picture ?: return
     val w = size.width
@@ -207,7 +211,7 @@ fun DrawScope.roomReflection(room: PaintedRoom, x: Int, platePx: Float) {
     // The foot wash as it lies on the card, read upwards from the foot.
     val wash = Array(WASH_SAMPLES) { i ->
         val u = i / (WASH_SAMPLES - 1f)
-        u to Color.Black.copy(alpha = footWash(1f - u * h / platePx))
+        u to Color.Black.copy(alpha = shade(1f - u * h / platePx))
     }
     drawRect(Brush.verticalGradient(*wash, startY = 0f, endY = h), topLeft = Offset(x.toFloat(), 0f), size = Size(w, h))
     drawRect(

@@ -1,5 +1,6 @@
 package com.rpm.player.phone.home
 
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.BlendMode
 import com.rpm.player.phone.design.holdPress
@@ -199,6 +200,14 @@ private val DAY_FOOT = Brush.verticalGradient(
  * Quick selection's lines are read over it. The mirror fades out further down, and the darkening with it.
  */
 private val MIRROR_HELD = ColorFilter.tint(Color.Black.copy(alpha = DAY_SHADE), BlendMode.SrcAtop)
+
+/**
+ * How far down the shade at the top of a banner card runs, and how dark it is at the top. The clock and the other
+ * status icons, and the page's title, are white and stand on the card; on a light photograph they cannot be read
+ * without it.
+ */
+private val TOP_FADE = 140.dp
+private const val TOP_SHADE = 0.45f
 
 /** Where a card's blur starts, as a share of its height: the face is cut into the upper half (`HomeFeatureCard.blurFrom`). */
 private const val BANNER_BLUR_FROM = 0.6f
@@ -711,6 +720,22 @@ private fun BannerCardView(
         // Outside night mode, a shade only behind the words at the foot, over the blur, so they read on any photograph
         // while the face above them is shown as it is.
         if (!night) Box(Modifier.fillMaxSize().background(DAY_FOOT))
+        // A shade at the top, under the status bar and the page's title, so they read on a light photograph.
+        Box(
+            Modifier.fillMaxSize().drawBehind {
+                val deep = TOP_FADE.toPx().coerceAtMost(size.height)
+                drawRect(
+                    Brush.verticalGradient(
+                        0f to Color.Black.copy(alpha = TOP_SHADE),
+                        0.45f to Color.Black.copy(alpha = TOP_SHADE * 0.55f),
+                        1f to Color.Transparent,
+                        startY = 0f,
+                        endY = deep,
+                    ),
+                    size = Size(size.width, deep),
+                )
+            },
+        )
         // The writing keeps its size while the picture grows with a pull, as on iPhone.
         Box(Modifier.matchParentSize().then(keepsSize)) {
         Row(
@@ -756,7 +781,8 @@ private fun BannerReflections(
 ) {
     // Outside night mode the bake is not darkened, so the mirror is held down here: Quick selection's lines are read over
     // it. In night mode the bake already carries the darkening.
-    val quiet = if (LocalNightMode.current) null else MIRROR_HELD
+    val night = LocalNightMode.current
+    val quiet = if (night) null else MIRROR_HELD
     Box(
         Modifier
             .fillMaxWidth()
@@ -780,7 +806,9 @@ private fun BannerReflections(
                     val x = ((page - at) * size.width).roundToInt()
                     val baked = runOffs[page.mod(cards)]
                     if (baked == null) {
-                        rooms[page.mod(cards)]?.let { roomReflection(it, x, platePx) }
+                        // Outside night mode a room's mirror is held as a photograph's is ([MIRROR_HELD]), as dark as
+                        // the card's foot ([DAY_FOOT]), so no line shows where they meet.
+                        rooms[page.mod(cards)]?.let { if (night) roomReflection(it, x, platePx) else roomReflection(it, x, platePx) { DAY_SHADE } }
                         continue
                     }
                     val from = (plate.value * RunOff.SCALE).roundToInt().coerceAtMost(baked.height)

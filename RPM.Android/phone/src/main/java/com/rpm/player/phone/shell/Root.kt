@@ -712,100 +712,106 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(backdrop)) {
           CompositionLocalProvider(LocalSongMenu provides songMenu, LocalTopTaps provides topTaps.getValue(tab), LocalHoldMenus provides holdMenus, LocalHolds provides holds) {
-            when (tab) {
-                Tab.Library -> AnimatedContent(
-                    targetState = opened,
-                    transitionSpec = { pushOrPop() },
-                    label = "library stack",
-                ) { stack ->
-                    val step = stack.lastOrNull()
-                    pages.SaveableStateProvider(step?.saved ?: "library") {
-                        page(step, push = { opened = opened + it }, onBack = { opened = opened.dropLast(1) }) {
-                            LibraryPage(
-                                ready,
-                                images,
-                                settings,
-                                bottomRoom = chrome,
-                                artwork = services.artwork,
-                                onOpen = { opened = opened + Step.Record(it.key) },
-                                onOpenList = { opened = opened + Step.Playlist(it.id) },
-                                onOpenArtist = { opened = opened + Step.Artist(it.name) },
-                                onOpenGenre = { opened = opened + Step.Genre(it.name) },
-                                playing = playing,
-                                // A song found in search plays its record from that song. A single song would be a
-                                // queue of one, and playback would stop after it. Nobody who searches for a song
-                                // wants that. The iPhone app's `play(track)` does the same.
-                                onPlaySong = { hit ->
-                                    val album = hit.album
-                                    val at = album.tracks.indexOfFirst { it.rpmId == hit.track.rpmId }
-                                    if (at >= 0) play(queueOf(collection.shelf, album, collection.cover(album), collection.disc(album)), at, Tapped.Song)
-                                },
-                                onMakePlaylist = playlistWrites::make,
-                                standing = wall,
-                                onRetry = services.library::retry,
-                                reading = WallReading(refreshing, services.library::refresh, shelfRows.firstOrNull { it.isOpen && !it.isOwn }?.name, services.library::rereadLists),
-                                history = history,
-                                onOpenHistory = { opened = opened + Step.History },
-                            )
+            // The tabs' pages slide: to a tab further right, the page goes out to the left and the new one comes in
+            // from the right, and the other way to a tab further left. The tab bar ([Chrome]) is outside and stays.
+            AnimatedContent(targetState = tab, transitionSpec = { tabSlide() }, label = "tabs") { shown ->
+              CompositionLocalProvider(LocalTopTaps provides topTaps.getValue(shown)) {
+                when (shown) {
+                    Tab.Library -> AnimatedContent(
+                        targetState = opened,
+                        transitionSpec = { pushOrPop() },
+                        label = "library stack",
+                    ) { stack ->
+                        val step = stack.lastOrNull()
+                        pages.SaveableStateProvider(step?.saved ?: "library") {
+                            page(step, push = { opened = opened + it }, onBack = { opened = opened.dropLast(1) }) {
+                                LibraryPage(
+                                    ready,
+                                    images,
+                                    settings,
+                                    bottomRoom = chrome,
+                                    artwork = services.artwork,
+                                    onOpen = { opened = opened + Step.Record(it.key) },
+                                    onOpenList = { opened = opened + Step.Playlist(it.id) },
+                                    onOpenArtist = { opened = opened + Step.Artist(it.name) },
+                                    onOpenGenre = { opened = opened + Step.Genre(it.name) },
+                                    playing = playing,
+                                    // A song found in search plays its record from that song. A single song would be a
+                                    // queue of one, and playback would stop after it. Nobody who searches for a song
+                                    // wants that. The iPhone app's `play(track)` does the same.
+                                    onPlaySong = { hit ->
+                                        val album = hit.album
+                                        val at = album.tracks.indexOfFirst { it.rpmId == hit.track.rpmId }
+                                        if (at >= 0) play(queueOf(collection.shelf, album, collection.cover(album), collection.disc(album)), at, Tapped.Song)
+                                    },
+                                    onMakePlaylist = playlistWrites::make,
+                                    standing = wall,
+                                    onRetry = services.library::retry,
+                                    reading = WallReading(refreshing, services.library::refresh, shelfRows.firstOrNull { it.isOpen && !it.isOwn }?.name, services.library::rereadLists),
+                                    history = history,
+                                    onOpenHistory = { opened = opened + Step.History },
+                                )
+                            }
                         }
                     }
-                }
-                // Home has its own stack. A record opened here slides in over home and back out to it. The library's
-                // stack is not changed by a trip that began on home.
-                Tab.Home -> AnimatedContent(targetState = homeOpened, transitionSpec = { pushOrPop() }, label = "home stack") { stack ->
-                    val step = stack.lastOrNull()
-                    pages.SaveableStateProvider("home:" + (step?.saved ?: "")) {
-                        page(step, push = { homeOpened = homeOpened + it }, onBack = { homeOpened = homeOpened.dropLast(1) }) {
-                            HomePage(
-                                ready,
-                                stations,
-                                rules.logoStamp,
-                                images,
-                                bottomRoom = chrome,
-                                actions = homeActions,
-                                onScreen = tab == Tab.Home && homeOpened.isEmpty(),
-                                onSwitch = if (shelfRows.size > 1) ({ picking = true }) else null,
-                                onReady = { homeReady = true },
-                                quickAdded = settings.quickAdded,
-                            )
+                    // Home has its own stack. A record opened here slides in over home and back out to it. The library's
+                    // stack is not changed by a trip that began on home.
+                    Tab.Home -> AnimatedContent(targetState = homeOpened, transitionSpec = { pushOrPop() }, label = "home stack") { stack ->
+                        val step = stack.lastOrNull()
+                        pages.SaveableStateProvider("home:" + (step?.saved ?: "")) {
+                            page(step, push = { homeOpened = homeOpened + it }, onBack = { homeOpened = homeOpened.dropLast(1) }) {
+                                HomePage(
+                                    ready,
+                                    stations,
+                                    rules.logoStamp,
+                                    images,
+                                    bottomRoom = chrome,
+                                    actions = homeActions,
+                                    onScreen = tab == Tab.Home && homeOpened.isEmpty(),
+                                    onSwitch = if (shelfRows.size > 1) ({ picking = true }) else null,
+                                    onReady = { homeReady = true },
+                                    quickAdded = settings.quickAdded,
+                                )
+                            }
                         }
                     }
-                }
-                Tab.Radio -> RadioPage(
-                    services.radio,
-                    images,
-                    tuned = now?.station?.logo?.uuid,
-                    said = now?.station?.said,
-                    bottomRoom = chrome,
-                    onTune = homeActions.onTune,
-                    // The saved stations of a shared collection are its owner's, and are never changed from here.
-                    onSave = { station -> if (services.radio.saved.value.mine) services.radio.favorites.toggle(station) },
-                )
-                Tab.Feed -> CompositionLocalProvider(LocalSampleFaces provides sampleFaces) {
-                    FeedScreen(
-                        feed,
+                    Tab.Radio -> RadioPage(
+                        services.radio,
                         images,
-                        session?.userId,
-                        unread = notices.unread,
+                        tuned = now?.station?.logo?.uuid,
+                        said = now?.station?.said,
                         bottomRoom = chrome,
-                        onMyProfile = { showingMe = true },
-                        onOpenPerson = { openPerson(it) },
-                        onOpenPost = { post -> openPerson(post.ownerId, post) },
-                        albumOf = ::albumOf,
-                        coverOf = { collection.cover(it) },
-                        albumCover = { artist, title -> services.albumCovers.of(artist, title) },
-                        onOpenAlbum = ::openAlbum,
+                        onTune = homeActions.onTune,
+                        // The saved stations of a shared collection are its owner's, and are never changed from here.
+                        onSave = { station -> if (services.radio.saved.value.mine) services.radio.favorites.toggle(station) },
+                    )
+                    Tab.Feed -> CompositionLocalProvider(LocalSampleFaces provides sampleFaces) {
+                        FeedScreen(
+                            feed,
+                            images,
+                            session?.userId,
+                            unread = notices.unread,
+                            bottomRoom = chrome,
+                            onMyProfile = { showingMe = true },
+                            onOpenPerson = { openPerson(it) },
+                            onOpenPost = { post -> openPerson(post.ownerId, post) },
+                            albumOf = ::albumOf,
+                            coverOf = { collection.cover(it) },
+                            albumCover = { artist, title -> services.albumCovers.of(artist, title) },
+                            onOpenAlbum = ::openAlbum,
+                        )
+                    }
+                    Tab.Settings -> SettingsTab(
+                        services,
+                        settings,
+                        controller,
+                        bottomRoom = chrome,
+                        downloaded = downloads.downloaded,
+                        onDownloads = { showingDownloads = true },
+                        onFeedback = openFeedback,
                     )
                 }
-                Tab.Settings -> SettingsTab(
-                    services,
-                    settings,
-                    controller,
-                    bottomRoom = chrome,
-                    downloaded = downloads.downloaded,
-                    onDownloads = { showingDownloads = true },
-                    onFeedback = openFeedback,
-                )
+              }
             }
           }
         }
@@ -1123,6 +1129,20 @@ private fun AnimatedContentTransitionScope<List<Step>>.pushOrPop(): ContentTrans
     } else {
         (slideInHorizontally { -it / 3 } togetherWith slideOutHorizontally { it }).apply { targetContentZIndex = -1f }
     }
+
+/**
+ * Between the main tabs, both pages slide the whole width, in the order the tabs stand in the bar ([Tab]): to a tab on
+ * the right, the page leaves to the left and the new page comes in from the right; to a tab on the left, the reverse.
+ */
+private fun AnimatedContentTransitionScope<Tab>.tabSlide(): ContentTransform =
+    if (targetState.ordinal > initialState.ordinal) {
+        slideInHorizontally(tween(TAB_SLIDE_MS)) { it } togetherWith slideOutHorizontally(tween(TAB_SLIDE_MS)) { -it }
+    } else {
+        slideInHorizontally(tween(TAB_SLIDE_MS)) { -it } togetherWith slideOutHorizontally(tween(TAB_SLIDE_MS)) { it }
+    }
+
+/** How long a slide between two main tabs takes. */
+private const val TAB_SLIDE_MS = 280
 
 /** One song to queue, with the names, cover and disc of the record it is on. */
 private fun queued(collection: com.rpm.player.core.library.Collection, track: CloudTrack): Queued {
