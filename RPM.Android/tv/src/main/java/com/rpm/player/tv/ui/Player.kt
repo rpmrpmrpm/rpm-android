@@ -710,12 +710,13 @@ private fun LyricKey(filled: Boolean, onClick: () -> Unit, modifier: Modifier) {
     }
 }
 
-/** How long the player waits before reading a measurement it asked for, and how many times it reads. */
-// The server finishes most songs in 14 to 42 s. A read is one small GET, so the first comes at 8 s and then one
-// every 5 s until about two minutes have passed, so an answer shows within seconds of being there.
-private const val MEASURE_WAIT_MS = 8_000L
-private const val MEASURE_EVERY_MS = 5_000L
-private const val MEASURE_READS = 23
+/** How long the player waits before reading a measurement it asked for, and how many times it reads. As on the
+ * phone (`KaraokeTiming`). */
+// The server finishes most songs in 14 to 42 s. A read is one small GET, so the first comes at 6 s and then one
+// every 4 s for about two and a half minutes, so an answer shows within seconds of being there.
+private const val MEASURE_WAIT_MS = 6_000L
+private const val MEASURE_EVERY_MS = 4_000L
+private const val MEASURE_READS = 36
 
 /** How long into a track the player reads the next one's sheet and asks for its timing: after this track's own
  * lookups, so they do not wait on it. */
