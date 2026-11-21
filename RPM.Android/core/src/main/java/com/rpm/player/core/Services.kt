@@ -128,6 +128,9 @@ class Services(
     val trackPlays = TrackPlayLog(File(context.filesDir, "track-plays.json"), scope)
     val trackPlaysSync = TrackPlaysSync(cloud, auth, trackPlays, scope, clock)
 
+    /** What this device plays in each part of the day, by genre, which the home banner's mood list is cut by. */
+    val dayPartPlays = com.rpm.player.core.playback.DayPartPlays(File(context.filesDir, "day-part-plays.json"), scope)
+
     val lrcLib = LrcLib(http)
 
     /** The word timing desktops measured for lyrics, for karaoke. */
@@ -154,7 +157,7 @@ class Services(
     val trackSources = TrackSources(computers, homeCatalogs, streamLinks, extension = TrackSources.extensionDecodes(), rate = streamRate, copies = copies)
 
     /** The cloud library with the paired computers' tracks merged in by rpmId. */
-    val library = LibraryRepository(cloud, auth, homeCatalogs, LibraryCache(context.cacheDir), scope, clock)
+    val library = LibraryRepository(cloud, auth, homeCatalogs, LibraryCache(context.cacheDir), scope, clock, dayPartPlays)
 
     /** A track menu's writes to the person's own collection: a favourite, a place in a playlist. */
     val ownWriter = OwnWriter(cloud, auth, library, clock)

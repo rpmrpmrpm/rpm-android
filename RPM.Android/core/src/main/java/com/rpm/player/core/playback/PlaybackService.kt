@@ -83,6 +83,8 @@ class PlaybackService : MediaSessionService() {
         com.rpm.player.core.diag.Diag.i(TrackPlaysSync.TAG, "play counted: ${play.ref.mediaId}")
         services.trackPlays.note(userId, play.ref.rpmId, play.at)
         services.trackPlaysSync.soon()
+        // What is played when, for the home banner's mood list; the person's own collection only, as home reads it.
+        if (play.ref.shelf == Shelf.Own) services.library.genreOf(play.ref)?.let { services.dayPartPlays.note(userId, it, play.at) }
     }
 
     private fun bank(part: StationCounter.Heard) {

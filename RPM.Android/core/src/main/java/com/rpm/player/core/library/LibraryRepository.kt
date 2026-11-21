@@ -11,6 +11,9 @@ import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.home.HomeCatalogs
 import com.rpm.player.core.home.HeldCatalog
 import com.rpm.player.core.home.HomeMerge
+import com.rpm.player.core.playback.DayPartPlays
+import com.rpm.player.core.playback.ListeningHistory
+import com.rpm.player.core.playback.TrackRef
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +32,8 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.Instant
+import java.time.ZoneId
 import kotlin.random.Random
 
 /** Which albums have a stored cover. [Unknown] when the index could not be read, in which case each
@@ -87,8 +92,11 @@ class LibraryRepository(
     private val auth: AuthClient,
     private val homeCatalogs: HomeCatalogs,
     private val cache: LibraryCache,
-    scope: CoroutineScope,
+    private val scope: CoroutineScope,
     private val clock: () -> Long,
+    /** What this device plays in each part of the day, which home's banner list is cut by; null builds home from the
+     * clock alone. */
+    private val dayPartPlays: DayPartPlays? = null,
 ) {
     private val current = MutableStateFlow<LibraryState>(LibraryState.SignedOut)
     val state: StateFlow<LibraryState> = current.asStateFlow()
@@ -181,6 +189,91 @@ class LibraryRepository(
 
     private data class Key(val user: String, val shelf: Shelf, val attempt: Int, val refresh: Int)
 
+    /** What [moment] was read from, which [freshenHome] compares with now: the mood clock's band, the part of the day,
+     * the day, and the newest listen. */
+    private data class Stamp(val moods: List<Mood>, val part: DayPart, val day: Int, val newest: ListeningHistory.Listen?)
+
+    /** The moment home is built for ([HomeMoment]), with this device's listens (rpmId, Unix seconds) to lay over the
+     * plays, for one user and shelf. */
+    private class Moment(val user: String, val shelf: Shelf, val home: HomeMoment, val listens: List<Pair<String, Long>>, val stamp: Stamp)
+
+    /**
+     * The moment home is built for, read at the first build of a load and kept for its other builds, so that a
+     * computer coming or going does not change the banner's list because the hour has turned. [freshenHome] reads it
+     * again. Null at the start of each load.
+     */
+    @Volatile private var moment: Moment? = null
+
+    /** The home on screen and what it was built from, so [freshenHome] can build home again without the collection.
+     * [playsReadAt] is when the collection's plays were read (unix ms). */
+    private class HomeBuilt(val ready: LibraryState.Ready, val user: String, val shelf: Shelf, val seed: Long, val playsReadAt: Long)
+
+    @Volatile private var homeBuilt: HomeBuilt? = null
+
+    /**
+     * Builds home again for now as the app comes back to the front, when the hour has moved to another band of the
+     * mood clock ([MoodClock]), another part of the day or another day, or when something was played since home was
+     * built. The banner's mood list, Continue and the rows read from plays follow it. The collection is not read or
+     * built again, and nothing else on screen changes.
+     *
+     * Only for the moment the app comes to the front, never while home is being looked at: a banner that changes
+     * under the person's eyes is worse than one that is an hour old. The desktop also reads its clock only when home is
+     * read.
+     */
+    fun freshenHome() {
+        val built = homeBuilt ?: return
+        val held = moment ?: return
+        if (current.value !== built.ready || held.user != built.user || held.shelf != built.shelf) return
+        if (stampNow() == held.stamp) return
+        scope.launch(Dispatchers.Default) {
+            val now = readMoment(built.user, built.shelf)
+            val next = built.ready.copy(home = homeOf(built.ready.collection, built.seed, now, built.playsReadAt))
+            // Only over the home it was built from: a load that published since built its home for its own moment.
+            if (current.compareAndSet(built.ready, next)) {
+                moment = now
+                homeBuilt = HomeBuilt(next, built.user, built.shelf, built.seed, built.playsReadAt)
+                Diag.d(TAG, "home built again for ${now.home.hour}h, ${now.home.genres.size} genres, ${now.listens.size} listens")
+            }
+        }
+    }
+
+    /**
+     * The genre of the record [ref] is on, as the genres list files it ([GenreWall.genreOf]), or null: a track of a
+     * shelf that is not the one on screen, a collection not loaded yet, or a record whose tags name no genre the app
+     * knows.
+     */
+    fun genreOf(ref: TrackRef): String? {
+        val ready = current.value as? LibraryState.Ready ?: return null
+        if (ready.collection.shelf != ref.shelf) return null
+        val album = ready.collection.albumOf[ref.rpmId] ?: return null
+        return GenreWall.genreOf(album).takeIf { it != GenreWall.UNCLASSIFIED }
+    }
+
+    private fun stampNow(): Stamp {
+        val local = Instant.ofEpochMilli(clock()).atZone(ZoneId.systemDefault())
+        return Stamp(MoodClock.order(local.hour), DayParts.of(local.hour), local.dayOfYear, ListeningHistory.listens.value.firstOrNull())
+    }
+
+    /** The moment now, for [user]'s [shelf]. Reads [dayPartPlays], whose file is read the first time, so it runs off
+     * the main thread. Only the person's own shelf is built from their listening, as the rest of home is: a shared
+     * collection's tracks hold none of their plays. */
+    private fun readMoment(user: String, shelf: Shelf): Moment {
+        val local = Instant.ofEpochMilli(clock()).atZone(ZoneId.systemDefault())
+        val heard = ListeningHistory.listens.value
+        val part = DayParts.of(local.hour)
+        val own = shelf == Shelf.Own
+        val genres = if (own) dayPartPlays?.genresAt(user, part).orEmpty() else emptyList()
+        val listens = if (own) heard.filter { it.ref.shelf == Shelf.Own }.map { it.ref.rpmId to it.at } else emptyList()
+        val stamp = Stamp(MoodClock.order(local.hour), part, local.dayOfYear, heard.firstOrNull())
+        return Moment(user, shelf, HomeMoment(local.hour, local.dayOfYear, genres), listens, stamp)
+    }
+
+    private fun momentFor(user: String, shelf: Shelf): Moment =
+        moment?.takeIf { it.user == user && it.shelf == shelf } ?: readMoment(user, shelf).also { moment = it }
+
+    private fun homeOf(collection: Collection, seed: Long, moment: Moment, playsReadAt: Long): Home =
+        HomeShelf.build(collection, Random(seed), moment.home, Lists.withListens(collection.plays, moment.listens, playsReadAt / 1000))
+
     init {
         scope.launch {
             combine(auth.session.map { it?.userId }.distinctUntilChanged(), asked, attempt, refreshes) { user, ask, n, r ->
@@ -248,6 +341,8 @@ class LibraryRepository(
         // collection still on screen never makes a load quiet.
         val before = shown?.takeIf { it.user == user && it.shelf == shelf && current.value is LibraryState.Ready }
         val quiet = before != null
+        // Each load reads the clock and this device's listening again at its first build.
+        moment = null
         if (!quiet) publishFor(user, shelf, LibraryState.Loading(shelf, 0)) else reading.value = true
         val started = SystemClock.elapsedRealtime()
         fun took(what: String) = Diag.d(TAG, "$what at ${SystemClock.elapsedRealtime() - started} ms${if (quiet) ", refresh" else ""}")
@@ -313,7 +408,7 @@ class LibraryRepository(
                         val reused = base?.takeIf { it.tracks === fresh.tracks && it.marks == mine.marks && it.here === here }
                         val parts = reused ?: base(laid, here, ::took).copy(tracks = fresh.tracks, marks = mine.marks).also { base = it }
                         builtLists = laid.playlists to laid.moods
-                        laid to build(laid, parts, seed, shelf, chosen, ::took)
+                        laid to build(laid, parts, seed, shelf, chosen, user, library.library.readAt, ::took)
                     }
                 } catch (e: CancellationException) {
                     throw e
@@ -338,7 +433,10 @@ class LibraryRepository(
                 // A quiet load whose build failed leaves the collection on screen, as its failed read does.
                 if (ready == null && quiet) return@collectLatest
                 publishFor(user, shelf, ready ?: LibraryState.Failed(shelf))
-                if (ready != null && current.value === ready) shown = Shown(user, shelf, seed)
+                if (ready != null && current.value === ready) {
+                    shown = Shown(user, shelf, seed)
+                    homeBuilt = HomeBuilt(ready, user, shelf, seed, library.library.readAt)
+                }
             }
     }
 
@@ -407,7 +505,8 @@ class LibraryRepository(
         return Base(library.tracks, emptyMap(), here, byId, albums, walls)
     }
 
-    private fun build(library: CloudLibrary, base: Base, seed: Long, shelf: Shelf, readings: Map<String, Int>, took: (String) -> Unit): LibraryState.Ready {
+    /** [playsReadAt]: when the plays in [library] were read (unix ms), before any lists read again since. */
+    private fun build(library: CloudLibrary, base: Base, seed: Long, shelf: Shelf, readings: Map<String, Int>, user: String, playsReadAt: Long, took: (String) -> Unit): LibraryState.Ready {
         val collection = Collection.of(
             shelf = shelf,
             albums = base.albums,
@@ -418,7 +517,7 @@ class LibraryRepository(
             moods = Lists.moods(library.moods),
         )
         took("collection")
-        val home = HomeShelf.build(collection, Random(seed))
+        val home = homeOf(collection, seed, momentFor(user, shelf), playsReadAt)
         took("home")
         return LibraryState.Ready(collection, home, base.walls)
     }

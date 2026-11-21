@@ -24,6 +24,13 @@ sealed interface QuickPick {
     data class Radio(val track: CloudTrack, val album: CloudAlbum?) : QuickPick
 }
 
+/**
+ * The moment home is built for: the hour and the day of the year on the local clock, and the genres this device plays
+ * in that part of the day, most played first ([com.rpm.player.core.playback.DayPartPlays.genresAt]). Read once per
+ * build: the desktop reads its clock once when home is read, and a home on screen does not change as the hour turns.
+ */
+data class HomeMoment(val hour: Int, val dayOfYear: Int, val genres: List<String>)
+
 /** Home, top to bottom. Every row may be empty, and an empty row is not drawn. */
 data class Home(
     val banner: List<BannerCard>,
@@ -76,12 +83,20 @@ object HomeShelf {
         "Melancholy", "Happy", "Angry", "Romantic", "Zen", "NewYearsEve", "Christmas",
     )
 
-    fun build(c: Collection, random: Random): Home {
+    /**
+     * @param moment the local time and this device's listening at that time of day, which choose the banner's mood list
+     *   on the person's own shelf ([bannerList]). Null builds without a clock: the banner takes the first list of Made
+     *   for you.
+     * @param heard the plays to rank by: [Collection.plays], or those with the plays counted on this device since the
+     *   collection was read laid over them ([Lists.withListens]), so what was played today is on home without reading
+     *   the cloud again.
+     */
+    fun build(c: Collection, random: Random, moment: HomeMoment? = null, heard: Map<String, Plays> = c.plays): Home {
         // Each album's totals are worked out once, by its key. A comparator that summed an album's tracks on
         // every comparison took most of a second per row on a TV box. An album itself as a map key hashes
         // every one of its tracks on each lookup.
-        val lastPlayed = c.albums.associate { it.key to c.lastPlayedOf(it) }
-        val plays = c.albums.associate { it.key to c.playsOf(it) }
+        val lastPlayed = c.albums.associate { album -> album.key to (album.tracks.maxOfOrNull { heard[it.rpmId]?.lastPlayedAt ?: 0 } ?: 0) }
+        val plays = c.albums.associate { album -> album.key to album.tracks.sumOf { heard[it.rpmId]?.count ?: 0 } }
         val addedAt = c.albums.associate { it.key to c.addedOf(it) }
         val listened = c.albums.filter { lastPlayed.getValue(it.key) > 0 }
             .sortedWith(compareByDescending<CloudAlbum> { lastPlayed.getValue(it.key) }.thenBy { it.key })
@@ -113,12 +128,16 @@ object HomeShelf {
 
         val quick = when (c.shelf) {
             // The lists as the iPhone deals them: the first generated lists, in the order the collection holds them.
-            Shelf.Own -> quick(c, listened, c.lists.filter { it.generated }.take(QUICK_LISTS))
+            Shelf.Own -> quick(c, heard, listened, c.lists.filter { it.generated }.take(QUICK_LISTS))
             is Shelf.Borrowed -> recommendedQuick(c, madeForYou, shown = (suggested + added.take(ROW_LENGTH)).mapTo(HashSet()) { it.key }, draw)
         }
 
+        // The banner's one list: on the person's own shelf the mood the hour asks for, cut to what they play at this
+        // time of day, or the first of Made for you where no mood list fits (the desktop's `banner ?? offered.First`).
+        val bannerLists = if (moment != null && c.shelf == Shelf.Own) listOfNotNull(bannerList(c.lists, moment) ?: madeForYou.firstOrNull()) else madeForYou
+
         return Home(
-            banner = banner(listened, added, played, suggested, madeForYou, random),
+            banner = banner(listened, added, played, suggested, bannerLists, random),
             quick = quick,
             madeForYou = madeForYou,
             listened = listenedRow,
@@ -128,6 +147,15 @@ object HomeShelf {
             added = added.take(ROW_LENGTH),
         )
     }
+
+    /**
+     * The mood list the banner shows at [moment]: the desktop's `HomeView.ReadBannerList`. The hour gives the moods
+     * in order ([MoodClock.order]); the genres played in this part of the day choose the cut of the first mood the
+     * collection has; the day of the year chooses the one day in seven ([MoodPick.which]). Null when the collection
+     * has none of the clock's moods.
+     */
+    fun bannerList(lists: List<TrackList>, moment: HomeMoment): TrackList? =
+        MoodPick.pick(MoodClock.order(moment.hour), moment.genres, MoodPick.offered(lists), moment.dayOfYear)
 
     /** One card from each source in turn, never the same record twice, and never a compilation of
      * various artists, which has no face to put on a banner. */
@@ -181,9 +209,9 @@ object HomeShelf {
      *
      * @param listened the records, played last first.
      */
-    private fun quick(c: Collection, listened: List<CloudAlbum>, lists: List<TrackList>): List<QuickPick> {
-        val latest = MostPlayed.songs(c.tracksById.values, c.plays, Int.MAX_VALUE)
-            .sortedByDescending { c.plays[it.rpmId]?.lastPlayedAt ?: 0 }
+    private fun quick(c: Collection, heard: Map<String, Plays>, listened: List<CloudAlbum>, lists: List<TrackList>): List<QuickPick> {
+        val latest = MostPlayed.songs(c.tracksById.values, heard, Int.MAX_VALUE)
+            .sortedByDescending { heard[it.rpmId]?.lastPlayedAt ?: 0 }
         val songs = latest.map { QuickPick.Song(it, c.albumOf[it.rpmId]) }
         val radios = radioSeeds(latest).map { QuickPick.Radio(it, c.albumOf[it.rpmId]) }
         // One record once (Chivan, 2026-11-04: "a lot of duplicate images from the same album"): a record a radio is

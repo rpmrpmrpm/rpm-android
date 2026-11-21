@@ -143,6 +143,24 @@ object Lists {
         return merged
     }
 
+    /**
+     * [plays] with this device's own listens laid over them, so home shows what was played since the cloud was read.
+     * Each listen is a track's rpmId and when it was counted (Unix seconds). A listen makes the track's last play at
+     * least that late, and the track counted as played at least once. A listen counted after [readAt] (Unix
+     * seconds), when the plays were read, is not in them yet and adds one to the count. An earlier one is taken to be in
+     * them already, because this device sends its totals soon after each play ([com.rpm.player.core.playback.TrackPlaysSync]).
+     */
+    fun withListens(plays: Map<String, Plays>, listens: List<Pair<String, Long>>, readAt: Long): Map<String, Plays> {
+        if (listens.isEmpty()) return plays
+        val laid = HashMap(plays)
+        for ((rpmId, at) in listens) {
+            val before = laid[rpmId]
+            val count = (before?.count ?: 0) + (if (at > readAt) 1 else 0)
+            laid[rpmId] = Plays(count = maxOf(count, 1), lastPlayedAt = maxOf(before?.lastPlayedAt ?: 0, at))
+        }
+        return laid
+    }
+
     /** The generated lists, each showing its first window of tracks. Empty lists are left out: the
      * computer does not push one, and an empty list would promise music and open on nothing. No other
      * floor: the computer only sends a list long enough to show (`SmartPlaylists.LeastToShow`, one song

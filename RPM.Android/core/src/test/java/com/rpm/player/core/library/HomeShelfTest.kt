@@ -138,6 +138,66 @@ class HomeShelfTest {
         assertEquals(listOf("RightNow", "FavoriteTracks", "Calm", "Energetic"), home.madeForYou.map { it.kind })
     }
 
+    /** The mood lists of [kinds] (kind to genre), twelve songs each, and Your mix. */
+    private fun moodLists(tracks: List<CloudTrack>, vararg kinds: Pair<String, String?>, shelf: Shelf = Shelf.Own): List<TrackList> {
+        val ids = tracks.map { it.rpmId }
+        val sent = kinds.map { (kind, genre) -> CloudMoodList(kind = kind, genre = genre, trackIds = ids) } + CloudMoodList(kind = "RightNow", trackIds = ids)
+        return Lists.generated(CloudMoodLists(lists = sent), tracks.associateBy { it.rpmId }, shelf)
+    }
+
+    private fun Home.bannerLists() = banner.filterIsInstance<BannerCard.OfList>().map { it.list.id }
+
+    @Test fun theBannersListIsTheMoodTheHourAsksForCutToWhatIsPlayedThen() {
+        val tracks = (1..12).map { track("t$it", "A") }
+        val lists = moodLists(tracks, "Calm" to null, "Calm" to "Jazz", "Sleep" to null, "Focus" to null)
+        val c = collection(tracks, lists = lists)
+        // Late at night: Sleep. Has no cut, so the whole collection's Sleep list, whatever is played then.
+        assertEquals(listOf("mood/Sleep||0"), HomeShelf.build(c, Random(1), HomeMoment(hour = 23, dayOfYear = 3, genres = listOf("Jazz"))).bannerLists())
+        // Early morning: Calm, cut to the jazz played in the morning.
+        assertEquals(listOf("mood/Calm|Jazz|0"), HomeShelf.build(c, Random(1), HomeMoment(hour = 8, dayOfYear = 3, genres = listOf("Jazz"))).bannerLists())
+        // The same hour with nothing played then: the whole collection's Calm list.
+        assertEquals(listOf("mood/Calm||0"), HomeShelf.build(c, Random(1), HomeMoment(hour = 8, dayOfYear = 3, genres = emptyList())).bannerLists())
+        // The working day: Focus.
+        assertEquals(listOf("mood/Focus||0"), HomeShelf.build(c, Random(1), HomeMoment(hour = 14, dayOfYear = 3, genres = emptyList())).bannerLists())
+        // The one day in seven: the next of Calm's group.
+        assertEquals(listOf("mood/Calm||0"), HomeShelf.build(c, Random(1), HomeMoment(hour = 8, dayOfYear = 7, genres = listOf("Jazz"))).bannerLists())
+    }
+
+    @Test fun withNoMoodListTheBannerShowsTheFirstOfMadeForYou() {
+        val tracks = (1..12).map { track("t$it", "A") }
+        val home = HomeShelf.build(collection(tracks, lists = moodLists(tracks)), Random(1), HomeMoment(hour = 23, dayOfYear = 3, genres = emptyList()))
+        assertEquals(listOf("mood/RightNow||0"), home.bannerLists())
+    }
+
+    @Test fun aSharedCollectionsBannerDoesNotReadTheClock() {
+        val tracks = (1..12).map { track("t$it", "A") }
+        val lists = moodLists(tracks, "Sleep" to null, shelf = Shelf.Borrowed("owner"))
+        val home = HomeShelf.build(shared(tracks, lists), Random(1), HomeMoment(hour = 23, dayOfYear = 3, genres = emptyList()))
+        assertEquals(home.madeForYou.first().id, home.bannerLists().first())
+    }
+
+    @Test fun aListenOnThisDeviceIsLaidOverThePlaysRead() {
+        val plays = mapOf("a" to Plays(3, 100), "b" to Plays(1, 50))
+        val laid = Lists.withListens(plays, listOf("a" to 400L, "b" to 150L, "c" to 120L), readAt = 200)
+        // After the read: one more play, and the latest.
+        assertEquals(Plays(4, 400), laid["a"])
+        // Before the read: already in its count, but its time is kept.
+        assertEquals(Plays(1, 150), laid["b"])
+        // A track the read had no plays of has been played once.
+        assertEquals(Plays(1, 120), laid["c"])
+    }
+
+    @Test fun whatWasPlayedTodayIsWhatContinues() {
+        val tracks = listOf(track("a1", "A"), track("b1", "B"))
+        val c = collection(tracks, plays = listOf(TrackPlaysRow("a1", plays = 5, lastPlayedAt = 100)))
+        val heard = Lists.withListens(c.plays, listOf("b1" to 500L), readAt = 200)
+        val home = HomeShelf.build(c, Random(1), heard = heard)
+        val first = home.banner.first() as BannerCard.OfAlbum
+        assertEquals(Kicker.CONTINUE, first.kicker)
+        assertEquals("B", first.album.album)
+        assertEquals(listOf("B", "A"), home.listened.map { it.album })
+    }
+
     @Test fun aGeneratedListShowsItsFirstWindow() {
         assertEquals(listOf("a", "b"), Lists.window(listOf("a", "b", "c", "d"), shows = 2))
         assertEquals(listOf("a", "b", "c"), Lists.window(listOf("a", "b", "c"), shows = 0))

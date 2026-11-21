@@ -170,6 +170,8 @@ class MainActivity : ComponentActivity() {
         // outlives the exit, and the library loads once per process. Quiet: the collection on
         // screen stays until the new one is in.
         services.library.refreshIfExited()
+        // Home built again for this hour and what was played while the app was away, if either moved on.
+        services.library.freshenHome()
         val future = MediaController.Builder(this, SessionToken(this, ComponentName(this, PlaybackService::class.java)))
             .buildAsync()
         connecting = future

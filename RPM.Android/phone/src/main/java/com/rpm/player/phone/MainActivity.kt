@@ -87,6 +87,8 @@ class MainActivity : ComponentActivity() {
         // each time the app becomes active. Other devices' counts are read with the library.
         services.trackPlaysSync.pass()
         services.radio.listensSync.pass()
+        // Home built again for this hour and what was played while the app was away, if either moved on.
+        services.library.freshenHome()
         val future = MediaController.Builder(this, SessionToken(this, ComponentName(this, PlaybackService::class.java)))
             .setListener(
                 object : MediaController.Listener {
