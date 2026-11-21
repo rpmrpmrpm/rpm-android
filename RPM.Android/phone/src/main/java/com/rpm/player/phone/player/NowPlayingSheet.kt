@@ -124,16 +124,8 @@ private const val SHEET_STIFFNESS = 322f
 /** `spring(duration: 0.3)`: the sheet going home when it was not pulled far enough, and the flicked sleeve coming back. */
 private const val HOME_STIFFNESS = 439f
 
-/**
- * The room left free beside the cover, on each side. The cover is as wide as the window allows with that room kept,
- * and never taller than the space between the grip and the title, so on a short screen it is smaller.
- */
-private val SLEEVE_SIDE = 15.dp
-
-/** The room kept above and below the cover where the height decides its size. */
-private val SLEEVE_ROOM = 12.dp
-
-/** The scale the cover shrinks to while the record is paused. */
+/** The size of the cover, and the scale it shrinks to while the record is paused. */
+private val SLEEVE = 260.dp
 private const val PAUSED_SCALE = 0.9f
 
 /** The room one spectrum bar needs, with its gap; at less the run looks like a texture, not bars. */
@@ -327,10 +319,7 @@ fun NowPlayingSheet(
                     if (up) {
                         LyricView(lyrics, now, karaoke, measured)
                     } else {
-                        BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            val edge = minOf(maxWidth - SLEEVE_SIDE * 2, maxHeight - SLEEVE_ROOM * 2).coerceAtLeast(120.dp)
-                            Sleeve(now, player, images, stage, edge, bars)
-                        }
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Sleeve(now, player, images, stage, SLEEVE, bars) }
                     }
                 }
                 Column(Modifier.padding(horizontal = 24.dp).padding(top = 8.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

@@ -176,19 +176,29 @@ private val NIGHT_FOOT = Brush.verticalGradient(
 )
 
 /**
+ * Outside night mode, how dark the shade is at the card's foot, and how dark the mirror under the card is. The two must
+ * be the same: the foot's last row and the mirror's first row are the same pixels of the photograph, and a different
+ * shade on each side shows as a hard line where the card ends.
+ */
+private const val DAY_SHADE = 0.45f
+
+/**
  * Outside night mode, the shade behind the words at the card's foot: nothing over the upper half, so the photograph shows
  * as the artist page shows it, and enough under the kicker, the title and the artist for white letters with their
- * shadow to read on a light photograph.
+ * shadow to read on a light photograph. It ends at [DAY_SHADE], where the mirror ([MIRROR_HELD]) continues it.
  */
 private val DAY_FOOT = Brush.verticalGradient(
     0f to Color.Transparent,
     0.5f to Color.Transparent,
     0.72f to Color.Black.copy(alpha = 0.22f),
-    1f to Color.Black.copy(alpha = 0.5f),
+    1f to Color.Black.copy(alpha = DAY_SHADE),
 )
 
-/** Outside night mode, how much the mirror under the banner is darkened: Quick selection's lines are read over it. */
-private val MIRROR_HELD = ColorFilter.tint(Color.Black.copy(alpha = 0.35f), BlendMode.SrcAtop)
+/**
+ * Outside night mode, how much the mirror under the banner is darkened, as dark as the card's foot ([DAY_SHADE]).
+ * Quick selection's lines are read over it. The mirror fades out further down, and the darkening with it.
+ */
+private val MIRROR_HELD = ColorFilter.tint(Color.Black.copy(alpha = DAY_SHADE), BlendMode.SrcAtop)
 
 /** Where a card's blur starts, as a share of its height: the face is cut into the upper half (`HomeFeatureCard.blurFrom`). */
 private const val BANNER_BLUR_FROM = 0.6f
@@ -712,7 +722,7 @@ private fun BannerCardView(
             val shadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(0f, 1f), blurRadius = 6f)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 BasicText(kicker, style = display(12f).copy(color = Ink.white(0xCC), letterSpacing = pt(1.5f), shadow = shadow))
-                MarkedTitle(title, album?.isExplicit == true, displayBold(22f).copy(color = Color.White, shadow = shadow), maxLines = 2, edge = 17.dp)
+                BasicText(title, maxLines = 2, overflow = TextOverflow.Ellipsis, style = displayBold(22f).copy(color = Color.White, shadow = shadow))
                 if (!subtitle.isNullOrEmpty()) {
                     BasicText(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = system(13f).copy(color = Ink.white(0xD1), shadow = shadow))
                 }
