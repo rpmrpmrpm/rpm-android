@@ -87,7 +87,7 @@ private fun norm(text: String) = text.trim().lowercase()
  * Thread-safe: the maps are touched under [lock] only, and nothing waits while holding it.
  */
 class Dossiers(
-    private val languages: List<String>,
+    languages: List<String>,
     private val directory: File?,
     private val scope: CoroutineScope,
     private val clock: () -> Long,
@@ -101,6 +101,13 @@ class Dossiers(
                 is GenreSubject -> client.genre(subject.name)
             }
         })
+
+    /**
+     * The Wikipedias to read, best first. An app may change them while it runs (the phone's description language). Every
+     * cache key carries them, so a change is a new question, and an answer kept in the other languages is not shown.
+     */
+    @Volatile
+    var languages: List<String> = languages
 
     @Serializable
     private data class Kept(val dossier: Dossier)

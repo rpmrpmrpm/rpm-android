@@ -117,6 +117,9 @@ enum class Ground(val id: String, @DrawableRes val file: Int, @StringRes val nam
     /** A printed score in warm sepia. */
     SheetMusic("sheet-music", R.drawable.background_sheet_music, CoreR.string.Settings_BackgroundSheetMusic),
 
+    /** Folds of warm copper light on black, with a fine grain. */
+    Aero("aero", R.drawable.background_aero, CoreR.string.Settings_BackgroundAero),
+
     /** The same three records pressed in gold. The supporter's. */
     Gold("gold", R.drawable.background_vinyl_gold, CoreR.string.Settings_BackgroundGold);
 

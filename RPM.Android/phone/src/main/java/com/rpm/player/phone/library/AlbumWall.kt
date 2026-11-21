@@ -1,5 +1,8 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.phone.design.holdPress
+import com.rpm.player.core.library.isExplicit
+import com.rpm.player.phone.design.MarkedTitle
 import com.rpm.player.phone.design.rememberPicture
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -128,17 +131,19 @@ fun AlbumTile(album: CloudAlbum, cover: Cover?, caption: AlbumCaption, images: I
     val art = caption.art.dp
     // Offline, a record with nothing on the phone is greyed: still there to look at, not there to play.
     val playable = LocalPlayable.current.canPlay(album.key)
+    val holds = com.rpm.player.phone.home.LocalHolds.current
     Column(
         Modifier
             .width(art)
             .height(caption.card.dp)
             .greyedOut(!playable)
-            .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onOpen),
+            // A long press offers the record's menu: play next, and Quick selection.
+            .holdPress(remember { MutableInteractionSource() }, onOpen, holds?.let { { it.album(album) } }),
     ) {
         SleeveSquare(cover, art, images, radius = 10.dp, glyphSize = min(max(caption.art * 0.2, 16.0), 52.0).toFloat())
         Spacer(Modifier.height(AlbumCaption.ART_GAP.dp))
         Box(Modifier.height(caption.albumLine.dp), contentAlignment = Alignment.CenterStart) {
-            BasicText(album.album, maxLines = 1, overflow = TextOverflow.Ellipsis, style = system(caption.album, FontWeight.Medium).copy(color = Color.White))
+            MarkedTitle(album.album, album.isExplicit, system(caption.album, FontWeight.Medium).copy(color = Color.White), edge = caption.badge.dp)
         }
         Spacer(Modifier.height(AlbumCaption.LINE_GAP.dp))
         Box(Modifier.height(caption.artistLine.dp), contentAlignment = Alignment.CenterStart) {

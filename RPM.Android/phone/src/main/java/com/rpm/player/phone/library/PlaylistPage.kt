@@ -76,6 +76,8 @@ import com.rpm.player.core.library.ListArt
 import com.rpm.player.core.library.MoodLine
 import com.rpm.player.core.library.PlaylistFeatures
 import com.rpm.player.core.library.TrackList
+import com.rpm.player.core.library.isExplicit
+import com.rpm.player.phone.design.ExplicitMark
 import com.rpm.player.core.library.moodSentence
 import com.rpm.player.phone.design.BackKey
 import com.rpm.player.phone.design.GlassButton
@@ -466,29 +468,13 @@ internal fun ListSongRow(track: CloudTrack, cover: Cover?, images: ImageLoader, 
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 BasicText(track.title.orEmpty(), Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(16f).copy(color = Color.White))
-                if (track.tags?.advisory == EXPLICIT) ExplicitMark()
+                if (track.isExplicit) ExplicitMark()
             }
             said(track).takeIf { it.isNotEmpty() }?.let {
                 BasicText(it, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(13f).copy(color = Ink.white(0x77)))
             }
         }
         BasicText(length(track.tags?.durationSeconds ?: 0.0), style = display(13f).copy(color = Ink.white(0x66)))
-    }
-}
-
-/**
- * The tag value for explicit lyrics (`ContentAdvisory.Explicit` on the desktop). It is the only value that shows the E.
- */
-internal const val EXPLICIT = 1
-
-/**
- * The E mark for explicit lyrics: a small light square with the letter cut out. The letter uses the background colour,
- * so it looks cut out.
- */
-@Composable
-internal fun ExplicitMark() {
-    Box(Modifier.size(14.dp).clip(RoundedCornerShape(3.dp)).background(Ink.white(0xAA)), contentAlignment = Alignment.Center) {
-        BasicText("E", style = system(9f, FontWeight.Bold).copy(color = Ink.ground))
     }
 }
 

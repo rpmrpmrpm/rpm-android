@@ -1,5 +1,7 @@
 package com.rpm.player.phone.shell
 
+import com.rpm.player.phone.coach.CoachTargets
+import com.rpm.player.phone.coach.coachTarget
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -107,6 +109,7 @@ private fun TabFace(tab: Tab, lit: Boolean, modifier: Modifier, onClick: () -> U
     Column(
         modifier
             .height(TAB_HEIGHT)
+            .coachTarget(tab.coachTarget)
             .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Tab, onClick = onClick),
         verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -119,6 +122,16 @@ private fun TabFace(tab: Tab, lit: Boolean, modifier: Modifier, onClick: () -> U
         )
     }
 }
+
+/** The name the first-run hints point at this tab by ([CoachTargets]). */
+private val Tab.coachTarget: String
+    get() = when (this) {
+        Tab.Home -> CoachTargets.TAB_HOME
+        Tab.Library -> CoachTargets.TAB_LIBRARY
+        Tab.Feed -> CoachTargets.TAB_FEED
+        Tab.Radio -> CoachTargets.TAB_RADIO
+        Tab.Settings -> CoachTargets.TAB_SETTINGS
+    }
 
 /** A tab's height, which the pill matches. */
 private val TAB_HEIGHT = 52.dp

@@ -81,6 +81,9 @@ import com.rpm.player.core.cloud.CloudTrack
 import com.rpm.player.core.library.AlbumLine
 import com.rpm.player.core.library.AlbumLines
 import com.rpm.player.core.library.CloudAlbum
+import com.rpm.player.core.library.isExplicit
+import com.rpm.player.phone.design.ExplicitMark
+import com.rpm.player.phone.design.MarkedTitle
 import com.rpm.player.core.library.SongLevel
 import com.rpm.player.core.library.Cover
 import com.rpm.player.phone.design.BackKey
@@ -393,7 +396,7 @@ private fun Header(
         CaseAndDisc(album, cover, disc, images, edge)
         Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             // Two lines, and shortened only past them.
-            BasicText(album.album, maxLines = 2, overflow = TextOverflow.Ellipsis, style = displayBold(24f).copy(color = Color.White, textAlign = TextAlign.Center))
+            MarkedTitle(album.album, album.isExplicit, displayBold(24f).copy(color = Color.White, textAlign = TextAlign.Center), maxLines = 2, edge = 18.dp)
             ArtistLine(album.artist, artists, onArtist)
         }
         // How much record there is, as a chip because it describes the record above it, and what it is made of under
@@ -746,7 +749,7 @@ private fun SongRow(line: AlbumLine.Song, playing: Boolean, enabled: Boolean, on
                     overflow = TextOverflow.Ellipsis,
                     style = (if (line.level == SongLevel.Piece) displayBold(16f) else display(16f)).copy(color = Color.White),
                 )
-                if (track.tags?.advisory == EXPLICIT) ExplicitMark()
+                if (track.isExplicit) ExplicitMark()
             }
             val second = if (line.level == SongLevel.Plain) track.artist?.takeIf { it.isNotEmpty() } else line.subtitle
             second?.let {

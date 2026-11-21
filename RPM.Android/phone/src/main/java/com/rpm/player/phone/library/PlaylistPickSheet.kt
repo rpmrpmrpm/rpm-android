@@ -1,5 +1,7 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.core.library.isExplicit
+import com.rpm.player.phone.design.MarkedTitle
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -234,7 +236,7 @@ private fun Header(browse: PlaylistBrowse, track: CloudTrack, onBack: (List<Stri
                     overflow = TextOverflow.Ellipsis,
                     style = displayBold(19f).copy(color = Color.White),
                 )
-                BasicText(track.title.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis, style = kicker())
+                MarkedTitle(track.title.orEmpty(), track.isExplicit, kicker())
             }
         }
         FlatKey(Glyph.close, onClose)

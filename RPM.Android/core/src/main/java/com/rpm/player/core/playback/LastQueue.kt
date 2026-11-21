@@ -36,6 +36,8 @@ data class SavedItem(
     val detail: String? = null,
     /** Whether the person added it with Play next or Add to queue ([EXTRA_UP_NEXT]). False in an older queue. */
     val upNext: Boolean = false,
+    /** Whether the song's lyrics are explicit ([EXTRA_EXPLICIT]). False in an older queue. */
+    val explicit: Boolean = false,
 )
 
 /** The queue, which item was playing and where. */
@@ -116,6 +118,7 @@ class LastQueue(private val file: File, scope: CoroutineScope) {
                 lufs = level.lufs,
                 peak = level.truePeak,
                 upNext = item.isUpNext,
+                explicit = m.extras?.getBoolean(EXTRA_EXPLICIT) == true,
             )
         }
 
@@ -144,6 +147,7 @@ class LastQueue(private val file: File, scope: CoroutineScope) {
                                 putLong(EXTRA_DISC_STAMP, saved.discStamp)
                                 putLevel(Level(saved.lufs, saved.peak))
                                 if (saved.upNext) putBoolean(EXTRA_UP_NEXT, true)
+                                if (saved.explicit) putBoolean(EXTRA_EXPLICIT, true)
                             },
                         )
                         .build(),

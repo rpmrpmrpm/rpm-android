@@ -1,5 +1,9 @@
 package com.rpm.player.phone.player
 
+import com.rpm.player.phone.coach.CoachTargets
+import com.rpm.player.phone.coach.coachTarget
+import androidx.compose.ui.unit.Dp
+import com.rpm.player.phone.PhoneSettings
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.animation.Crossfade
@@ -120,8 +124,16 @@ private const val SHEET_STIFFNESS = 322f
 /** `spring(duration: 0.3)`: the sheet going home when it was not pulled far enough, and the flicked sleeve coming back. */
 private const val HOME_STIFFNESS = 439f
 
-/** The size of the cover, and the scale it shrinks to while the record is paused. */
-private val SLEEVE = 260.dp
+/**
+ * The room left free beside the cover, on each side. The cover is as wide as the window allows with that room kept,
+ * and never taller than the space between the grip and the title, so on a short screen it is smaller.
+ */
+private val SLEEVE_SIDE = 15.dp
+
+/** The room kept above and below the cover where the height decides its size. */
+private val SLEEVE_ROOM = 12.dp
+
+/** The scale the cover shrinks to while the record is paused. */
 private const val PAUSED_SCALE = 0.9f
 
 /** The room one spectrum bar needs, with its gap; at less the run looks like a texture, not bars. */
@@ -180,6 +192,7 @@ private const val QUEUE_GLYPH = ""
  * @param speakers the speaker picker's model; null hides the speaker key.
  * @param leaving set when the listening ended under the sheet: it goes down by itself.
  * @param onClosed called once the sheet is down, so the caller can remove it.
+ * @param bars whether the spectrum bars beside the cover move with the music: the setting ([PhoneSettings.playerBars]).
  */
 @Composable
 fun NowPlayingSheet(
@@ -204,6 +217,7 @@ fun NowPlayingSheet(
     sleep: SleepClock,
     leaving: Boolean,
     onClosed: () -> Unit,
+    bars: Boolean = true,
 ) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -298,6 +312,7 @@ fun NowPlayingSheet(
                             Modifier
                                 .align(Alignment.CenterEnd)
                                 .padding(end = 12.dp)
+                                .coachTarget(CoachTargets.PLAYER_SPEAKERS)
                                 .graphicsLayer { alpha = 1f - putDown() },
                         ) {
                             GlassKey(backdrop, onClick = { if (putDown() == 0f) showingSpeakers = true }, Modifier.semantics { contentDescription = label }) {
@@ -312,7 +327,10 @@ fun NowPlayingSheet(
                     if (up) {
                         LyricView(lyrics, now, karaoke, measured)
                     } else {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Sleeve(now, player, images, stage) }
+                        BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            val edge = minOf(maxWidth - SLEEVE_SIDE * 2, maxHeight - SLEEVE_ROOM * 2).coerceAtLeast(120.dp)
+                            Sleeve(now, player, images, stage, edge, bars)
+                        }
                     }
                 }
                 Column(Modifier.padding(horizontal = 24.dp).padding(top = 8.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -389,6 +407,7 @@ private fun Grip(onDrag: (Float) -> Unit, onLetGo: (Float) -> Unit, onTap: () ->
             .fillMaxWidth()
             .height(44.dp)
             .draggable(rememberDraggableState(onDrag), Orientation.Vertical, onDragStopped = { onLetGo(it) })
+            .then(Modifier.coachTarget(CoachTargets.PLAYER_GRIP))
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onTap),
         contentAlignment = Alignment.Center,
     ) {
@@ -405,7 +424,7 @@ private fun Grip(onDrag: (Float) -> Unit, onLetGo: (Float) -> Unit, onTap: () ->
  * ([ScannedDisc.standIn]); a station shows its logo on a card.
  */
 @Composable
-private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: Stage) {
+private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: Stage, edge: Dp, bars: Boolean) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val scale by animateFloatAsState(if (now.playing) 1f else PAUSED_SCALE, spring(dampingRatio = 1f, stiffness = SHEET_STIFFNESS), label = "sleeve")
@@ -418,7 +437,8 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
     val across = remember { FloatArray(2) }
     Box(
         Modifier
-            .size(SLEEVE)
+            .size(edge)
+            .coachTarget(CoachTargets.PLAYER_COVER)
             .onGloballyPositioned {
                 val at = it.positionInRoot()
                 across[0] = at.x
@@ -428,6 +448,7 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
             // Under the cover's own layer, so it is measured against the cover as drawn (paused smaller, pushed aside by a
             // flick) without being scaled or moved with it (`SpectrumRunView` on iPhone).
             .drawBehind {
+                if (!bars) return@drawBehind
                 val room = stage.room ?: return@drawBehind
                 val side = size.width * scale
                 val middle = across[0] + size.width / 2 + flick.value
@@ -457,9 +478,9 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
     ) {
         val station = now.station
         when {
-            station != null -> StationCard(station, images)
-            now.cover == null -> RecordDisc(SLEEVE, spinning = false, disc = remember(standIn) { ScannedDisc.standIn(context, standIn) })
-            else -> SleeveSquare(now.cover, SLEEVE, images, radius = 14.dp, glyphSize = 52f)
+            station != null -> StationCard(station, images, edge)
+            now.cover == null -> RecordDisc(edge, spinning = false, disc = remember(standIn) { ScannedDisc.standIn(context, standIn) })
+            else -> SleeveSquare(now.cover, edge, images, radius = 14.dp, glyphSize = 52f)
         }
     }
 }
@@ -470,17 +491,17 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
  * 260 points would look like a hole.
  */
 @Composable
-private fun StationCard(station: com.rpm.player.core.playback.StationPlaying, images: ImageLoader) {
+private fun StationCard(station: com.rpm.player.core.playback.StationPlaying, images: ImageLoader, edge: Dp) {
     val shape = RoundedCornerShape(14.dp)
     // The cover of the song the station plays, over its logo, as on the desktop.
     val cover = com.rpm.player.phone.design.rememberSongCover(station)
-    Box(Modifier.size(SLEEVE).clip(shape)) {
+    Box(Modifier.size(edge).clip(shape)) {
     StationFace(
         station.logo,
         images,
-        edge = SLEEVE,
-        inset = SLEEVE * 0.16f,
-        modifier = Modifier.size(SLEEVE).clip(shape).background(Color.Black.copy(alpha = 0x22 / 255f)).border(1.dp, Ink.cardBorder, shape),
+        edge = edge,
+        inset = edge * 0.16f,
+        modifier = Modifier.size(edge).clip(shape).background(Color.Black.copy(alpha = 0x22 / 255f)).border(1.dp, Ink.cardBorder, shape),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
             BasicText(Glyph.radio, style = icon(48f).copy(color = Ink.white(0x3A)))
@@ -492,7 +513,7 @@ private fun StationCard(station: com.rpm.player.core.playback.StationPlaying, im
     }
     if (cover != null) {
         coil3.compose.AsyncImage(
-            model = com.rpm.player.phone.design.rememberPicture(cover, SLEEVE),
+            model = com.rpm.player.phone.design.rememberPicture(cover, edge),
             contentDescription = null,
             imageLoader = images,
             contentScale = androidx.compose.ui.layout.ContentScale.Crop,
@@ -543,6 +564,7 @@ private fun Words(now: NowPlaying, enabled: Boolean, onAlbum: (() -> Unit)?, mar
             Modifier
                 .offset(x = 12.dp)
                 .size(40.dp)
+                .then(if (onMark != null) Modifier.coachTarget(CoachTargets.PLAYER_HEART) else Modifier)
                 .alpha(if (onMark == null) 0f else 1f)
                 .clickable(remember { MutableInteractionSource() }, indication = null, enabled = enabled && onMark != null, role = Role.Button) { onMark?.invoke(!marked) },
             contentAlignment = Alignment.Center,
@@ -756,9 +778,13 @@ private fun Below(
     var menuKey by remember { mutableStateOf(Rect.Zero) }
     Box(Modifier.fillMaxWidth().padding(top = 2.dp), contentAlignment = Alignment.Center) {
         Row(Modifier.chromeGlass(backdrop, RoundedCornerShape(percent = 50))) {
-            Small(LYRICS_GLYPH, stringResource(R.string.Details_Lyrics), if (lyricsLit) Color.White else Ink.white(0x99), shown = lyricsShown, enabled = lyricsEnabled, onClick = onLyrics)
-            Small(QUEUE_GLYPH, stringResource(R.string.Viz_Queue), Ink.white(0x99), shown = queueEnabled, enabled = queueEnabled, onClick = onQueue)
-            Box(Modifier.onGloballyPositioned { menuKey = it.boundsInRoot() }) {
+            Box(Modifier.coachTarget(CoachTargets.PLAYER_LYRICS)) {
+                Small(LYRICS_GLYPH, stringResource(R.string.Details_Lyrics), if (lyricsLit) Color.White else Ink.white(0x99), shown = lyricsShown, enabled = lyricsEnabled, onClick = onLyrics)
+            }
+            Box(Modifier.coachTarget(CoachTargets.PLAYER_QUEUE)) {
+                Small(QUEUE_GLYPH, stringResource(R.string.Viz_Queue), Ink.white(0x99), shown = queueEnabled, enabled = queueEnabled, onClick = onQueue)
+            }
+            Box(Modifier.coachTarget(CoachTargets.PLAYER_MENU).onGloballyPositioned { menuKey = it.boundsInRoot() }) {
                 Small(Glyph.more, "", Ink.white(0x99), shown = true, enabled = true) { onMenu(menuKey) }
             }
         }

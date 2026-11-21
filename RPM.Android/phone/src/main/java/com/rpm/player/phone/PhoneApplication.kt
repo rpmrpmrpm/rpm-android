@@ -56,6 +56,8 @@ class PhoneApplication : RpmApplication() {
 
     override fun onCreate() {
         super.onCreate()
+        // Somebody already signed in when this build first runs had the app before the welcome and the hints existed.
+        settings.settleFirstRun(signedIn = services.auth.session.value != null)
         account = Account(this, services, settings, onDeleted = { signIn.notice = Said(com.rpm.player.core.R.string.Account_DeletedBody) })
         account.begin()
         // The player follows the same reading as the offline bar: offline, only what is on the phone plays. Set here,
@@ -89,10 +91,13 @@ class PhoneApplication : RpmApplication() {
         settings = PhoneSettings(this)
         downloadBook = Downloads.book(this)
         return Services(this, "android", settings.levelling, com.rpm.player.core.radio.TunerOpensOn.EveryCountry, copies = downloadBook)
+            .also { it.dossiers.languages = settings.articleLanguages() }
     }
 
     /** A pause key only pauses: headphones and cars send it to mean pause, never to start the music. */
     override val pauseKeyResumes: Boolean get() = false
+
+    override val marksExplicitOnSession: Boolean get() = true
 
     override fun sessionOpening(): SessionOpening = SessionOpening.Player(
         Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP).putExtra(MainActivity.EXTRA_SHOW_PLAYER, true),
@@ -397,8 +402,131 @@ class PhoneSettings(context: Context) {
         isGold = isSupporter
     }
 
+    /** Whether the opening sound plays when the app opens (`sound.opening`). On until it is turned off. */
+    var openingSound by mutableStateOf(prefs.getBoolean(KEY_OPENING_SOUND, true))
+        private set
+
+    fun changeOpeningSound(on: Boolean) {
+        openingSound = on
+        prefs.edit().putBoolean(KEY_OPENING_SOUND, on).apply()
+    }
+
+    /**
+     * The language of the Wikipedia texts on the artist and record pages (`papers.language`): a language code such as
+     * "en" or "nl", or empty for the phone's own language.
+     */
+    var articleLanguage by mutableStateOf(prefs.getString(KEY_ARTICLE_LANGUAGE, null).orEmpty())
+        private set
+
+    fun changeArticleLanguage(code: String) {
+        articleLanguage = code
+        prefs.edit().putString(KEY_ARTICLE_LANGUAGE, code).apply()
+    }
+
+    /** The Wikipedias the record and artist pages read, best first, from [articleLanguage]: that language, then English. */
+    fun articleLanguages(): List<String> =
+        com.rpm.player.core.papers.Encyclopedia.languages(articleLanguage.ifEmpty { java.util.Locale.getDefault().toLanguageTag() })
+
+    /** Whether the spectrum bars beside the cover in the player move with the music (`player.bars`). On at first. */
+    var playerBars by mutableStateOf(prefs.getBoolean(KEY_PLAYER_BARS, true))
+        private set
+
+    fun changePlayerBars(on: Boolean) {
+        playerBars = on
+        prefs.edit().putBoolean(KEY_PLAYER_BARS, on).apply()
+    }
+
+    /**
+     * What the person added to home's Quick selection themselves, newest first (`home.quick`): each one a song, a record
+     * or a list, by [QuickRef]. Shown after the suggested mixtapes. Something the collection no longer holds is skipped
+     * when home is drawn, and kept here, so it comes back when the collection has it again.
+     */
+    var quickAdded by mutableStateOf(readRefs(KEY_QUICK))
+        private set
+
+    fun addToQuick(ref: String) {
+        quickAdded = (listOf(ref) + quickAdded.filterNot { it == ref }).take(QUICK_ADDED)
+        prefs.edit().putString(KEY_QUICK, quickAdded.joinToString("\n")).apply()
+    }
+
+    fun removeFromQuick(ref: String) {
+        quickAdded = quickAdded.filterNot { it == ref }
+        prefs.edit().putString(KEY_QUICK, quickAdded.joinToString("\n")).apply()
+    }
+
+    /** The ids of the playlists the person pinned to the top of the playlists view, in the order they were pinned
+     * (`playlists.pinned`). */
+    var pinnedLists by mutableStateOf(readRefs(KEY_PINNED))
+        private set
+
+    fun pinList(id: String, on: Boolean) {
+        pinnedLists = if (on) pinnedLists.filterNot { it == id } + id else pinnedLists.filterNot { it == id }
+        prefs.edit().putString(KEY_PINNED, pinnedLists.joinToString("\n")).apply()
+    }
+
+    /** The first-run hints already shown and answered (`coach.seen`), by their keys ([com.rpm.player.phone.coach.CoachMark]). */
+    var coachSeen by mutableStateOf(readRefs(KEY_COACH).toSet())
+        private set
+
+    /** Whether the hint [key] was shown and answered. [ALL_SEEN] stands for every hint. */
+    fun hasSeen(key: String): Boolean = ALL_SEEN in coachSeen || key in coachSeen
+
+    fun seeCoach(key: String) {
+        if (hasSeen(key)) return
+        coachSeen = coachSeen + key
+        prefs.edit().putString(KEY_COACH, coachSeen.joinToString("\n")).apply()
+    }
+
+    /** Puts every first-run hint back, from the settings page. */
+    fun resetCoach() {
+        coachSeen = emptySet()
+        prefs.edit().remove(KEY_COACH).apply()
+    }
+
+    /** Whether the welcome has been shown on this phone (`welcome.done`). The very first launch shows it once. */
+    var welcomed by mutableStateOf(prefs.getBoolean(KEY_WELCOMED, false))
+        private set
+
+    fun finishWelcome() {
+        welcomed = true
+        prefs.edit().putBoolean(KEY_WELCOMED, true).apply()
+    }
+
+    /** Puts the welcome back, with the hints: the settings page's key, which shows them all again. */
+    fun replayWelcome() {
+        resetCoach()
+        welcomed = false
+        prefs.edit().putBoolean(KEY_WELCOMED, false).apply()
+    }
+
+    /**
+     * Decides once, on the first run of a build that has the welcome, whether this phone is new to rpm. A person who is
+     * already signed in then had the app before: they are not walked through the welcome or the hints. Somebody who
+     * still has to sign in is new, and sees both after signing in.
+     */
+    fun settleFirstRun(signedIn: Boolean) {
+        if (prefs.contains(KEY_WELCOMED)) return
+        welcomed = signedIn
+        if (signedIn) coachSeen = setOf(ALL_SEEN)
+        prefs.edit().putBoolean(KEY_WELCOMED, signedIn).putString(KEY_COACH, coachSeen.joinToString("\n")).apply()
+    }
+
+    private fun readRefs(key: String): List<String> =
+        prefs.getString(key, null)?.split('\n')?.filter { it.isNotBlank() }.orEmpty()
+
     private companion object {
         const val FILE = "rpm.phone"
+        const val KEY_OPENING_SOUND = "sound.opening"
+        const val KEY_ARTICLE_LANGUAGE = "papers.language"
+        const val KEY_PLAYER_BARS = "player.bars"
+        const val KEY_QUICK = "home.quick"
+        /** The most the person can add to Quick selection; home shows sixteen lines in all. */
+        const val QUICK_ADDED = 16
+        const val KEY_PINNED = "playlists.pinned"
+        const val KEY_COACH = "coach.seen"
+        const val KEY_WELCOMED = "welcome.done"
+        /** In [coachSeen], every hint at once. */
+        const val ALL_SEEN = "*"
         const val KEY_MODE = "levelling.mode"
         const val KEY_CLASSICAL = "levelling.classical"
         const val KEY_RATE_WIFI = "rate.wifi"

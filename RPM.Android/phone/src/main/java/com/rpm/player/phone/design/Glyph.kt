@@ -130,6 +130,19 @@ object Glyph {
     /** Sliders, for the general section of the settings page. The cog is the tab's own mark. */
     const val general = "\uF1DE"
 
+    /** A light bulb, for the first-run hints: the desktop's mark for them. */
+    const val hint = "\uF0EB"
+
+    /** A globe, for the language of the artist and record descriptions. */
+    const val globe = "\uF0AC"
+
+    /** A clock turned back, for the songs played lately. */
+    const val history = "\uF1DA"
+
+    /** A bolt, for Quick selection. */
+    const val quick = "\uF0E7"
+
+
     /** A speech bubble, for Send feedback. */
     const val feedback = "\uF075"
 

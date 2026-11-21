@@ -1,5 +1,7 @@
 package com.rpm.player.phone.downloads
 
+import com.rpm.player.core.library.isExplicit
+import com.rpm.player.phone.design.MarkedTitle
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -77,6 +79,8 @@ fun DownloadsPage(
     images: ImageLoader,
     onRemove: (Set<String>) -> Unit,
     onClose: () -> Unit,
+    /** Whether a record's title wears the E. The collection's copy of the record says, where it still has one. */
+    explicitOf: (CloudAlbum) -> Boolean = { it.isExplicit },
 ) {
     BackHandler(onBack = onClose)
     var selecting by rememberSaveable { mutableStateOf(false) }
@@ -124,7 +128,7 @@ fun DownloadsPage(
                                 leading = null,
                                 trailing = SwipeKey(Glyph.remove, stringResource(R.string.Rpm_Download_Remove), Ink.red) { onRemove(setOf(key)) },
                             ) {
-                                Line(row, coverOf(row.album), images, selecting, picked = key in picked) {
+                                Line(row, coverOf(row.album), images, selecting, picked = key in picked, explicit = explicitOf(row.album)) {
                                     if (selecting) {
                                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                         picked = if (key in picked) picked - key else picked + key
@@ -202,7 +206,7 @@ private fun Bar(selecting: Boolean, canSelect: Boolean, onClose: () -> Unit, onS
 
 /** One album: its tick while selecting, its sleeve, its name and artist, and its size or how far it has got. */
 @Composable
-private fun Line(row: DownloadRow, cover: Cover?, images: ImageLoader, selecting: Boolean, picked: Boolean, onTap: () -> Unit) {
+private fun Line(row: DownloadRow, cover: Cover?, images: ImageLoader, selecting: Boolean, picked: Boolean, explicit: Boolean, onTap: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -225,7 +229,7 @@ private fun Line(row: DownloadRow, cover: Cover?, images: ImageLoader, selecting
         }
         SleeveSquare(cover, SLEEVE.dp, images, radius = 6.dp, glyphSize = 16f)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            BasicText(row.album.album, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(15f).copy(color = Color.White))
+            MarkedTitle(row.album.album, explicit, display(15f).copy(color = Color.White))
             BasicText(row.album.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(12f).copy(color = Ink.white(0x88)))
         }
         BasicText(state(row), style = display(12f).copy(color = Ink.white(0x77), fontFeatureSettings = "tnum"))

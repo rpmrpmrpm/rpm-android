@@ -69,19 +69,23 @@ class KaraokeTiming(private val measured: MeasuredLyrics) {
      * moved by [offset] ([LyricsLookup.offset]), and the measured lines are moved with it, so they still match its lines
      * ([MeasuredLyrics.shifted]); their words are times in the record already.
      *
+     * [known] are the measured lines the lyrics lookup already read for this record ([LyricsLookup.answer]). They are used
+     * as the first answer, so the words light from the first line and are not asked for a second time.
+     *
      * The caller runs this while the player is shown and karaoke is on, and cancels it when the song changes.
      */
-    suspend fun read(mediaId: String, sheet: LyricSheet, offset: Double) {
+    suspend fun read(mediaId: String, sheet: LyricSheet, offset: Double, known: List<MeasuredLine>? = null) {
         if (!sheet.isSynced) return
         val track = TrackRef.parse(mediaId) ?: return
 
-        suspend fun read(): List<MeasuredLine> {
-            val lines = withContext(Dispatchers.IO) { measured.of(track) }
+        fun hold(lines: List<MeasuredLine>): List<MeasuredLine> {
             held = mediaId to MeasuredLyrics.shifted(lines, offset)
             return lines
         }
 
-        if (MeasuredLyrics.covers(read(), sheet)) return
+        suspend fun read(): List<MeasuredLine> = hold(withContext(Dispatchers.IO) { measured.of(track) })
+
+        if (MeasuredLyrics.covers(known?.let(::hold) ?: read(), sheet)) return
         if (!withContext(Dispatchers.IO) { measured.ask(track, sheet) }) return
         for (round in 0 until ROUNDS) {
             delay(if (round == 0) FIRST_WAIT_MS else WAIT_MS)
@@ -89,10 +93,37 @@ class KaraokeTiming(private val measured: MeasuredLyrics) {
         }
     }
 
+    /**
+     * Asks the cloud to measure the words of the song after the one playing, while this one plays, so its karaoke is
+     * ready when it starts: the transcoder needs about half a minute for a song, longer than many songs take to reach
+     * their first line. The sheet is found the way the lyrics lookup will find it when the song starts (the owner's
+     * chosen sheet, else LRCLIB's for the same names and length), so the measured lines match it. Each song is asked
+     * about once for the life of the app. Only the person's own songs: the cloud measures nobody else's.
+     *
+     * Called only while the player is shown with karaoke on, as the lyrics lookup is: ordinary listening sends no record
+     * names anywhere.
+     */
+    suspend fun warm(mediaId: String, artist: String?, title: String?, album: String?, seconds: Double, lrcLib: com.rpm.player.core.lyrics.LrcLib) {
+        val track = TrackRef.parse(mediaId) ?: return
+        if (track.shelf != com.rpm.player.core.cloud.Shelf.Own || title.isNullOrBlank()) return
+        if (!warmed.add(mediaId)) return
+        withContext(Dispatchers.IO) {
+            val sheet = measured.chosenSheet(track) ?: lrcLib.sheet(artist, title, album, seconds)
+            if (!sheet.isSynced) return@withContext
+            if (MeasuredLyrics.covers(measured.of(track), sheet)) return@withContext
+            measured.ask(track, sheet)
+        }
+    }
+
+    /** The songs [warm] has asked about. */
+    private val warmed = java.util.Collections.synchronizedSet(HashSet<String>())
+
     private companion object {
-        const val ROUNDS = 8
-        const val FIRST_WAIT_MS = 20_000L
-        const val WAIT_MS = 15_000L
+        /** About two and a half minutes of asking: the first look soon after the request, then every four seconds. A
+         * read is one small request, and it stops at the first answer that covers the sheet. */
+        const val ROUNDS = 36
+        const val FIRST_WAIT_MS = 6_000L
+        const val WAIT_MS = 4_000L
     }
 }
 

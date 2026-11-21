@@ -1,5 +1,10 @@
 package com.rpm.player.phone.home
 
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.BlendMode
+import com.rpm.player.phone.design.holdPress
+import com.rpm.player.core.library.isExplicit
+import com.rpm.player.phone.design.MarkedTitle
 import com.rpm.player.phone.design.rememberPicture
 import com.rpm.player.phone.design.frostsAtTop
 import com.rpm.player.phone.design.tapsToTop
@@ -162,6 +167,29 @@ private const val ROW_ART = 132.0
  */
 private fun bannerMirror(cards: Int): Dp = ((if (cards > 1) 10 + 5 else 0) + 26 + (23 + 10) + ROW_ART + 18).dp
 
+/** In night mode, the wash over the whole card toward its foot, where the writing stands. */
+private val NIGHT_FOOT = Brush.verticalGradient(
+    0f to Color.Transparent,
+    0.4f to Color.Black.copy(alpha = 0.25f),
+    0.68f to Color.Black.copy(alpha = 0.7f),
+    1f to Color.Black.copy(alpha = 0.7f),
+)
+
+/**
+ * Outside night mode, the shade behind the words at the card's foot: nothing over the upper half, so the photograph shows
+ * as the artist page shows it, and enough under the kicker, the title and the artist for white letters with their
+ * shadow to read on a light photograph.
+ */
+private val DAY_FOOT = Brush.verticalGradient(
+    0f to Color.Transparent,
+    0.5f to Color.Transparent,
+    0.72f to Color.Black.copy(alpha = 0.22f),
+    1f to Color.Black.copy(alpha = 0.5f),
+)
+
+/** Outside night mode, how much the mirror under the banner is darkened: Quick selection's lines are read over it. */
+private val MIRROR_HELD = ColorFilter.tint(Color.Black.copy(alpha = 0.35f), BlendMode.SrcAtop)
+
 /** Where a card's blur starts, as a share of its height: the face is cut into the upper half (`HomeFeatureCard.blurFrom`). */
 private const val BANNER_BLUR_FROM = 0.6f
 
@@ -216,6 +244,8 @@ class HomeActions(
  * @param onSwitch opens the collections picker, or null when there is only the person's own to choose.
  * @param onReady called once the page has drawn what it opens on: the banner's front card with its photograph looked
  * for, or no banner at all. The launch keeps its wait cover until then.
+ * @param quickAdded what the person put on Quick selection themselves ([QuickRef]), newest first. Shown after the
+ * suggested mixtapes.
  */
 @Composable
 fun HomePage(
@@ -228,6 +258,7 @@ fun HomePage(
     onScreen: Boolean,
     onSwitch: (() -> Unit)?,
     onReady: () -> Unit,
+    quickAdded: List<String> = emptyList(),
 ) {
     val collection = ready.collection
     val home = ready.home
@@ -248,7 +279,9 @@ fun HomePage(
     }
     val density = LocalDensity.current
     val banner = remember(home.banner, stations) { HomeShelf.withStation(home.banner, stations.firstOrNull()) }
-    val quick = remember(home.quick, stations) { HomeShelf.withStations(home.quick, stations).take(QUICK_PICKS) }
+    val quick = remember(home.quick, stations, quickAdded, collection) {
+        QuickRef.merged(HomeShelf.withStations(home.quick, stations), quickAdded, collection, QUICK_PICKS)
+    }
     val statusBar = WindowInsets.statusBars.asPaddingValues(density).calculateTopPadding()
     var heading by remember { mutableStateOf(0.dp) }
     var dress by remember { mutableStateOf<BannerDress?>(null) }
@@ -382,10 +415,10 @@ internal fun leadShare(scrolled: Float, bannerFoot: Float, top: Float): Float {
 private const val PRELOAD_AFTER_MS = 2_500L
 
 /** A banner card's photograph as cut for [scene], and the run-off baked from it for a card of that size. */
-private class HeldPhoto(val scene: ArtScene, val photo: Bitmap, val runOff: ImageBitmap, val width: Dp, val plate: Dp, val mirror: Dp) {
-    /** The run-off, if it was baked from [picture] at this size. */
-    fun bakedFor(picture: Bitmap?, width: Dp, plate: Dp, mirror: Dp): ImageBitmap? =
-        runOff.takeIf { picture === photo && width == this.width && plate == this.plate && mirror == this.mirror }
+private class HeldPhoto(val scene: ArtScene, val photo: Bitmap, val runOff: ImageBitmap, val width: Dp, val plate: Dp, val mirror: Dp, val night: Boolean) {
+    /** The run-off, if it was baked from [picture] at this size, for the same night mode. */
+    fun bakedFor(picture: Bitmap?, width: Dp, plate: Dp, mirror: Dp, night: Boolean): ImageBitmap? =
+        runOff.takeIf { picture === photo && width == this.width && plate == this.plate && mirror == this.mirror && night == this.night }
 }
 
 /** How long a turn waits at most for the next card's photograph to be cut, after the card in front has had its time. */
@@ -584,17 +617,20 @@ private fun BannerCardView(
     }
     val wearing = photo ?: cover
     // The photograph blurred toward the card's foot and mirrored under it, baked once per photograph and size.
-    val runOff by produceState(held?.bakedFor(photo, width, plate, mirror), photo, width, plate, mirror) {
+    // Outside night mode the photograph is baked as it is, as the artist page bakes its band: the words get their own
+    // shade over it ([DAY_FOOT]). In night mode it is baked darkened.
+    val night = LocalNightMode.current
+    val runOff by produceState(held?.bakedFor(photo, width, plate, mirror, night), photo, width, plate, mirror, night) {
         val picture = photo ?: return@produceState
-        held?.bakedFor(picture, width, plate, mirror)?.let { value = it; return@produceState }
+        held?.bakedFor(picture, width, plate, mirror, night)?.let { value = it; return@produceState }
         value = withContext(Dispatchers.Default) {
-            RunOff.bake(picture, width.value, plate.value, mirror.value, BANNER_BLUR_FROM, RunOff.Reflection.Blurred)
+            RunOff.bake(picture, width.value, plate.value, mirror.value, BANNER_BLUR_FROM, RunOff.Reflection.Blurred, darkened = night)
         }
     }
     LaunchedEffect(photo, runOff) {
         val picture = photo
         val baked = runOff
-        if (scene != null && picture != null && baked != null) onHeld(HeldPhoto(scene, picture, baked, width, plate, mirror))
+        if (scene != null && picture != null && baked != null) onHeld(HeldPhoto(scene, picture, baked, width, plate, mirror, night))
     }
     LaunchedEffect(runOff) { onRunOff(runOff) }
     // Ready once the photograph and its run-off are both in, so the front card comes in whole: the run-off is baked a
@@ -647,20 +683,12 @@ private fun BannerCardView(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = RunOff.HELD)))
+                // The photograph is held darker in night mode only, as on the artist page.
+                if (night) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = RunOff.HELD)))
             }
         }
-        // Darker towards the foot, where the writing stands.
-        Box(
-            Modifier.fillMaxSize().background(
-                Brush.verticalGradient(
-                    0f to Color.Transparent,
-                    0.4f to Color.Black.copy(alpha = 0.25f),
-                    0.68f to Color.Black.copy(alpha = 0.7f),
-                    1f to Color.Black.copy(alpha = 0.7f),
-                ),
-            ),
-        )
+        // In night mode, darker towards the foot over the whole card, under the baked blur, which carries the same wash.
+        if (night) Box(Modifier.fillMaxSize().background(NIGHT_FOOT))
         // The blur toward the foot, over the sharp photograph: the plate's part of the baked run-off.
         runOff?.takeIf { whole }?.let { baked ->
             Box(
@@ -670,6 +698,9 @@ private fun BannerCardView(
                 },
             )
         }
+        // Outside night mode, a shade only behind the words at the foot, over the blur, so they read on any photograph
+        // while the face above them is shown as it is.
+        if (!night) Box(Modifier.fillMaxSize().background(DAY_FOOT))
         // The writing keeps its size while the picture grows with a pull, as on iPhone.
         Box(Modifier.matchParentSize().then(keepsSize)) {
         Row(
@@ -681,7 +712,7 @@ private fun BannerCardView(
             val shadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(0f, 1f), blurRadius = 6f)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 BasicText(kicker, style = display(12f).copy(color = Ink.white(0xCC), letterSpacing = pt(1.5f), shadow = shadow))
-                BasicText(title, maxLines = 2, overflow = TextOverflow.Ellipsis, style = displayBold(22f).copy(color = Color.White, shadow = shadow))
+                MarkedTitle(title, album?.isExplicit == true, displayBold(22f).copy(color = Color.White, shadow = shadow), maxLines = 2, edge = 17.dp)
                 if (!subtitle.isNullOrEmpty()) {
                     BasicText(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = system(13f).copy(color = Ink.white(0xD1), shadow = shadow))
                 }
@@ -713,6 +744,9 @@ private fun BannerReflections(
     pull: TopPull,
     platePx: Float,
 ) {
+    // Outside night mode the bake is not darkened, so the mirror is held down here: Quick selection's lines are read over
+    // it. In night mode the bake already carries the darkening.
+    val quiet = if (LocalNightMode.current) null else MIRROR_HELD
     Box(
         Modifier
             .fillMaxWidth()
@@ -747,6 +781,7 @@ private fun BannerReflections(
                         srcSize = IntSize(baked.width, baked.height - from),
                         dstOffset = IntOffset(x, 0),
                         dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                        colorFilter = quiet,
                     )
                 }
             },
@@ -914,16 +949,21 @@ private fun QuickLine(pick: QuickPick, collection: Collection, images: ImageLoad
         is QuickPick.Radio -> { { actions.onRadio(pick.track) } }
     }
     val presses = remember { MutableInteractionSource() }
+    val holds = LocalHolds.current
     Row(
         Modifier
             .fillMaxWidth()
             .height(QUICK_LINE)
-            // A song has the song menu on a long press, as on iPhone. A song's radio is not the song, and has none.
+            // Every line has a menu on a long press. A song has the song menu, as on iPhone, and so has a mixtape: it is
+            // named for its song, and holding it offers that song. A record and a list have theirs ([Holds]); a station
+            // has none.
             .then(
-                if (pick is QuickPick.Song) {
-                    Modifier.songPress(pick.track, presses) { onClick?.invoke() }
-                } else {
-                    Modifier.clickable(presses, indication = null, enabled = onClick != null) { onClick?.invoke() }
+                when {
+                    pick is QuickPick.Song -> Modifier.songPress(pick.track, presses) { onClick?.invoke() }
+                    pick is QuickPick.Radio -> Modifier.songPress(pick.track, presses) { onClick?.invoke() }
+                    pick is QuickPick.OfAlbum && holds != null -> Modifier.holdPress(presses, { onClick?.invoke() }) { holds.album(pick.album) }
+                    pick is QuickPick.OfList && holds != null -> Modifier.holdPress(presses, { onClick?.invoke() }) { holds.list(pick.list) }
+                    else -> Modifier.clickable(presses, indication = null, enabled = onClick != null) { onClick?.invoke() }
                 },
             ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -953,7 +993,13 @@ private fun QuickLine(pick: QuickPick, collection: Collection, images: ImageLoad
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            BasicText(title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = system(14f, FontWeight.Medium).copy(color = Color.White))
+            // The E on a song and on a record. A mixtape is a radio and not the song it starts from, so it has none.
+            val explicit = when (pick) {
+                is QuickPick.Song -> pick.track.isExplicit
+                is QuickPick.OfAlbum -> pick.album.isExplicit
+                else -> false
+            }
+            MarkedTitle(title, explicit, system(14f, FontWeight.Medium).copy(color = Color.White))
             if (!subtitle.isNullOrEmpty()) {
                 BasicText(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = system(12f).copy(color = Ink.secondary))
             }
@@ -993,8 +1039,9 @@ internal fun ListsRow(heading: String, lists: List<TrackList>, collection: Colle
         BasicText(heading, Modifier.padding(horizontal = 20.dp), style = display(19f).copy(color = Color.White))
         LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             items(lists, key = { it.id }) { list ->
+                val holds = LocalHolds.current
                 Column(
-                    Modifier.width(art).clickable(remember { MutableInteractionSource() }, indication = null) { onOpen(list) },
+                    Modifier.width(art).holdPress(remember { MutableInteractionSource() }, { onOpen(list) }, holds?.let { { it.list(list) } }),
                     verticalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
                     val name = listName(list.name)

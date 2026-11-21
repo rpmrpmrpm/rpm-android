@@ -48,6 +48,7 @@ class SessionArtwork(
     private val covers: CastCovers,
     private val scope: CoroutineScope,
     private val songCovers: SongCovers? = null,
+    private val marksExplicit: Boolean = false,
 ) : ForwardingPlayer(player) {
     private val listeners = CopyOnWriteArraySet<Player.Listener>()
 
@@ -104,11 +105,25 @@ class SessionArtwork(
             val cover = song?.takeIf { it.mediaId == id && it.key == keyOf(sung) }
             if (cover != null) return built.setArtworkData(cover.jpeg, MediaMetadata.PICTURE_TYPE_FRONT_COVER).build()
         }
+        if (announced == null) markExplicit(built, own)
         val picture = held?.takeIf { it.mediaId == id } ?: return built.build()
         return built.setArtworkData(picture.jpeg, MediaMetadata.PICTURE_TYPE_FRONT_COVER).build()
     }
 
     /** What the station playing announces, with the station's name, or null when a record plays. */
+    /**
+     * Puts [EXPLICIT_MARK] after the title of a song whose item says it is explicit ([EXTRA_EXPLICIT]), and sets the
+     * platform's explicit key, which car screens read. Only the session's metadata changes: the app's own screens read
+     * the queue's item, whose title stays as it is.
+     */
+    private fun markExplicit(built: MediaMetadata.Builder, own: MediaMetadata) {
+        if (!marksExplicit) return
+        if (currentMediaItem?.mediaMetadata?.extras?.getBoolean(EXTRA_EXPLICIT) != true) return
+        val title = own.title?.toString()?.takeIf { it.isNotBlank() } ?: return
+        built.setTitle(title + "\u00A0" + EXPLICIT_MARK)
+            .setExtras(Bundle(own.extras ?: Bundle()).apply { putLong(PLATFORM_EXPLICIT, 1L) })
+    }
+
     private fun stationSong(own: MediaMetadata): Pair<Icy.Said?, String>? {
         val id = currentMediaItem?.mediaId ?: return null
         if (StationItems.uuidOf(id) == null) return null
@@ -170,9 +185,19 @@ class SessionArtwork(
         }
     }
 
-    private companion object {
+    companion object {
         /** An announcement this short on either side is not a song worth asking about ("-", "X"). */
-        const val SHORTEST = 2
+        private const val SHORTEST = 2
+
+        /**
+         * The explicit mark after a song's title on the lock screen and the media notification: a circled E (U+24BA).
+         * The system draws that text, not the app, so the mark must be a character its fonts have. Android's symbol font
+         * has this one; the squared E (U+1F174) that streaming services use is in none of them and shows as a box.
+         */
+        const val EXPLICIT_MARK = "\u24BA"
+
+        /** `MediaConstants.METADATA_KEY_IS_EXPLICIT`: 1 for an explicit item. Car screens draw their own mark from it. */
+        private const val PLATFORM_EXPLICIT = "android.media.IS_EXPLICIT"
     }
 
     /** Tells the session the metadata changed: it reads [getMediaMetadata] again, picture included. */

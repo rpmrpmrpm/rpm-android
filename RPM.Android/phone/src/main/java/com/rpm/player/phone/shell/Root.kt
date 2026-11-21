@@ -1,5 +1,21 @@
 package com.rpm.player.phone.shell
 
+import com.rpm.player.phone.coach.CoachTargets
+import com.rpm.player.phone.coach.LocalCoachTargets
+import com.rpm.player.phone.coach.coachTarget
+import com.rpm.player.phone.coach.CoachMark
+import com.rpm.player.phone.coach.CoachHint
+import com.rpm.player.phone.coach.CoachFinale
+import com.rpm.player.phone.coach.Welcome
+import com.rpm.player.phone.coach.rememberSample
+import com.rpm.player.phone.design.HoldMenus
+import com.rpm.player.phone.design.HoldMenuLayer
+import com.rpm.player.phone.design.LocalHoldMenus
+import com.rpm.player.phone.home.Holds
+import com.rpm.player.phone.home.LocalHolds
+import com.rpm.player.phone.home.QuickRef
+import com.rpm.player.phone.library.PlayedLately
+import com.rpm.player.core.library.isExplicit
 import androidx.compose.runtime.produceState
 import com.rpm.player.core.cloud.Post
 import com.rpm.player.phone.profile.LocalSampleFaces
@@ -191,6 +207,9 @@ fun Root(services: Services, settings: PhoneSettings, signIn: SignIn, controller
     }
     val reach by (LocalContext.current.applicationContext as com.rpm.player.phone.PhoneApplication).line.collectAsStateWithLifecycle()
     var opening by rememberSaveable { mutableStateOf(true) }
+    // The opening sound, as the opening screen shows: once per start of the app ([OpeningSound]).
+    val soundContext = LocalContext.current
+    LaunchedEffect(Unit) { if (opening) OpeningSound.play(soundContext, settings.openingSound) }
     var fading by remember { mutableStateOf(false) }
     // Whether the shell has lifted its own wait cover, home's front card in: the opening waits for that and not only for
     // the library, or it fades onto that cover and home comes in under the person's eyes.
@@ -276,11 +295,16 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     val pages = rememberSaveableStateHolder()
     val now = rememberNowPlaying(controller)
     val playing = now?.mediaId?.let { TrackRef.parse(it)?.rpmId }
+    // The opening sound gives way to the music, as the desktop's does.
+    LaunchedEffect(now?.playing) { if (now?.playing == true) OpeningSound.stop() }
     val collection = ready.collection
     val images = services.images
     val queue = rememberQueue(controller, collection)
     // The marked songs exist only on the person's own shelf. Another account's songs cannot be marked by this one.
     val marked = remember(collection) { if (collection.shelf == Shelf.Own) MarkedSongs.of(collection.albums) else null }
+    // The songs played lately, newest first, with what this phone played since the library was read.
+    val listens by com.rpm.player.core.playback.ListeningHistory.listens.collectAsStateWithLifecycle()
+    val history = remember(collection, listens) { PlayedLately.of(collection, listens) }
     val heard by services.radio.listens.top.collectAsStateWithLifecycle()
     // The launch's wait cover (`covering` and `homeReady` on iPhone). The shell is new for each collection shown, so a
     // switch to another collection is covered the same way.
@@ -422,6 +446,15 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     val file: (CloudTrack) -> Unit = { filing = it }
     val favouriteRecords by services.albumFavourites.marks.collectAsStateWithLifecycle()
     val songMenus = remember { SongMenuShown() }
+    // The long-press menus on records and playlists, and what they offer.
+    val holdMenus = remember { HoldMenus() }
+    val resources = LocalContext.current.resources
+    val holds = remember(collection, controller, resources) {
+        Holds(resources, settings) { album ->
+            // As play next on a song: into an empty queue the record waits, paused.
+            controller?.insertNext(queueOf(collection.shelf, album, collection.cover(album), collection.disc(album)))
+        }
+    }
     // The long-press menu on a song outside the queue, handed down to every page that lists songs. Made again only when
     // the collection or the controller changes, because a new menu redraws every row that reads it.
     val songMenu = remember(collection, controller) {
@@ -439,6 +472,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             // to keep the old one beside.
             startRadio = { track -> controller?.startRadio(queued(collection, track)) },
             shown = songMenus,
+            quick = { track -> holds.quick(QuickRef.of(track)) },
         )
     }
     val queueMenu = remember(songMenu) { songMenu.with(UpNext.ItIsTheQueue) }
@@ -602,6 +636,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                 QueuePage(queue, sittingFrom, controller, images, bottomRoom = chrome, onBack = onBack)
             }
             step == Step.Marked && marked != null -> songs(stringResource(R.string.Playlists_FavoriteTracks), marked, onBack)
+            step == Step.History && history.isNotEmpty() -> songs(stringResource(R.string.Playlists_RecentlyPlayed), history, onBack)
             else -> root()
         }
     }
@@ -655,14 +690,28 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
 
     // The pages' sheets are drawn over the chrome (`OverChrome`), as the iPhone's cover the tab bar and the mini player.
     val overChrome = remember { OverChromeHost() }
+    // Where the first-run hints point ([CoachTargets]), and the song the welcome plays.
+    val coachTargets = remember { CoachTargets() }
+    val welcomeSong = if (!settings.welcomed && collection.shelf == Shelf.Own) rememberSample(collection) else null
+    // Whether a hint of the app's tour showed in this run: the closing card follows only such a run, as on the desktop.
+    var touredNow by remember { mutableStateOf(false) }
+    // The player's hints wait until the sheet has risen.
+    var playerSettled by remember { mutableStateOf(false) }
+    LaunchedEffect(playerUp) {
+        playerSettled = false
+        if (playerUp) {
+            delay(PLAYER_RISES_MS)
+            playerSettled = true
+        }
+    }
     // Each tab's way back to the top of the page it shows: a tap on the tab that is already showing, or on an empty part
     // of a page's header ([TopTaps]).
     val topTaps = remember { Tab.entries.associateWith { TopTaps() } }
     // The covers of the songs stations announce reach the mini player and the player through LocalSongCovers.
-    CompositionLocalProvider(LocalPlayable provides downloads.playable, LocalOverChrome provides overChrome, LocalSongCovers provides services.songCovers) {
+    CompositionLocalProvider(LocalPlayable provides downloads.playable, LocalOverChrome provides overChrome, LocalSongCovers provides services.songCovers, LocalCoachTargets provides coachTargets) {
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(backdrop)) {
-          CompositionLocalProvider(LocalSongMenu provides songMenu, LocalTopTaps provides topTaps.getValue(tab)) {
+          CompositionLocalProvider(LocalSongMenu provides songMenu, LocalTopTaps provides topTaps.getValue(tab), LocalHoldMenus provides holdMenus, LocalHolds provides holds) {
             when (tab) {
                 Tab.Library -> AnimatedContent(
                     targetState = opened,
@@ -695,6 +744,8 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                                 standing = wall,
                                 onRetry = services.library::retry,
                                 reading = WallReading(refreshing, services.library::refresh, shelfRows.firstOrNull { it.isOpen && !it.isOwn }?.name, services.library::rereadLists),
+                                history = history,
+                                onOpenHistory = { opened = opened + Step.History },
                             )
                         }
                     }
@@ -715,6 +766,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                                 onScreen = tab == Tab.Home && homeOpened.isEmpty(),
                                 onSwitch = if (shelfRows.size > 1) ({ picking = true }) else null,
                                 onReady = { homeReady = true },
+                                quickAdded = settings.quickAdded,
                             )
                         }
                     }
@@ -765,7 +817,9 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             miniPlayer = if (now != null && controller != null) {
                 {
                     CompositionLocalProvider(LocalSongCovers provides services.songCovers) {
-                        MiniPlayer(now, controller, images, backdrop, onOpen = { wiring.leaving = false; playerUp = true })
+                        Box(Modifier.coachTarget(CoachTargets.MINI_PLAYER)) {
+                            MiniPlayer(now, controller, images, backdrop, onOpen = { wiring.leaving = false; playerUp = true })
+                        }
                     }
                 }
             } else {
@@ -798,6 +852,11 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
         // after the listening ended.
         val sheetNow = now ?: wiring.lastNow
         if (playerUp && sheetNow != null && controller != null) {
+            // While the player shows with karaoke on, the next song's words are measured ahead, so its karaoke is ready
+            // from its first line.
+            val karaokeWanted = com.rpm.player.phone.player.karaokeOn(services, settings)
+            val next = queue.playing?.let { queue.entries.getOrNull(it + 1) }
+            LaunchedEffect(next?.mediaId, karaokeWanted) { if (karaokeWanted) wiring.warmNext(next) }
             val album = playing?.let { collection.albumOf[it] }
             val artist = playing?.let { wiring.artistOf(it, ready) }
             CompositionLocalProvider(LocalSongCovers provides services.songCovers) {
@@ -826,6 +885,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                     speakers = wiring.speakers,
                     sleep = services.sleep,
                     leaving = wiring.leaving,
+                    bars = settings.playerBars,
                     onClosed = {
                         playerUp = false
                         wiring.leaving = false
@@ -904,8 +964,10 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                 images = images,
                 onRemove = downloads.engine::remove,
                 onClose = { showingDownloads = false },
+                explicitOf = { album -> (collection.album(album.key) ?: album).isExplicit },
             )
         }
+        HoldMenuLayer(holdMenus, backdrop)
         SongOverlays(
             services,
             collection,
@@ -919,6 +981,48 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                 start?.let { controller?.start(it) }
             },
         )
+        // The first-run hints, over everything but the stage: the player's while it is up, the app's otherwise. Not while
+        // the welcome, the wait cover or the collections picker is up, and never over another account's collection.
+        if (settings.welcomed && !covering && !picking && !onStage && collection.shelf == Shelf.Own) {
+            val tour = if (playerUp) CoachMark.PLAYER_TOUR.takeIf { playerSettled } else CoachMark.APP_TOUR
+            val due = tour?.firstNotNullOfOrNull { mark -> if (settings.hasSeen(mark.key)) null else coachTargets.of(mark.target)?.let { mark to it } }
+            when {
+                due != null -> {
+                    val (mark, target) = due
+                    if (!playerUp) LaunchedEffect(mark) { touredNow = true }
+                    CoachHint(
+                        mark,
+                        target,
+                        onNext = { settings.seeCoach(mark.key) },
+                        // The close key ends the tour it belongs to.
+                        onClose = { tour.forEach { settings.seeCoach(it.key) } },
+                    )
+                }
+                !playerUp && touredNow && !settings.hasSeen(CoachMark.DONE) -> CoachFinale(onDone = { settings.seeCoach(CoachMark.DONE) })
+            }
+        }
+        // The welcome, on the very first launch, over the app it opens on.
+        if (!settings.welcomed && collection.shelf == Shelf.Own && !covering) {
+            Welcome(
+                collection,
+                images,
+                settings,
+                welcomeSong,
+                onPlay = { song ->
+                    settings.finishWelcome()
+                    val album = collection.albumOf[song.rpmId]
+                    if (album != null) {
+                        val at = album.tracks.indexOfFirst { it.rpmId == song.rpmId }.coerceAtLeast(0)
+                        play(queueOf(collection.shelf, album, collection.cover(album), collection.disc(album)), at, Tapped.Song)
+                    } else {
+                        play(listOf(queued(collection, song)), 0, Tapped.Song)
+                    }
+                    wiring.leaving = false
+                    playerUp = true
+                },
+                onDone = settings::finishWelcome,
+            )
+        }
         // Over everything, the player included: the stage is the whole screen while the phone is turned.
         Stage(onStage, now, controller, services, wiring.speakers)
         Reports(services, feedbackShot, onFeedbackClosed = { feedbackShot = null })
@@ -1036,6 +1140,9 @@ private fun queued(collection: com.rpm.player.core.library.Collection, track: Cl
 /** How long the wait cover stays over the shell at least, and how much longer it waits at most for home's front card:
  * a photograph is a network request, and a slow one must not hold the app (`homeWaitsAtMost` on iPhone). */
 private const val COVER_FIRST_MS = 400L
+
+/** How long the player takes to rise before its first-run hints point at its parts. */
+private const val PLAYER_RISES_MS = 700L
 private const val HOME_WAITS_AT_MOST_MS = 2_100L
 
 /**

@@ -161,7 +161,7 @@ class PlaybackService : MediaSessionService() {
         // The session's player says its device is remote while casting, so the remote's volume keys move the
         // speaker, and carries the playing item's picture for the launcher's card.
         val sessionPlayer = CastPlayer(player, services.casting)
-        val builder = MediaSession.Builder(this, SessionArtwork(sessionPlayer, services.nowPlayingPictures, scope, services.songCovers)).setCallback(Callback())
+        val builder = MediaSession.Builder(this, SessionArtwork(sessionPlayer, services.nowPlayingPictures, scope, services.songCovers, (application as RpmApplication).marksExplicitOnSession)).setCallback(Callback())
         // How the launcher's now playing card and the notification open the app: each app answers (SessionOpening).
         when (val opening = (application as RpmApplication).sessionOpening()) {
             is SessionOpening.Player -> builder.setSessionActivity(

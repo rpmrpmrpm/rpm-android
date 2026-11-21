@@ -1,5 +1,6 @@
 package com.rpm.player.core.playback
 
+import com.rpm.player.core.library.isExplicit
 import com.rpm.player.core.cloud.Shelf
 import android.os.Bundle
 import android.os.SystemClock
@@ -271,6 +272,10 @@ fun Player.addToQueue(tracks: List<Queued>) {
     addMediaItems(tracks.map { mediaItemOf(it.copy(upNext = true)) })
 }
 
+/** Set on a queued song whose tags say its lyrics are explicit. The phone's media session marks its title with
+ * [SessionArtwork.EXPLICIT_MARK] for the lock screen and the notification. */
+const val EXTRA_EXPLICIT = "rpm.explicit"
+
 /** The song radio a queued item belongs to, in its metadata extras. Not kept with the saved queue: a radio ends
  * when the service does, as it does on the computer. */
 const val EXTRA_RADIO = "rpm.radio"
@@ -295,6 +300,7 @@ internal fun mediaItemOf(q: Queued): MediaItem =
                         putLevel(Level.of(q.track.tags))
                         q.radio?.let { putString(EXTRA_RADIO, it) }
                         if (q.upNext) putBoolean(EXTRA_UP_NEXT, true)
+                        if (q.track.isExplicit) putBoolean(EXTRA_EXPLICIT, true)
                     },
                 )
                 .build(),

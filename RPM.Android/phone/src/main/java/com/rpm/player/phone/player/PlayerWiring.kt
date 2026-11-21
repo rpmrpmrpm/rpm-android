@@ -64,7 +64,14 @@ class PlayerWiring(private val services: Services) {
      */
     suspend fun readTiming(now: NowPlaying) {
         if (now.station != null || lyrics.mediaId != now.mediaId) return
-        timing.read(now.mediaId, lyrics.original, lyrics.offset)
+        timing.read(now.mediaId, lyrics.original, lyrics.offset, known = lyrics.answer?.lines)
+    }
+
+    /** Has the words of [next], the song after the one playing, measured ahead of time ([KaraokeTiming.warm]). */
+    suspend fun warmNext(next: QueueEntry?) {
+        next ?: return
+        val track = collection?.tracksById?.get(next.track.rpmId) ?: next.track
+        timing.warm(next.mediaId, track.artist, track.title, track.album, track.tags?.durationSeconds ?: 0.0, services.lrcLib)
     }
 
     /** Whether the song [rpmId] carries the heart, as pressed here or as the library has it. */

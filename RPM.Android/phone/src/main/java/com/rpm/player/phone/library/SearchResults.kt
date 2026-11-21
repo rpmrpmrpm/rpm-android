@@ -1,5 +1,7 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.core.library.isExplicit
+import com.rpm.player.phone.design.MarkedTitle
 import com.rpm.player.phone.ui.ArtistMark
 import com.rpm.player.phone.ui.MarkView
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -148,12 +150,12 @@ internal fun SearchResults(
             ArtistLine(artist, collection, images, artwork) { actions.onOpenArtist(artist) }
         }
         group("records", headings.records, headings, answer.records, open, key = { "record:" + it.key }) { album ->
-            Line(album, collection, images, album.album, album.artist, mark = false, onClick = { actions.onOpen(album) }) {
+            Line(album, collection, images, album.album, album.artist, mark = false, explicit = album.isExplicit, onClick = { actions.onOpen(album) }) {
                 BasicText(if (album.tracks.size == 1) stringResource(R.string.Rpm_Album_TracksOne) else stringResource(R.string.Rpm_Album_Tracks, album.tracks.size), maxLines = 1, style = display(12f).copy(color = Ink.white(0x66)))
             }
         }
         group("songs", headings.songs, headings, answer.songs, open, key = { "song:" + it.track.rpmId }) { hit ->
-            Line(hit.album, collection, images, hit.track.title.orEmpty(), hit.track.artist.orEmpty(), mark = hit.track.rpmId == playing, song = hit.track, onClick = { actions.onPlay(hit) })
+            Line(hit.album, collection, images, hit.track.title.orEmpty(), hit.track.artist.orEmpty(), mark = hit.track.rpmId == playing, explicit = hit.track.isExplicit, song = hit.track, onClick = { actions.onPlay(hit) })
         }
         if (answer.songs.size >= SongSearch.CEILING && open["songs"] == true) {
             item(key = "ceiling") {
@@ -259,10 +261,11 @@ private fun Line(
     line: String,
     mark: Boolean,
     onClick: () -> Unit,
+    explicit: Boolean = false,
     song: CloudTrack? = null,
     end: @Composable () -> Unit = {},
 ) {
-    Entry(title, line, mark, onClick, song, end) {
+    Entry(title, line, mark, onClick, song, end, explicit) {
         SleeveSquare(collection.cover(album), 40.dp, images, radius = 6.dp, glyphSize = 15f)
     }
 }
@@ -326,6 +329,7 @@ private fun Entry(
     onClick: () -> Unit,
     song: CloudTrack? = null,
     end: @Composable () -> Unit = {},
+    explicit: Boolean = false,
     picture: @Composable () -> Unit,
 ) {
     val presses = remember { MutableInteractionSource() }
@@ -342,7 +346,7 @@ private fun Entry(
         Box(Modifier.width(3.dp).height(26.dp).clip(RoundedCornerShape(50)).background(if (mark) Color.White else Color.Transparent))
         Box(Modifier.padding(start = 9.dp)) { picture() }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            BasicText(title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(15f).copy(color = Color.White))
+            MarkedTitle(title, explicit, display(15f).copy(color = Color.White))
             BasicText(line, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(12f).copy(color = Ink.white(0x88)))
         }
         end()

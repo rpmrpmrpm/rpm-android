@@ -1,5 +1,7 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.core.library.isExplicit
+import com.rpm.player.phone.design.MarkedTitle
 import android.content.res.Resources
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -346,12 +348,7 @@ private fun PickRow(hit: SongSearch.SongHit, chosen: Boolean, collection: Collec
     ) {
         PlaylistSleeve(collection.cover(hit.album), Glyph.record, edge = 40.dp, corner = 6.dp, mark = 16f, images)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            BasicText(
-                hit.track.title?.takeIf { it.isNotEmpty() } ?: hit.album.album,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = display(14f).copy(color = Color.White),
-            )
+            MarkedTitle(hit.track.title?.takeIf { it.isNotEmpty() } ?: hit.album.album, hit.track.isExplicit, display(14f).copy(color = Color.White))
             val artist = hit.track.artist?.takeIf { it.isNotEmpty() } ?: hit.album.artist
             val said = listOf(artist, hit.album.album).filter { it.isNotEmpty() }.joinToString(" · ")
             BasicText(said, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(11f).copy(color = Ink.white(0x88)))

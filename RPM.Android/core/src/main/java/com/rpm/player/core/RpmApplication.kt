@@ -36,6 +36,11 @@ abstract class RpmApplication : Application() {
     /** Whether a media key's Pause plays when the player is paused (`KeyRules.forMediaKey`). The TV's remotes need it;
      * a phone's headphones and car must not have it. */
     open val pauseKeyResumes: Boolean get() = true
+
+    /** Whether the media session puts the explicit mark after an explicit song's title, for the lock screen and the
+     * media notification ([com.rpm.player.core.playback.SessionArtwork]). The phone does; the TV's now playing card
+     * does not. */
+    open val marksExplicitOnSession: Boolean get() = false
 }
 
 /** How the system's media surfaces open the app, answered by each app ([RpmApplication.sessionOpening]). */

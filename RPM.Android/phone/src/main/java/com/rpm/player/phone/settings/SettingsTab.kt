@@ -106,5 +106,16 @@ fun SettingsTab(
         },
         onFeedback = onFeedback,
         bottomRoom = bottomRoom,
+        openingSound = settings.openingSound,
+        onOpeningSound = settings::changeOpeningSound,
+        articleLanguage = settings.articleLanguage,
+        onArticleLanguage = { code ->
+            settings.changeArticleLanguage(code)
+            // The pages read the descriptions through the dossiers, which ask in these languages from now on.
+            services.dossiers.languages = settings.articleLanguages()
+        },
+        playerBars = settings.playerBars,
+        onPlayerBars = settings::changePlayerBars,
+        onReplayHints = settings::replayWelcome,
     )
 }

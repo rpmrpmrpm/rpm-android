@@ -87,6 +87,11 @@ class LyricsLookup(private val lrcLib: LrcLib, private val measured: MeasuredLyr
     var offset by mutableStateOf(0.0)
         private set
 
+    /** The cloud's measured words of the record [sheet] belongs to, as the lookup read them for the offset; null where
+     * it did not read them. [KaraokeTiming] starts from them, so the words are not asked for twice. */
+    var answer by mutableStateOf<com.rpm.player.core.lyrics.MeasuredAnswer?>(null)
+        private set
+
     /** The media id of the record [sheet] belongs to, once its lookup has finished; null while one runs. */
     var mediaId by mutableStateOf<String?>(null)
         private set
@@ -104,6 +109,7 @@ class LyricsLookup(private val lrcLib: LrcLib, private val measured: MeasuredLyr
             sheet = LyricSheet.EMPTY
             original = LyricSheet.EMPTY
             offset = 0.0
+            answer = null
             this.mediaId = null
             asked = null
             looking = false
@@ -116,6 +122,7 @@ class LyricsLookup(private val lrcLib: LrcLib, private val measured: MeasuredLyr
         sheet = LyricSheet.EMPTY
         original = LyricSheet.EMPTY
         offset = 0.0
+        answer = null
         this.mediaId = null
         looking = true
 
@@ -126,11 +133,13 @@ class LyricsLookup(private val lrcLib: LrcLib, private val measured: MeasuredLyr
         if (!found.isSynced) found = withContext(Dispatchers.IO) { lrcLib.sheet(artist, title, album, seconds) }
         if (asked != key) return
         var moved = 0.0
+        var read: com.rpm.player.core.lyrics.MeasuredAnswer? = null
         if (found.isSynced && track.shelf == Shelf.Own) {
-            val answer = withContext(Dispatchers.IO) { measured.read(track) }
+            read = withContext(Dispatchers.IO) { measured.read(track) }
             if (asked != key) return
-            moved = MeasuredLyrics.offsetFor(answer, found)
+            moved = MeasuredLyrics.offsetFor(read, found)
         }
+        answer = read
         original = found
         offset = moved
         sheet = MeasuredLyrics.shifted(found, moved)

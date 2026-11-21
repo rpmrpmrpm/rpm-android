@@ -1,5 +1,8 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.phone.design.holdPress
+import com.rpm.player.phone.design.MenuItem
+import androidx.compose.ui.layout.layout
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
@@ -91,6 +94,8 @@ fun PlaylistWall(
     topRoom: Dp,
     onPress: (PlaylistRow) -> Unit,
     onPinch: (Double?) -> Unit,
+    menuOf: (PlaylistRow) -> (() -> List<MenuItem>)? = { null },
+    header: (@Composable () -> Unit)? = null,
     footer: @Composable () -> Unit,
 ) {
     val pinch by rememberUpdatedState(onPinch)
@@ -109,9 +114,23 @@ fun PlaylistWall(
             contentPadding = PaddingValues(start = EDGE.dp, end = EDGE.dp, top = topRoom + 4.dp, bottom = FOOT + bottomRoom),
             horizontalArrangement = Arrangement.spacedBy(WALL_GUTTER.dp),
         ) {
+            // The rows over the covers ([PlaylistsPage]'s shelf of the history and the pinned lists), across the whole
+            // width: drawn as rows in this layout too, so they run out to the edges past the wall's margin.
+            if (header != null) {
+                item(key = "header", span = { GridItemSpan(maxLineSpan) }, contentType = "header") {
+                    val bleed = EDGE.dp
+                    Box(
+                        Modifier.layout { measurable, constraints ->
+                            val extra = (bleed * 2).roundToPx()
+                            val placeable = measurable.measure(constraints.copy(minWidth = constraints.maxWidth + extra, maxWidth = constraints.maxWidth + extra))
+                            layout(constraints.maxWidth, placeable.height) { placeable.place(-extra / 2, 0) }
+                        },
+                    ) { header() }
+                }
+            }
             items(rows, key = { it.id }, contentType = { "list" }) { row ->
                 Box(contentAlignment = Alignment.TopCenter) {
-                    PlaylistTile(row, titleOf(row), pictureOf(row), framedOf(row), caption, images) { onPress(row) }
+                    PlaylistTile(row, titleOf(row), pictureOf(row), framedOf(row), caption, images, menuOf(row)) { onPress(row) }
                 }
             }
             item(key = "footer", span = { GridItemSpan(maxLineSpan) }, contentType = "footer") { footer() }
@@ -126,7 +145,7 @@ fun PlaylistWall(
  * that room so a short name sits right under the picture. The whole tile answers a tap.
  */
 @Composable
-private fun PlaylistTile(row: PlaylistRow, title: String, picture: Any?, framed: FramedList?, caption: AlbumCaption, images: ImageLoader, onPress: () -> Unit) {
+private fun PlaylistTile(row: PlaylistRow, title: String, picture: Any?, framed: FramedList?, caption: AlbumCaption, images: ImageLoader, menu: (() -> List<MenuItem>)?, onPress: () -> Unit) {
     val art = caption.art.dp
     // The mark on an empty square follows the edge, as on the records wall: a glyph that suits two columns is far
     // too big at one and far too small at four.
@@ -135,7 +154,7 @@ private fun PlaylistTile(row: PlaylistRow, title: String, picture: Any?, framed:
         Modifier
             .width(art)
             .height(caption.card.dp)
-            .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onPress),
+            .holdPress(remember { MutableInteractionSource() }, onPress, menu),
     ) {
         PlaylistSleeve(picture, row.mark, art, corner = 10.dp, mark = glyphSize, images, framed, markPicture = row.markPicture)
         Spacer(Modifier.height(AlbumCaption.ART_GAP.dp))

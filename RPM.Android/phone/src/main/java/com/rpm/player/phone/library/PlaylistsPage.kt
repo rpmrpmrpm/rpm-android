@@ -1,5 +1,8 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.phone.design.holdPress
+import com.rpm.player.phone.design.MenuItem
+import androidx.compose.foundation.layout.height
 import com.rpm.player.phone.design.rememberPicture
 import com.rpm.player.phone.design.UnderHeader
 import androidx.activity.compose.BackHandler
@@ -103,8 +106,15 @@ private val BESIDE_TITLE = 12.dp
  * Unlike the iPhone, there is no row for the queue or for the marked songs. The computer's lists about listening
  * stand at the top of the tree, and its decades are inside its moods ([PlaylistBrowse.of]).
  *
+ * **Above the top of the tree stand the songs played lately and the pinned lists** ([Heads]): the history first, then
+ * the lists the person pinned, in the order they were pinned. They are rows in both layouts, so they read as a shelf of
+ * their own and not as more covers. A pinned list is also still in its own folder. A long press on a list offers to pin
+ * it, or to let it go, and to put it on home's Quick selection ([com.rpm.player.phone.home.Holds]).
+ *
  * @param onMake makes a playlist from the panel: its name, its folder and its songs. It returns a sentence when it
  * failed, and null when it is done.
+ * @param history the songs played lately, newest first ([PlayedLately]); empty hides the history's row.
+ * @param onOpenHistory opens the page of those songs.
  *
  * Not yet implemented: pull to refresh (the lists are read again when the app comes back to the front instead), and
  * the line that says whose collection a borrowed one is.
@@ -119,6 +129,8 @@ fun PlaylistsPage(
     onOpen: (TrackList) -> Unit,
     onMake: suspend (name: String, folder: List<String>, tracks: List<CloudTrack>) -> String?,
     onReread: suspend () -> Unit = {},
+    history: List<CloudTrack> = emptyList(),
+    onOpenHistory: () -> Unit = {},
 ) {
     val ground = rememberBackdrop()
     // A pull down from the top reads the playlists again (`onReread` on iPhone); the spinner stays while it runs.
@@ -152,6 +164,17 @@ fun PlaylistsPage(
         is PlaylistRow.Playlist -> onOpen(row.list)
     }
     val pictureOf = { row: PlaylistRow -> collection.coverModel(row) }
+    val holds = com.rpm.player.phone.home.LocalHolds.current
+    val menuOf = { row: PlaylistRow -> (row as? PlaylistRow.Playlist)?.let { list -> holds?.let { { it.list(list.list) } } } }
+    // The shelf above the tree: only at its top, where nothing else is open.
+    val pinned = remember(settings.pinnedLists, collection, resources) {
+        settings.pinnedLists.mapNotNull { id -> collection.list(id)?.let { PlaylistRow.Playlist(it, listName(it.name, resources), emptyList()) } }
+    }
+    val heads: (@Composable () -> Unit)? = if (browse.at.isEmpty() && (history.isNotEmpty() || pinned.isNotEmpty())) {
+        { Heads(history, pinned, collection, images, onOpenHistory, ::press, menuOf) }
+    } else {
+        null
+    }
 
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(page)) {
@@ -184,7 +207,7 @@ fun PlaylistsPage(
                 ) { key(browse.at, settings.playlistLayout) {
                     when (settings.playlistLayout) {
                         PlaylistLayout.List -> Column(Modifier.fillMaxSize()) {
-                            Rows(browse, pictureOf, images, bottomRoom, top, ::press) {
+                            Rows(browse, pictureOf, images, bottomRoom, top, ::press, menuOf, heads) {
                                 Footer(browse, empty = collection.lists.isEmpty(), own = own)
                             }
                         }
@@ -199,6 +222,8 @@ fun PlaylistsPage(
                                 bottomRoom = bottomRoom,
                                 topRoom = top,
                                 onPress = ::press,
+                                menuOf = menuOf,
+                                header = heads,
                                 onPinch = { factor ->
                                     if (factor == null) {
                                         pinching?.let(settings::changePlaylistStride)
@@ -250,6 +275,8 @@ private fun androidx.compose.foundation.layout.ColumnScope.Rows(
     bottomRoom: Dp,
     top: Dp,
     onPress: (PlaylistRow) -> Unit,
+    menuOf: (PlaylistRow) -> (() -> List<MenuItem>)?,
+    heads: (@Composable () -> Unit)?,
     footer: @Composable () -> Unit,
 ) {
     val list = rememberLazyListState()
@@ -259,8 +286,9 @@ private fun androidx.compose.foundation.layout.ColumnScope.Rows(
         modifier = Modifier.weight(1f).fillMaxWidth().dissolvesAtTop(top) { list.scrolled() },
         contentPadding = PaddingValues(top = top, bottom = FOOT + bottomRoom),
     ) {
+        if (heads != null) item(key = "heads", contentType = "heads") { heads() }
         items(browse.rows, key = { it.id }, contentType = { "row" }) { row ->
-            Line(row, pictureOf(row), framedOf(row), images) { onPress(row) }
+            Line(row, pictureOf(row), framedOf(row), images, menu = menuOf(row)) { onPress(row) }
         }
         item(key = "footer", contentType = "footer") { footer() }
     }
@@ -300,9 +328,45 @@ private fun counts(browse: PlaylistBrowse): String {
 private fun playlistsCount(count: Int): String =
     if (count == 1) stringResource(R.string.Stats_PlaylistsOne) else stringResource(R.string.Stats_Playlists, count)
 
-/** One row: the picture, the name over how much is in it, and the chevron on a folder. The row is lit while pressed. */
+/**
+ * The shelf above the top of the tree: the songs played lately, then the pinned lists. Rows like the tree's own, in
+ * either layout, with a thin line under them that sets them apart from the tree.
+ */
 @Composable
-private fun Line(row: PlaylistRow, picture: Any?, framed: FramedList?, images: ImageLoader, onClick: () -> Unit) {
+private fun Heads(
+    history: List<CloudTrack>,
+    pinned: List<PlaylistRow.Playlist>,
+    collection: com.rpm.player.core.library.Collection,
+    images: ImageLoader,
+    onHistory: () -> Unit,
+    onPress: (PlaylistRow) -> Unit,
+    menuOf: (PlaylistRow) -> (() -> List<MenuItem>)?,
+) {
+    Column(Modifier.fillMaxWidth()) {
+        if (history.isNotEmpty()) {
+            // The cover of the record played last, so the row shows what was just heard.
+            val cover = collection.albumOf[history.first().rpmId]?.let { collection.cover(it) }
+            HeadLine(
+                stringResource(R.string.Playlists_RecentlyPlayed),
+                holding(history.size, seconds(history), 0),
+                end = Glyph.history,
+                onClick = onHistory,
+                menu = null,
+            ) { PlaylistSleeve(cover, Glyph.history, edge = 44.dp, corner = 6.dp, mark = 16f, images) }
+        }
+        for (row in pinned) {
+            val framed = framedOf(row)
+            HeadLine(row.name, holding(row.list.tracks.size, seconds(row.list.tracks), row.list.missing), end = Glyph.pin, onClick = { onPress(row) }, menu = menuOf(row)) {
+                PlaylistSleeve(collection.cover(row.list), row.mark, edge = 44.dp, corner = 6.dp, mark = 16f, images, framed, markPicture = row.markPicture)
+            }
+        }
+        Box(Modifier.padding(horizontal = 20.dp, vertical = 8.dp).fillMaxWidth().height(1.dp).background(Ink.white(0x1A)))
+    }
+}
+
+/** One row of [Heads]: a [Line] with its own picture and a quiet mark at its end that says why it stands up here. */
+@Composable
+private fun HeadLine(title: String, detail: String, end: String, onClick: () -> Unit, menu: (() -> List<MenuItem>)?, picture: @Composable () -> Unit) {
     val presses = remember { MutableInteractionSource() }
     val pressed by presses.collectIsPressedAsState()
     Row(
@@ -310,7 +374,31 @@ private fun Line(row: PlaylistRow, picture: Any?, framed: FramedList?, images: I
             .fillMaxWidth()
             .defaultMinSize(minHeight = 64.dp)
             .background(if (pressed) Ink.white(0x24) else Color.Transparent)
-            .clickable(presses, indication = null, role = Role.Button, onClick = onClick)
+            .holdPress(presses, onClick, menu)
+            .padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        picture()
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            BasicText(title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(15f).copy(color = Color.White))
+            BasicText(detail, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(11f).copy(color = Ink.white(0x88)))
+        }
+        BasicText(end, style = icon(12f).copy(color = Ink.white(0x55)))
+    }
+}
+
+/** One row: the picture, the name over how much is in it, and the chevron on a folder. The row is lit while pressed. */
+@Composable
+private fun Line(row: PlaylistRow, picture: Any?, framed: FramedList?, images: ImageLoader, menu: (() -> List<MenuItem>)? = null, onClick: () -> Unit) {
+    val presses = remember { MutableInteractionSource() }
+    val pressed by presses.collectIsPressedAsState()
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 64.dp)
+            .background(if (pressed) Ink.white(0x24) else Color.Transparent)
+            .holdPress(presses, onClick, menu)
             .padding(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,

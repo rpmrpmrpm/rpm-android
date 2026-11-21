@@ -11,6 +11,16 @@ data class CloudAlbum(
     val tracks: List<CloudTrack>,
 )
 
+/** The tag value for explicit lyrics (`ContentAdvisory.Explicit` on the desktop). It is the only value that shows the E:
+ * 2 means the song was stated to be clean, and 0 that nobody has said. */
+const val ADVISORY_EXPLICIT = 1
+
+/** Whether the E goes beside the song's title. */
+val CloudTrack.isExplicit: Boolean get() = tags?.advisory == ADVISORY_EXPLICIT
+
+/** Whether the E goes beside the record's title: when any of its songs is explicit, as streaming services mark a record. */
+val CloudAlbum.isExplicit: Boolean get() = tracks.any { it.isExplicit }
+
 /**
  * Turns the catalogue's tracks into albums, with the same rules as the iOS app's `AlbumWall`,
  * `AlbumGrouping`, `AlbumTracklist` and `AlbumSort`: grouped by folder where there is one and by tags

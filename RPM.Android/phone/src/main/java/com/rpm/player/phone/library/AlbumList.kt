@@ -1,5 +1,7 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.core.library.isExplicit
+import com.rpm.player.phone.design.MarkedTitle
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseOut
@@ -249,7 +251,7 @@ private fun RecordLine(album: CloudAlbum, collection: Collection, images: ImageL
     ) {
         PlaylistSleeve(collection.cover(album), Glyph.record, edge = 64.dp, corner = 6.dp, mark = 22f, images)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            BasicText(album.album, maxLines = 2, overflow = TextOverflow.Ellipsis, style = displayBold(17f).copy(color = Color.White))
+            MarkedTitle(album.album, album.isExplicit, displayBold(17f).copy(color = Color.White), maxLines = 2)
             BasicText(byLine(album), maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(13f).copy(color = Ink.white(0x99)))
         }
     }
@@ -286,7 +288,7 @@ private fun SongLine(track: CloudTrack, at: Int, album: CloudAlbum, playing: Boo
                 style = display(13f).copy(color = if (playing) Color.White else Ink.white(0x77), textAlign = TextAlign.End),
             )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                BasicText(track.title.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(15f).copy(color = Color.White))
+                MarkedTitle(track.title.orEmpty(), track.isExplicit, display(15f).copy(color = Color.White))
                 val artist = track.artist
                 if (!artist.isNullOrEmpty() && !artist.equals(album.artist, ignoreCase = true)) {
                     BasicText(artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(12f).copy(color = Ink.white(0x77)))
@@ -317,7 +319,7 @@ private fun SongAlone(track: CloudTrack, on: CloudAlbum, collection: Collection,
         ) {
             PlaylistSleeve(collection.cover(on), Glyph.record, edge = 44.dp, corner = 6.dp, mark = 16f, images)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                BasicText(track.title.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(16f).copy(color = Color.White))
+                MarkedTitle(track.title.orEmpty(), track.isExplicit, display(16f).copy(color = Color.White))
                 BasicText(
                     listOfNotNull(track.artist, track.album).filter { it.isNotEmpty() }.joinToString(" · "),
                     maxLines = 1,

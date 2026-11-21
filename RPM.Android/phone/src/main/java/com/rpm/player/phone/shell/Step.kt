@@ -38,6 +38,11 @@ sealed interface Step {
         override val saved get() = MARKED
     }
 
+    /** The songs played lately, newest first. There is only one such list, so it needs no name. */
+    data object History : Step {
+        override val saved get() = HISTORY
+    }
+
     companion object {
         private const val RECORD = "record:"
         private const val PLAYLIST = "list:"
@@ -45,6 +50,7 @@ sealed interface Step {
         private const val GENRE = "genre:"
         private const val QUEUE = "queue"
         private const val MARKED = "marked"
+        private const val HISTORY = "history"
 
         fun of(saved: String): Step? = when {
             saved.startsWith(RECORD) -> Record(saved.removePrefix(RECORD))
@@ -53,6 +59,7 @@ sealed interface Step {
             saved.startsWith(GENRE) -> Genre(saved.removePrefix(GENRE))
             saved == QUEUE -> Queue
             saved == MARKED -> Marked
+            saved == HISTORY -> History
             else -> null
         }
 

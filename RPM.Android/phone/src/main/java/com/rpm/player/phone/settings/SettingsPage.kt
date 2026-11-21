@@ -198,6 +198,13 @@ fun SettingsPage(
     onKaraoke: (Boolean) -> Unit,
     sharesListening: Boolean? = null,
     onSharesListening: (Boolean) -> Unit = {},
+    openingSound: Boolean = true,
+    onOpeningSound: (Boolean) -> Unit = {},
+    articleLanguage: String = "",
+    onArticleLanguage: (String) -> Unit = {},
+    playerBars: Boolean = true,
+    onPlayerBars: (Boolean) -> Unit = {},
+    onReplayHints: () -> Unit = {},
 ) {
     val page = rememberBackdrop()
     // What the header's glass frosts: the background and the cards that scroll under it.
@@ -229,11 +236,16 @@ fun SettingsPage(
                 ) {
                     when (section) {
                         SettingsSection.General -> {
+                            cards.Opening(openingSound, onOpeningSound)
+                            cards.Descriptions(articleLanguage, onArticleLanguage)
+                            cards.Hints(onReplayHints)
                             cards.About(version, onCredits = { credits = true }, crashReports, onCrashReports)
                             cards.Device(cached, onClearCache)
                         }
-                        SettingsSection.Appearance ->
+                        SettingsSection.Appearance -> {
                             cards.Backdrops(ground, isGold, onGround, nightMode, onNightMode, discStandIn, onDiscStandIn)
+                            cards.Player(playerBars, onPlayerBars)
+                        }
                         SettingsSection.Playback -> {
                             cards.Playback(onWifi, onCellular, onRates, reachSavesData, quota, karaoke, onKaraoke)
                             cards.Loudness(levelling, levelsClassical, onLevelling, onLevelsClassical)
@@ -484,6 +496,81 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
                 onAsk(MenuAsk(anchor, standIns, discStandIn.ordinal) { onDiscStandIn(DiscStandIn.entries[it]) })
             }
         }
+    }
+
+    /** The player's look: whether the bars beside the cover move with the music. */
+    @Composable
+    fun Player(bars: Boolean, onBars: (Boolean) -> Unit) {
+        Card(Glyph.play, stringResource(R.string.Playlists_NowPlaying)) {
+            Toggle(stringResource(R.string.Settings_PlayerBars), bars, onBars)
+            Hint(stringResource(R.string.Settings_PlayerBarsHint))
+        }
+    }
+
+    // ── general ──
+
+    /** The opening sound, on or off. */
+    @Composable
+    fun Opening(on: Boolean, onChange: (Boolean) -> Unit) {
+        Card(Glyph.speaker, stringResource(R.string.Settings_Sound)) {
+            Toggle(stringResource(R.string.Settings_StartupSound), on, onChange)
+            Hint(stringResource(R.string.Settings_StartupSoundHint))
+        }
+    }
+
+    /**
+     * The language of the Wikipedia texts on the artist and record pages: the phone's own first, then the languages
+     * offered ([ArticleLanguages]), each named in itself, as a language picker names them.
+     */
+    @Composable
+    fun Descriptions(code: String, onPick: (String) -> Unit) {
+        val own = java.util.Locale.getDefault()
+        val phone = stringResource(R.string.Settings_ArticleLanguagePhone, ArticleLanguages.nameOf(own.language))
+        val codes = listOf("") + ArticleLanguages.OFFERED
+        val names = codes.map { if (it.isEmpty()) phone else ArticleLanguages.nameOf(it) }
+        val chosen = codes.indexOf(code).coerceAtLeast(0)
+        Card(Glyph.globe, stringResource(R.string.Settings_ArticleLanguage)) {
+            ClosedMenu(names[chosen], dimmed = false) { anchor -> onAsk(MenuAsk(anchor, names, chosen) { onPick(codes[it]) }) }
+            Hint(stringResource(R.string.Settings_ArticleLanguageHint))
+        }
+    }
+
+    /** The key that shows the welcome and the first-run hints again. Once pressed it says so, and rests. */
+    @Composable
+    fun Hints(onReplay: () -> Unit) {
+        var back by remember { mutableStateOf(false) }
+        Card(Glyph.hint, stringResource(R.string.Settings_Hints)) {
+            Hint(stringResource(R.string.Settings_Phone_HintsHint))
+            Key(stringResource(if (back) R.string.Settings_HintsBack else R.string.Settings_ShowHintsAgain), enabled = !back) {
+                back = true
+                onReplay()
+            }
+        }
+    }
+
+    /** A line of words with a switch at its end; the whole line turns it. */
+    @Composable
+    private fun Toggle(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
+        val haptics = LocalHapticFeedback.current
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Switch) {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onChange(!on)
+                },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BasicText(label, Modifier.weight(1f), style = display(13f).copy(color = Ink.white(0xB3)))
+            Spacer(Modifier.width(10.dp))
+            Switch(on)
+        }
+    }
+
+    /** The quiet line under a setting that says what it does. */
+    @Composable
+    private fun Hint(text: String) {
+        BasicText(text, style = display(11f).copy(color = Ink.white(0x88)))
     }
 
     @Composable
