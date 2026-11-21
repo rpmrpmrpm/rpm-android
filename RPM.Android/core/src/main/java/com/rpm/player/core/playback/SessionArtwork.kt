@@ -190,11 +190,12 @@ class SessionArtwork(
         private const val SHORTEST = 2
 
         /**
-         * The explicit mark after a song's title on the lock screen and the media notification: a circled E (U+24BA).
-         * The system draws that text, not the app, so the mark must be a character its fonts have. Android's symbol font
-         * has this one; the squared E (U+1F174) that streaming services use is in none of them and shows as a box.
+         * The explicit mark after a song's title on the lock screen and the media notification: a white E in a filled
+         * square (U+1F174), as the iPhone shows it. The system draws that text, not the app, so the mark must be a
+         * character its fonts have. Android's symbol fonts do not have it, but its CJK font (NotoSansCJK) does, and the
+         * system falls back to that font for it.
          */
-        const val EXPLICIT_MARK = "\u24BA"
+        const val EXPLICIT_MARK = "\uD83C\uDD74"
 
         /** `MediaConstants.METADATA_KEY_IS_EXPLICIT`: 1 for an explicit item. Car screens draw their own mark from it. */
         private const val PLATFORM_EXPLICIT = "android.media.IS_EXPLICIT"
