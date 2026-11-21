@@ -3,7 +3,9 @@ package com.rpm.player.core.lyrics
 /**
  * Which words of the score are lit when, for karaoke: the measured words a line takes, and the line that is shown while
  * the last one is still being sung. These are the rules of the TV app's lyric column, which the iPhone ported as
- * `KaraokeLines` (RPMKit/Lyrics/KaraokeLight.swift); the phone uses them from here. Keep the three the same.
+ * `KaraokeLines` (RPMKit/Lyrics/KaraokeLight.swift); the phone uses them from here. Keep the three the same, except
+ * that here a line also takes over before its stamp when its measured words start earlier ([held]); the TV's
+ * `LyricColumn` and the iPhone do not do that.
  */
 object KaraokeLines {
     /** How far before its stamp a line's last measured word may end and still be taken, in seconds. */
@@ -14,6 +16,9 @@ object KaraokeLines {
 
     /** The longest a line waits past its stamp for its first measured word, in seconds. */
     const val WAIT_LONGEST = 4.0
+
+    /** The earliest before its stamp a line takes over for its first measured word, in seconds. */
+    const val EARLIEST = 1.0
 
     /**
      * The measured words of the line [text] at [seconds], where they fall in the line's own time: none may end before the
@@ -59,8 +64,27 @@ object KaraokeLines {
      * It is also the previous piece while the measured words of [piece] are still well ahead. A line measured to start
      * well after its stamp would stand there unlit until the voice reaches it. That wait is never longer than
      * [WAIT_LONGEST] past the stamp, so a measurement that went wrong cannot hold the lyrics back.
+     *
+     * And it is the next piece once its first measured word is [LEAD] away, even before its stamp. A sheet's stamp is
+     * often a little after the voice starts the line, by up to half a second in quick singing. Waiting for the stamp would
+     * show the line late, with its first words already sung and lit all at once. It moves on no earlier than [EARLIEST]
+     * before the stamp, and not while the line it leaves is still on its last measured word, unless the next line's first
+     * word has already started.
      */
     fun held(score: LyricScore, piece: Int?, seconds: Double, heard: List<List<WordSpan>?>): Int? {
+        val stays = heldBack(score, piece, seconds, heard)
+        if (stays != piece) return stays
+        val next = (piece ?: -1) + 1
+        if (next !in heard.indices || next !in score.parts.indices) return piece
+        val starts = heard[next]?.firstOrNull()?.from ?: return piece
+        if (seconds < starts - LEAD || seconds < score.parts[next].seconds - EARLIEST) return piece
+        val singing = piece?.let { heard.getOrNull(it)?.lastOrNull() }
+        if (singing != null && singing.to > seconds && starts > seconds) return piece
+        return next
+    }
+
+    /** [held] without moving on early: the previous piece while it is still sung or the words of [piece] are well ahead. */
+    private fun heldBack(score: LyricScore, piece: Int?, seconds: Double, heard: List<List<WordSpan>?>): Int? {
         if (piece == null || piece !in heard.indices || piece !in score.parts.indices) return piece
 
         // Before the first piece is null: the intro is shown.
