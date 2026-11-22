@@ -1,5 +1,7 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.core.library.AlbumTitle
+import androidx.compose.ui.text.font.FontWeight
 import com.rpm.player.phone.ui.Halo
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -395,8 +397,16 @@ private fun Header(
         Spacer(Modifier.height(top))
         CaseAndDisc(album, cover, disc, images, edge)
         Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            // Two lines, and shortened only past them.
-            MarkedTitle(album.album, album.isExplicit, displayBold(24f).copy(color = Color.White, textAlign = TextAlign.Center), maxLines = 2, edge = 18.dp)
+            // The record's name on two lines, shortened only past them, and its edition ("Deluxe", "Bonus Edition") on a
+            // quieter line of its own under it, as the desktop's record page shows them (AlbumTitle).
+            val title = remember(album.album) { AlbumTitle.split(album.album) }
+            MarkedTitle(title.name, album.isExplicit, displayBold(24f).copy(color = Color.White, textAlign = TextAlign.Center), maxLines = 2, edge = 18.dp)
+            if (title.editions.isNotEmpty()) {
+                BasicText(
+                    title.editions.joinToString(EDITION_GAP),
+                    style = display(13f).copy(color = Ink.white(0xB3), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                )
+            }
             ArtistLine(album.artist, artists, onArtist)
         }
         // How much record there is, as a chip because it describes the record above it, and what it is made of under
@@ -678,6 +688,9 @@ private const val CASE_TURN = 6.0
 /** Between the year and the count in the pill: a middle dot with space round it, the separator the
  *  count lines use. No dashes in text the user reads. */
 private const val YEAR_GAP = " \u00b7 "
+
+/** Between two editions on the edition line, as the desktop joins them. */
+private const val EDITION_GAP = "  \u00b7  "
 
 /** The edge of the Similar albums row's sleeves: home's rows' (`ROW_ART` in HomePage.kt, `HomeRowView.art` on iPhone).
  *  The sleeves are read early at this edge, so it must be the one the row draws. */
