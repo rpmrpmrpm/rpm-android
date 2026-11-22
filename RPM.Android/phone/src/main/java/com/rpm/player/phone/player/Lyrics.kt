@@ -197,28 +197,23 @@ internal fun LyricView(sheet: LyricSheet, now: NowPlaying, karaoke: Boolean, mea
     val score = remember(sheet) { LyricScore.of(sheet, asides = true) }
     // Each piece's measured words, worked out once per answer. Empty without karaoke, which leaves the stamps to decide.
     val heard = remember(score, measured, karaoke) { if (karaoke) KaraokeLines.heard(score, measured) else emptyList() }
-    // With karaoke, a line stays up while its last measured word is still sung ([KaraokeLines.held]).
-    fun piece(seconds: Double): Int? = KaraokeLines.held(score, score.index(seconds), seconds, heard)
+    // When each piece takes over: with karaoke, a line stays up while its last measured word is still sung, and every
+    // line is sung for a moment ([KaraokeLines.held]).
+    val handovers = remember(score, heard) { KaraokeLines.handovers(score, heard) }
+    fun piece(seconds: Double): Int? = handovers.piece(seconds)
     // The line and its words are timed by one steady clock, so the light does not step back when the reported position
     // does.
     val clock = remember(now.mediaId) { KaraokeClock() }
     fun seconds(): Double = SystemClock.uptimeMillis().let { up -> clock.seconds(now.positionAt(up), now.advancing, up) }
-    val at by produceState(piece(seconds()), score, now, heard) {
-        // Measured words move the line on between the stamps as well, so then the playhead is looked at a few times a
-        // second. A value that did not change recomposes nothing.
-        val measuring = heard.any { it != null }
+    val at by produceState(piece(seconds()), handovers, now) {
+        // The playhead is looked at when the next piece takes over, not on every frame. A value that did not change
+        // recomposes nothing.
         while (true) {
             val seconds = seconds()
-            val index = piece(seconds)
-            value = index
+            value = piece(seconds)
             if (!now.advancing) break
-            val next = score.parts.getOrNull((score.index(seconds) ?: -1) + 1)?.seconds
-            val wait = when {
-                next != null -> ((next - seconds) * 1000).roundToInt().toLong().coerceAtLeast(16)
-                measuring -> Long.MAX_VALUE
-                else -> break
-            }
-            delay(if (measuring) minOf(wait, HELD_LOOK_MS) else wait)
+            val next = handovers.next(seconds) ?: break
+            delay(((next - seconds) * 1000).roundToInt().toLong().coerceAtLeast(16))
         }
     }
     val list = rememberLazyListState()
@@ -424,9 +419,6 @@ private const val GAP = 0.2f
  * that moved the line while it scrolled. */
 private const val SCROLL_MS = 450L
 private const val SETTLE_MS = 300L
-
-/** How often the playhead is looked at while measured words can move the sung line between stamps, in milliseconds. */
-private const val HELD_LOOK_MS = 100L
 
 /** The colour of a line that is not being sung. */
 private val LINE = Color(0xFFEAEAEA)

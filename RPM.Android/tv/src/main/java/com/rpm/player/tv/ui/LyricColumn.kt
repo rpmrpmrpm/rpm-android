@@ -118,7 +118,7 @@ fun LyricColumn(sheet: LyricSheet, nowPlaying: NowPlaying?, karaoke: Boolean, me
             val up = SystemClock.uptimeMillis()
             val seconds = playing?.let { clockNow.seconds(it.positionAt(up), it.advancing, up) } ?: 0.0
             now = seconds
-            val piece = KaraokeLines.held(score, score.index(seconds), seconds, heardNow) ?: -1
+            val piece = KaraokeLines.held(score, seconds, heardNow) ?: -1
             val back = piece < at && seconds > movedOnAt - SEEK_BACK
             if (piece != at && !back) {
                 if (piece > at) movedOnAt = seconds
