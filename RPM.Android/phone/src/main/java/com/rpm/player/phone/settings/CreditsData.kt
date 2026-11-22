@@ -19,6 +19,7 @@ internal object CreditsData {
         "MPL-2.0" to CreditLicense(name = "Mozilla Public License 2.0", file = "MPL-2.0.txt", url = "https://spdx.org/licenses/MPL-2.0.html", isNotices = false),
         "OFL-1.1" to CreditLicense(name = "SIL Open Font License 1.1", file = "OFL-1.1.txt", url = "https://openfontlicense.org", isNotices = false),
         "Pexels" to CreditLicense(name = "Pexels License", file = null, url = "https://www.pexels.com/license/", isNotices = false),
+        "PublicDomain" to CreditLicense(name = "Public domain", file = null, url = "https://commons.wikimedia.org/wiki/File:Ludwig_van_Beethoven_-_sonata_no._14_in_c_sharp_minor_%27moonlight%27,_op._27_no._2_-_i._adagio_sostenuto.ogg", isNotices = false),
         "Terms" to CreditLicense(name = "Terms of use", file = null, url = null, isNotices = false),
     )
 
@@ -264,6 +265,9 @@ internal object CreditsData {
             CreditEntry(name = "Kareena  Joseph", version = null, detail = "burning bridges (Pop)", copyright = null, url = "https://www.pexels.com/photo/closeup-of-a-burning-matchstick-flame-33934130/", source = null, use = null, termsUrl = null, licenses = listOf("Pexels")),
             CreditEntry(name = "Nothing Ahead", version = null, detail = "feels. (Hip-Hop / Rap)", copyright = null, url = "https://www.pexels.com/photo/lights-behind-window-glass-in-rain-20164680/", source = null, use = null, termsUrl = null, licenses = listOf("Pexels")),
             CreditEntry(name = "Mohammed-Ali  Hamadache", version = null, detail = "final call (Disco)", copyright = null, url = "https://www.pexels.com/photo/red-lit-disco-ball-at-night-party-39466002/", source = null, use = null, termsUrl = null, licenses = listOf("Pexels")),
+        )),
+        CreditSection(title = R.string.Credits_Section_Music, note = null, entries = listOf(
+            CreditEntry(name = "Musopen", version = null, detail = null, copyright = "Piano Sonata No. 14, first movement, performed by Paul Pitman for Musopen", url = "https://musopen.org", source = null, use = R.string.Credits_Musopen_Use, termsUrl = null, licenses = listOf("PublicDomain")),
         )),
         CreditSection(title = R.string.Credits_Section_Catalogues, note = R.string.Credits_Catalogues_Note, entries = listOf(
             CreditEntry(name = "Wikipedia", version = null, detail = null, copyright = null, url = "https://www.wikipedia.org", source = null, use = R.string.Credits_Wikipedia_Use, termsUrl = null, licenses = listOf("CC-BY-SA-4.0")),
