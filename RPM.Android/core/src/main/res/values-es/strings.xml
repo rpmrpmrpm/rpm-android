@@ -3285,8 +3285,11 @@
     <!-- Import queue status line after the background catalogue fill; {0} is how many records got a genre, subgenre, year or explicit marks. -->
     <string name="Queue_CatalogueFilled">Discos completados desde el catálogo: %1$s</string>
 
-    <!-- Line above the progress bar in the import queue's tag stage, shown right after music is added: rpm fills in what the new records lack from its catalogue before the queue opens for editing. -->
-    <string name="Queue_TagStageCaption">¡Ahora, tus etiquetas! Estamos trayendo del catálogo los géneros, subgéneros, años, marcas de contenido explícito e imágenes de disco.</string>
+    <!-- Line above the progress bar in the import queue's tag stage, shown right after music is added: rpm fills in genres, subgenres, years, explicit marks and disc pictures from its catalogue before the queue opens for editing. -->
+    <string name="Queue_TagStageCaption">Obteniendo la información de los álbumes</string>
+
+    <!-- Line above the progress bar in the import queue while added music is being read in, before the tag stage. -->
+    <string name="Queue_ScanCaption">Importando archivos</string>
 
     <!-- Line under the progress bar in the import queue's tag stage. {0} is the album being looked up, {1} how many there are, {2} its artist and {3} its title. -->
     <string name="Queue_TagStageAlbum">Álbum %1$s de %2$s: %3$s – %4$s</string>
