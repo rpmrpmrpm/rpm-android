@@ -13,6 +13,7 @@ import com.rpm.player.core.library.ArtistCredit
 import com.rpm.player.core.library.ArtistWallItem
 import com.rpm.player.core.library.Collection
 import com.rpm.player.core.library.LibraryState
+import com.rpm.player.core.library.StarterTracks
 import com.rpm.player.core.playback.NowPlaying
 import com.rpm.player.core.playback.TrackRef
 import kotlinx.coroutines.launch
@@ -81,8 +82,10 @@ class PlayerWiring(private val services: Services) {
         return collection?.tracksById?.get(rpmId)?.tags?.favorite == true
     }
 
-    /** Whether the song playing can carry this account's heart: a song, on this account's own shelf. */
-    fun canMark(now: NowPlaying): Boolean = now.station == null && TrackRef.parse(now.mediaId)?.shelf == Shelf.Own
+    /** Whether the song playing can carry this account's heart, and be put in a playlist: a song, on this account's own
+     * shelf, and not a starter track, which the cloud does not hold. */
+    fun canMark(now: NowPlaying): Boolean =
+        now.station == null && TrackRef.parse(now.mediaId)?.let { it.shelf == Shelf.Own && !StarterTracks.isStarter(it.rpmId) } == true
 
     /**
      * Marks [rpmId], or clears the mark. The change shows before the cloud answers and is undone if it refuses, as on

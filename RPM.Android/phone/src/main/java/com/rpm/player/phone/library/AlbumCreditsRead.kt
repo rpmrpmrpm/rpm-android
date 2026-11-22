@@ -4,6 +4,7 @@ import com.rpm.player.core.cloud.CloudClient
 import com.rpm.player.core.cloud.Shelf
 import com.rpm.player.core.library.AlbumCredits
 import com.rpm.player.core.library.CloudAlbum
+import com.rpm.player.core.library.StarterTracks
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 
@@ -23,7 +24,8 @@ class AlbumCreditsRead(private val cloud: CloudClient, private val shelf: Shelf)
 
     /** The record's credits, or null where they cannot be read: a borrowed shelf, or a failed read. */
     suspend fun of(album: CloudAlbum): AlbumCredits? {
-        if (shelf != Shelf.Own) return null
+        // A starter record is not in the cloud, which keeps the sidecars.
+        if (shelf != Shelf.Own || StarterTracks.isStarter(album)) return null
         val first = album.tracks.firstOrNull() ?: return null
         read[first.rpmId]?.let { return it }
 

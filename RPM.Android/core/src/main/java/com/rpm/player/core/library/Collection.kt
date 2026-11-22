@@ -92,7 +92,7 @@ class Collection(
      * every album in [of], because it is asked for only when a record is queued or its page opens, and then kept:
      * a list's queue asks once per track. */
     fun disc(album: CloudAlbum): DiscArt? = synchronized(discs) {
-        if (discs.containsKey(album.key)) discs[album.key] else discFor(album, index, shelf).also { discs[album.key] = it }
+        if (discs.containsKey(album.key)) discs[album.key] else (StarterTracks.discOf(album) ?: discFor(album, index, shelf)).also { discs[album.key] = it }
     }
 
     private val discs = HashMap<String, DiscArt?>()
@@ -112,7 +112,8 @@ class Collection(
             moods: Map<String, Set<String>> = emptyMap(),
         ): Collection {
             val albumOf = buildMap { for (album in albums) for (track in album.tracks) put(track.rpmId, album) }
-            val albumCovers = albums.associate { it.key to coverFor(it, index, shelf) }
+            // A starter record's cover ships with the app; every other is asked of the cloud.
+            val albumCovers = albums.associate { it.key to (StarterTracks.coverOf(it) ?: coverFor(it, index, shelf)) }
             // A generated list uses the photograph shipped with the app, as on the desktop (GeneratedCover's
             // order). The cloud also keeps a drawn picture for that list, but it is not asked for.
             val listCovers = lists.associate { list ->

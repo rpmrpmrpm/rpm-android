@@ -10,6 +10,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy
 import com.rpm.player.core.cloud.Shelf
+import com.rpm.player.core.library.StarterTracks
 import com.rpm.player.core.net.Reach
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
@@ -220,8 +221,10 @@ class OfflinePlayback(
 
         private const val EDGE_POLL_MS = 1_000L
 
-        /** Whether the track [ref] is on this device. Only the person's own records are ever downloaded. */
-        fun holds(copies: LocalCopies, ref: TrackRef): Boolean = ref.shelf == Shelf.Own && copies.holds(ref.rpmId)
+        /** Whether the track [ref] is on this device. Only the person's own records are ever downloaded, and a starter
+         * track is always there, inside the app. */
+        fun holds(copies: LocalCopies, ref: TrackRef): Boolean =
+            ref.shelf == Shelf.Own && (copies.holds(ref.rpmId) || StarterTracks.isStarter(ref.rpmId))
     }
 }
 

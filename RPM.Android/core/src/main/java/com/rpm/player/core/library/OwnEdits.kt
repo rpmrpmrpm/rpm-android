@@ -108,8 +108,9 @@ class OwnWriter(
 ) {
     /** Puts the favourite mark on [rpmId], or takes it off. False when it could not be saved: no session,
      * no network, no cloud row for the track (one only on a computer), or, taking it off, an API that does
-     * not have `cloud/track-mark` yet. */
+     * not have `cloud/track-mark` yet, or a starter track, which the cloud does not hold ([StarterTracks]). */
     suspend fun mark(rpmId: String, favorite: Boolean): Boolean {
+        if (StarterTracks.isStarter(rpmId)) return false
         val user = auth.session.value?.userId ?: return false
         val at = if (favorite) utcTicks(clock()) else 0L
         val stamp = orNull {
@@ -130,6 +131,8 @@ class OwnWriter(
      * written and the answer is [Filed.AlreadyIn].
      */
     suspend fun addToPlaylist(rpmId: String, playlistId: String, again: Boolean = false): Filed {
+        // A playlist names cloud tracks, and a starter track is not one.
+        if (StarterTracks.isStarter(rpmId)) return Filed.Failed
         val user = auth.session.value?.userId ?: return Filed.Failed
         val began = clock()
         var current = orNull { cloud.playlists(Shelf.Own) }?.firstOrNull { it.playlistId == playlistId } ?: return Filed.Failed
@@ -158,6 +161,7 @@ class OwnWriter(
      * (`ifUnchangedSince` 0), so a clash is a failure rather than somebody's playlist overwritten.
      */
     suspend fun createPlaylist(rpmId: String, name: String): Boolean {
+        if (StarterTracks.isStarter(rpmId)) return false
         val user = auth.session.value?.userId ?: return false
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return false

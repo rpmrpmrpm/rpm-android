@@ -80,8 +80,9 @@ class SongMenu(
     val onFile: (CloudTrack) -> Unit,
     val startRadio: ((CloudTrack) -> Unit)?,
     internal val shown: SongMenuShown,
-    /** The Quick selection item for a song: add it to home's Quick selection, or take it out. Null leaves it out. */
-    val quick: ((CloudTrack) -> MenuItem)? = null,
+    /** The Quick selection item for a song: add it to home's Quick selection, or take it out. Null leaves it out, for
+     * every song or, where the function answers null, for that one. */
+    val quick: ((CloudTrack) -> MenuItem?)? = null,
 ) {
     /** The same menu, with play next meaning [upNext] instead. */
     fun with(upNext: UpNext) = SongMenu(isMarked, isMine, upNext, onMark, onFile, startRadio, shown, quick)
@@ -212,7 +213,7 @@ fun SongMenuLayer(shown: SongMenuShown, backdrop: Backdrop) {
             )
             add(MenuItem(stringResource(R.string.Rpm_Track_AddToPlaylist), Glyph.playlists) { menu.onFile(track) })
         }
-        menu.quick?.let { add(it(track)) }
+        menu.quick?.invoke(track)?.let(::add)
     }
     // Keyed by the opening, so a second long press while the first menu fades starts a fresh menu.
     androidx.compose.runtime.key(open) {

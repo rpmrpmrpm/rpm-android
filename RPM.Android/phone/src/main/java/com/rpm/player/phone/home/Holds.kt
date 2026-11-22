@@ -5,6 +5,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import com.rpm.player.core.R
 import com.rpm.player.core.cloud.CloudTrack
 import com.rpm.player.core.library.CloudAlbum
+import com.rpm.player.core.library.StarterTracks
 import com.rpm.player.core.library.Collection
 import com.rpm.player.core.library.QuickPick
 import com.rpm.player.core.library.TrackList
@@ -66,10 +67,11 @@ class Holds(
     private val settings: PhoneSettings,
     private val playNext: (CloudAlbum) -> Unit,
 ) {
-    /** A record: play next, and Quick selection. */
-    fun album(album: CloudAlbum): List<MenuItem> = listOf(
+    /** A record: play next, and Quick selection. A starter record is not kept on Quick selection: it goes away once the
+     * person has music of their own ([StarterTracks]). */
+    fun album(album: CloudAlbum): List<MenuItem> = listOfNotNull(
         MenuItem(resources.getString(R.string.AlbumMenu_PlayNext), Glyph.next) { playNext(album) },
-        quick(QuickRef.of(album)),
+        if (StarterTracks.isStarter(album)) null else quick(QuickRef.of(album)),
     )
 
     /** A playlist: pinned to the top of the playlists view, and Quick selection. */

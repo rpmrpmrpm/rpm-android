@@ -16,6 +16,7 @@ import com.rpm.player.phone.home.LocalHolds
 import com.rpm.player.phone.home.QuickRef
 import com.rpm.player.phone.library.PlayedLately
 import com.rpm.player.core.library.isExplicit
+import com.rpm.player.core.library.StarterTracks
 import androidx.compose.runtime.produceState
 import com.rpm.player.core.cloud.Post
 import com.rpm.player.phone.profile.LocalSampleFaces
@@ -405,8 +406,10 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     LaunchedEffect(playingSong) { listening.note(playingSong) }
     // The badges the reader's own collection unlocks, worked out here and sent once the page is read; the server
     // notifies the reader of each new one.
+    // The starter tracks shown in place of an empty collection are not the reader's: they unlock nothing and are not counted.
+    val starterShelf = remember(collection) { StarterTracks.isStarterShelf(collection) }
     val ownBadges = remember(collection.albums, ready.walls.genres, collection.shelf) {
-        if (collection.shelf != Shelf.Own) emptyList()
+        if (collection.shelf != Shelf.Own || starterShelf) emptyList()
         else ProfileBadges.unlocked(
             collection.albums.size,
             collection.albums.sumOf { it.tracks.size },
@@ -419,7 +422,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     LaunchedEffect(tab, session?.userId) { if (tab == Tab.Feed && session != null) notices.readUnread() }
     // The size of the collection, for the counts on the reader's page. Sent again only when it changes.
     LaunchedEffect(collection.albums.size, collection.shelf) {
-        if (collection.shelf == Shelf.Own) reportCounts(services, collection.albums)
+        if (collection.shelf == Shelf.Own && !starterShelf) reportCounts(services, collection.albums)
     }
 
     // ── Send feedback ──
@@ -461,8 +464,8 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
         SongMenu(
             isMarked = { collection.tracksById[it.rpmId]?.tags?.favorite == true },
             // A song is this account's when its own collection holds it. Another account's songs cannot be marked or
-            // filed by this one.
-            isMine = { collection.shelf == Shelf.Own && collection.tracksById.containsKey(it.rpmId) },
+            // filed by this one, and neither can a starter track, which the cloud does not hold.
+            isMine = { collection.shelf == Shelf.Own && collection.tracksById.containsKey(it.rpmId) && !StarterTracks.isStarter(it.rpmId) },
             // Nothing starts, as on iPhone (`AppModel.playNext`): into an empty queue the song waits, paused.
             upNext = UpNext.Send { track -> controller?.insertNext(listOf(queued(collection, track))) },
             // The writes run in the app's scope, so leaving the page does not cut one off half made.
@@ -472,7 +475,8 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             // to keep the old one beside.
             startRadio = { track -> controller?.startRadio(queued(collection, track)) },
             shown = songMenus,
-            quick = { track -> holds.quick(QuickRef.of(track)) },
+            // A starter track goes away once the person has music, so it is not put on Quick selection.
+            quick = { track -> if (StarterTracks.isStarter(track.rpmId)) null else holds.quick(QuickRef.of(track)) },
         )
     }
     val queueMenu = remember(songMenu) { songMenu.with(UpNext.ItIsTheQueue) }
@@ -519,7 +523,8 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             readCredits = creditsRead::of,
             onPlayAll = { play(queue(), 0, Tapped.List) },
             marked = favouriteRecords.isFavourite(album),
-            onMark = { on -> services.scope.launch { services.albumFavourites.mark(album, on) } },
+            // A starter record is not in the cloud, which keeps the marks.
+            onMark = if (StarterTracks.isStarter(album)) null else { on -> services.scope.launch { services.albumFavourites.mark(album, on) } },
             download = downloads.key(album, collection.shelf),
             canPlay = downloads.canPlay,
             onPerson = ::openPerson,

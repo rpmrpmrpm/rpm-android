@@ -16,6 +16,7 @@ import com.rpm.player.core.home.HomeCatalogs
 import com.rpm.player.core.home.PeerRefused
 import com.rpm.player.core.home.PeerTrack
 import com.rpm.player.core.home.PeerWire
+import com.rpm.player.core.library.StarterTracks
 import com.rpm.player.core.net.escapeSegment
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
@@ -28,6 +29,9 @@ sealed interface TrackSource {
 
     /** A file on this device: a download ([LocalCopies]). */
     data class Local(val file: java.io.File) : TrackSource
+
+    /** A file inside the app, under its assets: a starter track ([StarterTracks]). */
+    data class Bundled(val asset: String) : TrackSource
 }
 
 /**
@@ -101,13 +105,15 @@ class TrackSources(
             }
             TrackSource.Cloud -> streamLinks.resolveBlocking(ref, kilobits = rates.getOrPut(ref.mediaId) { rate.kilobits })
             is TrackSource.Local -> StreamLink(Uri.fromFile(source.file).toString())
+            is TrackSource.Bundled -> StreamLink("asset:///" + source.asset)
         }
     }
 
     /** A track on a shelf another account shares always plays from the cloud: the computers on this
-     * network hold the person's own music, not the owner's. */
+     * network hold the person's own music, not the owner's. A starter track is in the app and nowhere else. */
     private fun choose(ref: TrackRef): TrackSource {
         if (ref.shelf != Shelf.Own) return TrackSource.Cloud
+        StarterTracks.assetOf(ref.rpmId)?.let { return TrackSource.Bundled(it) }
         copies.fileOf(ref.rpmId)?.let { return TrackSource.Local(it) }
         return HeldCatalog.nasFirst(catalogs.here.value.values).firstOrNull { catalog ->
             catalog.tracks[ref.rpmId]?.let { playsHere(it, extension) } == true && computers.usable(catalog.computer) != null
@@ -164,7 +170,8 @@ class TrackSources(
 class SourcedDataSource(
     private val upstream: DataSource,
     private val sources: TrackSources,
-    /** Opens a downloaded track's file. The network source cannot open a file address. */
+    /** Opens a downloaded track's file, and a starter track in the app's assets. The network source opens neither
+     * address. */
     private val files: DataSource,
 ) : DataSource {
 
@@ -199,7 +206,7 @@ class SourcedDataSource(
         }
         // A live encode is read through drops, taken up where it broke off, and seeked by second (LiveEncodeSource).
         reading = when {
-            chosen is TrackSource.Local -> files
+            chosen is TrackSource.Local || chosen is TrackSource.Bundled -> files
             address.live -> LiveEncodeSource(upstream, address.url).also { live = ref to it }
             else -> upstream
         }

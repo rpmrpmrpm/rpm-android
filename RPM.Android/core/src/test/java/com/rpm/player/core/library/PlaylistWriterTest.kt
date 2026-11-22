@@ -150,4 +150,25 @@ class PlaylistWriterTest {
         assertEquals(PlaylistRefusal.Failed, writer(store).delete(list("p1", "Old", listOf(track("a"))), Shelf.Own))
         assertTrue(edits.removed.isEmpty())
     }
+
+    // ── starter tracks ──
+
+    /** A starter track is not in the cloud, so a playlist never names one. */
+    @Test fun aNewPlaylistLeavesTheStarterTracksOut() = runTest {
+        val store = Store()
+        val starter = StarterTracks.tracks.first().rpmId
+
+        assertNull(writer(store).make("Mine", emptyList(), listOf("a", starter)))
+
+        assertEquals(listOf("a"), store.writes.single().second.trackIds)
+    }
+
+    @Test fun addingOnlyStarterTracksWritesNothing() = runTest {
+        val store = Store(stored("p1", "Old", listOf("a")))
+
+        val added = writer(store).add(list("p1", "Old", listOf(track("a"))), Shelf.Own, StarterTracks.tracks.map { it.rpmId })
+
+        assertEquals(SongsAdded.Refused(PlaylistRefusal.Failed), added)
+        assertTrue(store.writes.isEmpty())
+    }
 }

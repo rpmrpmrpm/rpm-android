@@ -1,6 +1,7 @@
 package com.rpm.player.core.lyrics
 
 import com.rpm.player.core.cloud.CloudClient
+import com.rpm.player.core.library.StarterTracks
 import com.rpm.player.core.playback.TrackRef
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.Serializable
@@ -44,14 +45,15 @@ data class MeasuredAnswer(
  * device's sheet: the same text, the same time, and the same number of words ([forLine]). Every
  * other line uses the estimate from [LyricTiming.sweep].
  *
- * Read once per track. A track that nobody has measured, or a failed read, gives no measurement.
+ * Read once per track. A track that nobody has measured, or a failed read, gives no measurement. A starter track
+ * ([StarterTracks]) is not in the cloud, so it is never asked about.
  */
 class MeasuredLyrics(private val cloud: CloudClient) {
     suspend fun of(track: TrackRef): List<MeasuredLine> = read(track).lines
 
     /** The whole answer for [track]: the measured lines and the sheet's offset. Empty when nothing was measured or
      * the read failed. A listener who is not a supporter is given the offset alone, where there is one. */
-    suspend fun read(track: TrackRef): MeasuredAnswer = try {
+    suspend fun read(track: TrackRef): MeasuredAnswer = if (StarterTracks.isStarter(track.rpmId)) MeasuredAnswer() else try {
         cloud.lyricTiming(track)
     } catch (e: CancellationException) {
         throw e
@@ -61,7 +63,7 @@ class MeasuredLyrics(private val cloud: CloudClient) {
 
     /** The synced sheet the track's owner chose on a desktop, which comes before LRCLIB's first guess; null when
      * they chose none, it has no times, or the read failed. */
-    suspend fun chosenSheet(track: TrackRef): LyricSheet? = try {
+    suspend fun chosenSheet(track: TrackRef): LyricSheet? = if (StarterTracks.isStarter(track.rpmId)) null else try {
         cloud.lyricSheet(track)?.let(LyricSheet::parse)?.takeIf { it.isSynced }
     } catch (e: CancellationException) {
         throw e
@@ -71,7 +73,7 @@ class MeasuredLyrics(private val cloud: CloudClient) {
 
     /** Asks the cloud to time [sheet]'s words from [track]'s recording (`cloud/lyric-timing/{rpmId}/measure`).
      * The transcoder does the work, and [of] reads the answer later. False when the request failed. */
-    suspend fun ask(track: TrackRef, sheet: LyricSheet): Boolean = try {
+    suspend fun ask(track: TrackRef, sheet: LyricSheet): Boolean = if (StarterTracks.isStarter(track.rpmId)) false else try {
         cloud.measureLyrics(track, MeasureAsk(sheet.lines.mapIndexed { i, line -> SheetLine(i, line.seconds, line.text) }))
         true
     } catch (e: CancellationException) {

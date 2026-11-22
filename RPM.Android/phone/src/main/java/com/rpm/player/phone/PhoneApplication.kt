@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import com.rpm.player.core.library.AlbumOrdering
 import com.rpm.player.core.library.BlankDisc
 import com.rpm.player.core.library.DiscStandIn
+import com.rpm.player.core.library.StarterTracks
 import com.rpm.player.core.library.ArtistOrdering
 import com.rpm.player.core.library.ArtistTrackGrouping
 import com.rpm.player.core.playback.EqCurve
@@ -126,9 +127,21 @@ class PhoneApplication : RpmApplication() {
             com.rpm.player.core.radio.TunerOpensOn.EveryCountry,
             copies = downloadBook,
             equalizing = settings.equalizing,
+            starters = StarterTracks.tracks,
+            forceStarters = previewsStarters(),
         )
             .also { it.dossiers.languages = settings.articleLanguages() }
     }
+
+    /**
+     * Whether the starter tracks are shown over the person's music, as a new account sees them, to look at those screens
+     * without signing out. Only a debuggable build reads it, so a listener's build never does. Turned on with
+     * `adb shell run-as com.rpm.player touch files/starter-preview` and off by removing that file; read when the app
+     * starts.
+     */
+    private fun previewsStarters(): Boolean =
+        (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0 &&
+            java.io.File(filesDir, STARTER_PREVIEW).exists()
 
     /** A pause key only pauses: headphones and cars send it to mean pause, never to start the music. */
     override val pauseKeyResumes: Boolean get() = false
@@ -622,3 +635,6 @@ class PhoneSettings(context: Context) {
         const val KEY_PLAYLIST_STRIDE = "playlists.tileArt.v1"
     }
 }
+
+/** The file in the app's files folder that turns the starter preview on ([PhoneApplication], debuggable builds only). */
+private const val STARTER_PREVIEW = "starter-preview"

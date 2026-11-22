@@ -22,6 +22,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.FileDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultRenderersFactory
@@ -41,6 +42,7 @@ import com.rpm.player.core.radio.RadioStation
 import com.rpm.player.core.radio.StationCounter
 import com.rpm.player.core.RpmApplication
 import com.rpm.player.core.services
+import com.rpm.player.core.library.StarterTracks
 import java.io.File
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
@@ -79,6 +81,8 @@ class PlaybackService : MediaSessionService() {
     // second before the reading) is not kept.
     private fun bankPlay(play: TrackCounter.Counted) {
         ListeningHistory.note(play.ref, play.at)
+        // A starter track is in the app, not in the cloud: its plays are sent nowhere, and they do not shape home's banner.
+        if (StarterTracks.isStarter(play.ref.rpmId)) return
         val userId = services.auth.session.value?.userId ?: return
         com.rpm.player.core.diag.Diag.i(TrackPlaysSync.TAG, "play counted: ${play.ref.mediaId}")
         services.trackPlays.note(userId, play.ref.rpmId, play.at)
@@ -108,7 +112,9 @@ class PlaybackService : MediaSessionService() {
         // stream's, and passes through. One client pins each computer's key and checks every other host.
         val sources = services.trackSources
         val network = OkHttpDataSource.Factory(services.peerHttp).setUserAgent(RadioBrowser.USER_AGENT)
-        val opened = SourcedDataSource.Factory(network, sources, FileDataSource.Factory())
+        // Files are a download's (file://) or a starter track's in the app's assets (asset:///), which DefaultDataSource
+        // tells apart by the address.
+        val opened = SourcedDataSource.Factory(network, sources, DefaultDataSource.Factory(this, FileDataSource.Factory()))
 
         // The sink is wrapped so the room can read what is being heard, at the moment it is heard, and so the
         // audio can go to a Cast device instead of the TV.

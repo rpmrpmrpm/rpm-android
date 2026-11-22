@@ -82,6 +82,11 @@ class Services(
     /** The equaliser curve, which the playback service's sink reads for every buffer, as it reads [levelling]. The phone
      * keeps it with its settings; the TV has no equaliser, and its curve stays off. */
     val equalizing: com.rpm.player.core.playback.Equalizing = com.rpm.player.core.playback.Equalizing(),
+    /** The tracks shown while the person's own collection holds no music: the phone's starter tracks, none on the TV.
+     * See [com.rpm.player.core.library.StarterTracks]. */
+    starters: List<com.rpm.player.core.cloud.CloudTrack> = emptyList(),
+    /** Shows [starters] over the person's music as well, as on a new account. Only a debuggable build sets it. */
+    forceStarters: Boolean = false,
 ) {
     /**
      * The settled network reading of an app that keeps downloads, which the player follows offline
@@ -160,7 +165,7 @@ class Services(
     val trackSources = TrackSources(computers, homeCatalogs, streamLinks, extension = TrackSources.extensionDecodes(), rate = streamRate, copies = copies)
 
     /** The cloud library with the paired computers' tracks merged in by rpmId. */
-    val library = LibraryRepository(cloud, auth, homeCatalogs, LibraryCache(context.cacheDir), scope, clock, dayPartPlays)
+    val library = LibraryRepository(cloud, auth, homeCatalogs, LibraryCache(context.cacheDir), scope, clock, dayPartPlays, starters, forceStarters)
 
     /** A track menu's writes to the person's own collection: a favourite, a place in a playlist. */
     val ownWriter = OwnWriter(cloud, auth, library, clock)

@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import com.rpm.player.core.library.StarterTracks
 
 /**
  * Which records can be played here and now, as the iPhone's `PlayableHere` (RPMUI/RPMTheme.swift): everything while
@@ -20,7 +21,8 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
  */
 @Immutable
 data class PlayableHere(val isOnline: Boolean, val onPhone: Set<String>) {
-    fun canPlay(albumKey: String): Boolean = isOnline || albumKey in onPhone
+    /** A starter record ([StarterTracks]) is inside the app, so it always plays. */
+    fun canPlay(albumKey: String): Boolean = isOnline || albumKey in onPhone || StarterTracks.isStarterKey(albumKey)
 
     companion object {
         /** Everything plays. A screen drawn before the app has the real answer must assume this, or it greys out a whole

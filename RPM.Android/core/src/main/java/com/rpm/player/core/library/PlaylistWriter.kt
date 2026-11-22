@@ -99,13 +99,15 @@ class PlaylistWriter(
     ) : this(CloudPlaylistStore(cloud), { auth.session.value?.userId }, library::edited, clock, mint)
 
     /**
-     * Makes a playlist called [name] in [folder] (outermost first; empty is the top of the tree) holding [rpmIds]
+     * Makes a playlist called [name] in [folder] (outermost first; empty is the top of the tree) holding [picked]
      * in that order. It may hold none, to be filled later. It goes under a new id and is written only if nothing is
-     * stored there (`ifUnchangedSince` 0), so a clash is a failure and never somebody's playlist overwritten.
+     * stored there (`ifUnchangedSince` 0), so a clash is a failure and never somebody's playlist overwritten. A starter
+     * track is left out: a playlist names cloud tracks ([StarterTracks]).
      *
      * @return null when it was made.
      */
-    suspend fun make(name: String, folder: List<String>, rpmIds: List<String>): PlaylistRefusal? {
+    suspend fun make(name: String, folder: List<String>, picked: List<String>): PlaylistRefusal? {
+        val rpmIds = picked.filterNot(StarterTracks::isStarter)
         val user = user() ?: return PlaylistRefusal.Failed
         // Trimmed, because a trailing space makes the name look like another playlist's.
         val trimmed = name.trim()
@@ -124,12 +126,15 @@ class PlaylistWriter(
     }
 
     /**
-     * Puts [rpmIds] at the end of [list], leaving any song the list already holds where it is: somebody who picks
+     * Puts [picked] at the end of [list], leaving any song the list already holds where it is: somebody who picks
      * twelve songs does not want a second copy of the three already there. The list is read from the store first,
-     * not taken from the page, which can be several changes behind.
+     * not taken from the page, which can be several changes behind. A starter track is left out, as in [make], and
+     * songs that are all starter tracks are refused.
      */
-    suspend fun add(list: TrackList, shelf: Shelf, rpmIds: List<String>): SongsAdded {
+    suspend fun add(list: TrackList, shelf: Shelf, picked: List<String>): SongsAdded {
         if (shelf != Shelf.Own) return SongsAdded.Refused(PlaylistRefusal.NotYours)
+        val rpmIds = picked.filterNot(StarterTracks::isStarter)
+        if (rpmIds.isEmpty() && picked.isNotEmpty()) return SongsAdded.Refused(PlaylistRefusal.Failed)
         if (list.generated) return SongsAdded.Refused(PlaylistRefusal.Generated)
         val user = user() ?: return SongsAdded.Refused(PlaylistRefusal.Failed)
         val began = clock()

@@ -123,6 +123,15 @@ internal object StoredPictures {
         cloud: CloudClient,
         disk: DiskCache?,
     ): FetchResult {
+        // A starter record's picture ships with the app (StarterTracks) and is read from its assets, never asked of the cloud.
+        StarterTracks.pictureAsset(keys.firstOrNull())?.let { asset ->
+            val bytes = options.context.assets.open(asset).use { it.readBytes() }
+            return SourceFetchResult(
+                source = ImageSource(Buffer().write(bytes), options.fileSystem, SharpScaled),
+                mimeType = null,
+                dataSource = DataSource.DISK,
+            )
+        }
         // The size is part of the key: a box that starts asking for bigger copies fetches them, not the ones it kept.
         val sized = when (size) {
             CoverSize.Original -> ""

@@ -21,6 +21,7 @@ import com.rpm.player.core.cloud.CloudTrack
 import com.rpm.player.core.cloud.Shelf
 import com.rpm.player.core.downloads.AlbumDownloads
 import com.rpm.player.core.library.CloudAlbum
+import com.rpm.player.core.library.StarterTracks
 import com.rpm.player.core.net.Reach
 import com.rpm.player.phone.PhoneApplication
 
@@ -61,7 +62,8 @@ class DownloadsHere internal constructor(
      * the account's own tracks, and another person's record is not one.
      */
     fun key(album: CloudAlbum, shelf: Shelf): DownloadKey? {
-        if (shelf != Shelf.Own) return null
+        // A starter record is in the app already, and the cloud has nothing to download for it.
+        if (shelf != Shelf.Own || StarterTracks.isStarter(album)) return null
         return DownloadKey(
             standing = shown.value[album.key],
             onDownload = {

@@ -57,6 +57,8 @@ import coil3.ImageLoader
 import com.rpm.player.core.R
 import com.rpm.player.core.cloud.CloudTrack
 import com.rpm.player.core.library.Collection
+import com.rpm.player.core.library.Plays
+import com.rpm.player.core.library.StarterTracks
 import com.rpm.player.core.room.RoomPalette
 import com.rpm.player.phone.PhoneSettings
 import com.rpm.player.phone.design.GlassButton
@@ -344,23 +346,36 @@ private fun Sample(song: CloudTrack, collection: Collection, images: ImageLoader
 /**
  * The song the welcome plays: one the person already knows where they have listened before (the one played most), else
  * one they marked, else a song from the collection. Only a song that can play now, and one long enough to look round the
- * player while it plays.
+ * player while it plays. See [sampleOf].
  */
 @Composable
 fun rememberSample(collection: Collection): CloudTrack? {
     val playable = LocalPlayable.current
     return remember(collection, playable) {
-        val songs = collection.tracksById.values.filter { track ->
-            !track.title.isNullOrBlank() &&
-                (track.tags?.durationSeconds ?: 0.0) >= MIN_SECONDS &&
-                collection.albumOf[track.rpmId]?.let { playable.canPlay(it.key) } == true
-        }
-        songs.maxWithOrNull(
-            compareBy<CloudTrack> { collection.plays[it.rpmId]?.count ?: 0 }
-                .thenBy { if (it.tags?.favorite == true) 1 else 0 }
-                .thenByDescending { it.rpmId },
-        )
+        sampleOf(collection.tracksById.values, collection.plays) { rpmId -> collection.albumOf[rpmId]?.let { playable.canPlay(it.key) } == true }
     }
+}
+
+/**
+ * The welcome's song from [tracks], as [rememberSample] picks it. [canPlay] says whether a track's record plays now.
+ *
+ * A collection that is the starter tracks ([StarterTracks]), shown while the person has no music of their own, has no
+ * plays and no marks to go by, so the song is the first of [StarterTracks.welcomeOrder] that qualifies. Without them a
+ * new account would have no song, and the welcome would leave out its last step and the player's tour.
+ */
+internal fun sampleOf(tracks: kotlin.collections.Collection<CloudTrack>, plays: Map<String, Plays>, canPlay: (String) -> Boolean): CloudTrack? {
+    val songs = tracks.filter { track ->
+        !track.title.isNullOrBlank() && (track.tags?.durationSeconds ?: 0.0) >= MIN_SECONDS && canPlay(track.rpmId)
+    }
+    if (songs.isNotEmpty() && songs.all { StarterTracks.isStarter(it.rpmId) }) {
+        val byId = songs.associateBy { it.rpmId }
+        StarterTracks.welcomeOrder.firstNotNullOfOrNull(byId::get)?.let { return it }
+    }
+    return songs.maxWithOrNull(
+        compareBy<CloudTrack> { plays[it.rpmId]?.count ?: 0 }
+            .thenBy { if (it.tags?.favorite == true) 1 else 0 }
+            .thenByDescending { it.rpmId },
+    )
 }
 
 /** A song shorter than this ends before the player has been shown round. */

@@ -90,6 +90,8 @@ class AlbumFavourites(
 
     /** Marks [album] a favourite ([on]) or clears the mark. True when the store took every write. Main thread. */
     suspend fun mark(album: CloudAlbum, on: Boolean): Boolean {
+        // A starter record is not in the cloud, so it has no mark to keep ([StarterTracks]).
+        if (StarterTracks.isStarter(album)) return false
         val user = held.value.user ?: return false
         val spellings = AlbumArtKey.spellings(RecordPicture.COVER, album.tracks)
         val keys = if (on) spellings.take(1) else spellings.filter(held.value::isOn)

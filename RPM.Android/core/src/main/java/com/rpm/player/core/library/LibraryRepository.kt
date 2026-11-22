@@ -97,6 +97,11 @@ class LibraryRepository(
     /** What this device plays in each part of the day, which home's banner list is cut by; null builds home from the
      * clock alone. */
     private val dayPartPlays: DayPartPlays? = null,
+    /** The tracks shown in place of an own collection that holds no music ([StarterTracks.shown]): the phone's starter
+     * tracks, none on the TV. They are laid in where the collection is built, so the cache and the cloud never hold them. */
+    private val starters: List<com.rpm.player.core.cloud.CloudTrack> = emptyList(),
+    /** Shows [starters] over a collection that has music too: a debuggable build's way to look at a new account. */
+    private val forceStarters: Boolean = false,
 ) {
     private val current = MutableStateFlow<LibraryState>(LibraryState.SignedOut)
     val state: StateFlow<LibraryState> = current.asStateFlow()
@@ -406,7 +411,7 @@ class LibraryRepository(
                         // Keyed on the tracks as read and the marks laid over them: laying marks makes a new list of
                         // tracks on every build, though nothing in it changed.
                         val reused = base?.takeIf { it.tracks === fresh.tracks && it.marks == mine.marks && it.here === here }
-                        val parts = reused ?: base(laid, here, ::took).copy(tracks = fresh.tracks, marks = mine.marks).also { base = it }
+                        val parts = reused ?: base(laid, here, shelf, ::took).copy(tracks = fresh.tracks, marks = mine.marks).also { base = it }
                         builtLists = laid.playlists to laid.moods
                         laid to build(laid, parts, seed, shelf, chosen, user, library.library.readAt, ::took)
                     }
@@ -495,8 +500,8 @@ class LibraryRepository(
         val walls: Walls,
     )
 
-    private fun base(library: CloudLibrary, here: Map<String, HeldCatalog>, took: (String) -> Unit): Base {
-        val all = HomeMerge.merge(library.tracks, here.values)
+    private fun base(library: CloudLibrary, here: Map<String, HeldCatalog>, shelf: Shelf, took: (String) -> Unit): Base {
+        val all = StarterTracks.shown(shelf, HomeMerge.merge(library.tracks, here.values), starters, forceStarters)
         val byId = all.associateBy { it.rpmId }
         val albums = AlbumWall.group(all)
         took("${albums.size} albums grouped from ${all.size} tracks, ${here.size} computers")
