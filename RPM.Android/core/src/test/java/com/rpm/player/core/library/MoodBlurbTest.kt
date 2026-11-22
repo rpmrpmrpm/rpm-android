@@ -82,4 +82,14 @@ class MoodBlurbTest {
         val lists = Lists.generated(cut, tracks.associateBy { it.rpmId }, Shelf.Own)
         assertEquals(MoodLine(Mood.Calm, listOf("jazz")), lists.single().blurb)
     }
+
+    /** A press answered by the store shows the store's new list, not a slice of the run the cut came with. */
+    @Test
+    fun aNewReadingFromTheStoreReplacesTheSlice() {
+        fun track(id: String) = CloudTrack(rpmId = id, tags = CloudTrackTags(genre = "Jazz"))
+        val tracks = listOf("a", "b", "c", "d", "n1", "n2").map(::track)
+        val cut = CloudMoodLists(lists = listOf(CloudMoodList(kind = "Calm", id = "L", trackIds = listOf("a", "b", "c", "d"), shows = 2)))
+        val lists = Lists.generated(cut, tracks.associateBy { it.rpmId }, Shelf.Own, mapOf("L" to 7), mapOf("L" to listOf("n1", "n2")))
+        assertEquals(listOf("n1", "n2"), lists.single().tracks.map { it.rpmId })
+    }
 }

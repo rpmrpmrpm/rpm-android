@@ -77,18 +77,30 @@ class PlaybackService : MediaSessionService() {
     /** What plays without a network, on a device that keeps downloads; null on the TV ([com.rpm.player.core.Services.line]). */
     private var offline: OfflinePlayback? = null
 
-    // A play is the signed-in account's. One counted with nobody signed in (the session ended in the
-    // second before the reading) is not kept.
-    private fun bankPlay(play: TrackCounter.Counted) {
-        ListeningHistory.note(play.ref, play.at)
-        // A starter track is in the app, not in the cloud: its plays are sent nowhere, and they do not shape home's banner.
-        if (StarterTracks.isStarter(play.ref.rpmId)) return
+    // A listen is the signed-in account's. One heard with nobody signed in (the session ended in the
+    // second before the reading) is not kept. Every listen worth writing down goes to the listening log;
+    // one that counted is also a play.
+    private fun bankListen(heard: TrackCounter.Heard) {
+        heard.play?.let { ListeningHistory.note(it.ref, it.at) }
+        // A starter track is in the app, not in the cloud: its listens are sent nowhere, and they do not shape home's banner.
+        if (StarterTracks.isStarter(heard.ref.rpmId)) return
         val userId = services.auth.session.value?.userId ?: return
-        com.rpm.player.core.diag.Diag.i(TrackPlaysSync.TAG, "play counted: ${play.ref.mediaId}")
-        services.trackPlays.note(userId, play.ref.rpmId, play.at)
+        // The app's scope and not this service's: the last listen is banked as the service ends, and the
+        // service's scope is cancelled in the same breath.
+        services.scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            services.listens.note(userId, ListenLog.Heard(
+                heard.ref.rpmId, heard.at, heard.heardSeconds, heard.lengthSeconds, heard.counted,
+                heard.localHour, heard.localDayOfWeek))
+        }
+        heard.play?.let { play ->
+            com.rpm.player.core.diag.Diag.i(TrackPlaysSync.TAG, "play counted: ${play.ref.mediaId}")
+            services.trackPlays.note(userId, play.ref.rpmId, play.at)
+        }
         services.trackPlaysSync.soon()
         // What is played when, for the home banner's mood list; the person's own collection only, as home reads it.
-        if (play.ref.shelf == Shelf.Own) services.library.genreOf(play.ref)?.let { services.dayPartPlays.note(userId, it, play.at) }
+        heard.play?.takeIf { it.ref.shelf == Shelf.Own }?.let { play ->
+            services.library.genreOf(play.ref)?.let { services.dayPartPlays.note(userId, it, play.at) }
+        }
     }
 
     private fun bank(part: StationCounter.Heard) {
@@ -266,12 +278,12 @@ class PlaybackService : MediaSessionService() {
                 val duration = player.duration.takeIf { it > 0 } ?: current?.mediaMetadata?.durationMs ?: 0L
                 // A queue played to its end keeps its last track as the current item; that listen is over
                 // and is judged now, not when the service ends. Played again, it is a new listen.
-                trackCounter.read(
+                trackCounter.readListen(
                     now = current?.takeIf { player.playbackState != Player.STATE_ENDED }?.let { TrackRef.parse(it.mediaId) },
                     playing = player.isPlaying,
                     position = player.currentPosition / 1000.0,
                     duration = duration / 1000.0,
-                )?.let(::bankPlay)
+                )?.let(::bankListen)
                 if (player.isPlaying && ++ticks % KEEP_EVERY_S == 0) keepQueue(player)
             }
         }
@@ -400,7 +412,7 @@ class PlaybackService : MediaSessionService() {
     override fun onDestroy() {
         // The listen in hand ends with the service; what it heard since its last part is counted.
         counter.handOut()?.let(::bank)
-        trackCounter.settle()?.let(::bankPlay)
+        trackCounter.settleListen()?.let(::bankListen)
         // The cast ends with the player it was sending from.
         services.casting.detach()
         services.sleep.detach()

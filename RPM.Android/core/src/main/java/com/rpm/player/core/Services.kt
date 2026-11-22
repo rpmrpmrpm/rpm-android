@@ -134,7 +134,11 @@ class Services(
     /** What this TV has played, as totals per track, and the passes that send them to the cloud for the
      * desktop to build the generated lists from, as the phone sends its own. */
     val trackPlays = TrackPlayLog(File(context.filesDir, "track-plays.json"), scope)
-    val trackPlaysSync = TrackPlaysSync(cloud, auth, trackPlays, scope, clock)
+
+    /** Every listen worth writing down, plays and skips, until the store's listening log has taken it. The store
+     * cuts On repeat, Rediscover, Late night, First listens and the hourly lean of Your mix from it. */
+    val listens = com.rpm.player.core.playback.ListenLog(File(context.filesDir, "listens.json"))
+    val trackPlaysSync = TrackPlaysSync(cloud, auth, trackPlays, listens, scope, clock)
 
     /** What this device plays in each part of the day, by genre, which the home banner's mood list is cut by. */
     val dayPartPlays = com.rpm.player.core.playback.DayPartPlays(File(context.filesDir, "day-part-plays.json"), scope)
@@ -165,7 +169,9 @@ class Services(
     val trackSources = TrackSources(computers, homeCatalogs, streamLinks, extension = TrackSources.extensionDecodes(), rate = streamRate, copies = copies)
 
     /** The cloud library with the paired computers' tracks merged in by rpmId. */
-    val library = LibraryRepository(cloud, auth, homeCatalogs, LibraryCache(context.cacheDir), scope, clock, dayPartPlays, starters, forceStarters)
+    val library = LibraryRepository(cloud, auth, homeCatalogs, LibraryCache(context.cacheDir), scope, clock, dayPartPlays, starters, forceStarters) {
+        AppLanguage.of(context.resources.configuration.locales[0])
+    }
 
     /** A track menu's writes to the person's own collection: a favourite, a place in a playlist. */
     val ownWriter = OwnWriter(cloud, auth, library, clock)
