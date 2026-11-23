@@ -144,6 +144,7 @@ import com.rpm.player.core.cloud.ProfileSample
 import com.rpm.player.core.cloud.ProfileBadges
 import com.rpm.player.core.cloud.Song
 import com.rpm.player.phone.player.NowPlayingSheet
+import com.rpm.player.phone.player.LandscapeStyle
 import com.rpm.player.phone.player.OnListeningEnded
 import com.rpm.player.phone.player.PutAwayWhenPlayedOut
 import com.rpm.player.phone.player.rememberPlayerWiring
@@ -686,8 +687,20 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     // The stage: the phone turned while something is loaded. The app turns only while there is something to turn to,
     // and the player is put away when the stage opens, so turning back shows the tab it was opened from.
     StageOrientationFollows(loaded = now != null)
-    val onStage = rememberTurned() && now != null && controller != null
+    val sideways = rememberTurned() && now != null && controller != null
+    // The modern style of the setting shows the player itself on its side, in place of the stage. It is raised when the
+    // phone turns and stays up when it turns back, so turning back shows the upright player.
+    val modern = settings.landscapePlayer == LandscapeStyle.Modern
+    val onStage = sideways && !modern
+    val playerSideways = sideways && modern
     LaunchedEffect(onStage) { if (onStage) playerUp = false }
+    LaunchedEffect(playerSideways) {
+        if (playerSideways) {
+            wiring.leaving = false
+            playerUp = true
+        }
+    }
+    val activity = LocalContext.current.findActivity()
 
     // When the connection goes, the person's own records are shown, with the ones not on the phone greyed: a borrowed
     // collection cannot be read without a network. An open page of the own shelf stays open; its record may be on the
@@ -939,6 +952,11 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                     sleep = services.sleep,
                     leaving = wiring.leaving,
                     bars = settings.playerBars,
+                    sideways = playerSideways,
+                    onPortrait = { activity?.let(StageOrientation::requestPortrait) },
+                    tap = services.audioTap,
+                    visual = settings.landscapeVisual,
+                    onVisual = settings::changeLandscapeVisual,
                     onClosed = {
                         playerUp = false
                         wiring.leaving = false
@@ -1036,9 +1054,10 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                 start?.let { controller?.start(it) }
             },
         )
-        // The first-run hints, over everything but the stage: the player's while it is up, the app's otherwise. Not while
-        // the welcome, the wait cover or the collections picker is up, and never over another account's collection.
-        if (settings.welcomed && !covering && !picking && !onStage && collection.shelf == Shelf.Own) {
+        // The first-run hints, over everything but the phone on its side: the player's while it is up, the app's
+        // otherwise. Not while the welcome, the wait cover or the collections picker is up, and never over another
+        // account's collection.
+        if (settings.welcomed && !covering && !picking && !sideways && collection.shelf == Shelf.Own) {
             val tour = if (playerUp) CoachMark.PLAYER_TOUR.takeIf { playerSettled } else CoachMark.APP_TOUR
             val due = tour?.firstNotNullOfOrNull { mark -> if (settings.hasSeen(mark.key)) null else coachTargets.of(mark.target)?.let { mark to it } }
             when {

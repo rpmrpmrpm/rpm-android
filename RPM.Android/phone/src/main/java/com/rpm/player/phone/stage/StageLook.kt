@@ -144,6 +144,18 @@ class StageSettings private constructor(context: Context) {
  */
 @Composable
 fun LookPicker(backdrop: Backdrop, showing: StageLook, onPick: (StageLook) -> Unit, onClose: () -> Unit) {
+    VisualPicker(backdrop, stringResource(showing.title), onClose) {
+        for (look in StageLook.offered) LookLine(look.glyph, look.title, look.detail, on = look == showing) { onPick(look) }
+    }
+}
+
+/**
+ * The panel the visualisers are picked from: its title and the name of the one shown, over the [rows]. The stage's
+ * [LookPicker] and the modern player on its side both use it, so the two lists look the same. A tap outside the panel
+ * calls [onClose].
+ */
+@Composable
+fun VisualPicker(backdrop: Backdrop, shown: String, onClose: () -> Unit, rows: @Composable () -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
@@ -164,20 +176,21 @@ fun LookPicker(backdrop: Backdrop, showing: StageLook, onPick: (StageLook) -> Un
             Column {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     BasicText(stringResource(R.string.Rpm_Stage_Visualiser), Modifier.weight(1f), style = displayBold(15f).copy(color = Color.White))
-                    BasicText(stringResource(showing.title), style = display(12f).copy(color = Ink.white(0x88)))
+                    BasicText(shown, style = display(12f).copy(color = Ink.white(0x88)))
                 }
                 Box(Modifier.fillMaxWidth().height(1.dp).background(Ink.white(0x1A)))
-                Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = 6.dp)) {
-                    for (look in StageLook.offered) LookLine(look, on = look == showing) { onPick(look) }
-                }
+                Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = 6.dp)) { rows() }
             }
         }
     }
 }
 
-/** One row of the picker: the look's glyph, its name over its line of description, and a tick on the one shown. */
+/**
+ * One row of the picker: the glyph, the name over its line of description, and a tick on the one shown. A [detail]
+ * that is empty leaves the name alone on its row.
+ */
 @Composable
-private fun LookLine(look: StageLook, on: Boolean, onClick: () -> Unit) {
+fun LookLine(glyph: String, @StringRes title: Int, @StringRes detail: Int?, on: Boolean, onClick: () -> Unit) {
     val presses = remember { MutableInteractionSource() }
     val pressed by presses.collectIsPressedAsState()
     Row(
@@ -189,12 +202,12 @@ private fun LookLine(look: StageLook, on: Boolean, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(Modifier.width(20.dp).padding(top = 1.dp), contentAlignment = Alignment.TopCenter) {
-            BasicText(look.glyph, style = icon(15f).copy(color = if (on) Ink.cyan else Ink.white(0xB3)))
+            BasicText(glyph, style = icon(15f).copy(color = if (on) Ink.cyan else Ink.white(0xB3)))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            BasicText(stringResource(look.title), style = display(15f).copy(color = Color.White))
-            val detail = stringResource(look.detail)
-            if (detail.isNotEmpty()) BasicText(detail, style = display(12f).copy(color = Ink.white(0x88)))
+            BasicText(stringResource(title), style = display(15f).copy(color = Color.White))
+            val said = detail?.let { stringResource(it) }.orEmpty()
+            if (said.isNotEmpty()) BasicText(said, style = display(12f).copy(color = Ink.white(0x88)))
         }
         if (on) BasicText(Glyph.check, Modifier.padding(top = 1.dp), style = icon(14f).copy(color = Color.White))
     }

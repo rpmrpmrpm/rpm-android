@@ -278,10 +278,11 @@ private fun Header(errand: SheetErrand, ready: Boolean, busy: Boolean, onCancel:
 
 /**
  * A two-way switch, as the iPhone's segmented picker draws it on a dark screen: a rounded track with the chosen half
- * lit. A switch and not a key, because the reader goes back and forth between the two lists.
+ * lit. A switch and not a key, because the reader goes back and forth between the two lists. The settings use it for
+ * their two-way choices too.
  */
 @Composable
-private fun Segments(labels: List<String>, chosen: Int, onChoose: (Int) -> Unit) {
+internal fun Segments(labels: List<String>, chosen: Int, onChoose: (Int) -> Unit) {
     val track = RoundedCornerShape(9.dp)
     val face = RoundedCornerShape(7.dp)
     Row(

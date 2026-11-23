@@ -116,6 +116,8 @@ fun SettingsTab(
         },
         playerBars = settings.playerBars,
         onPlayerBars = settings::changePlayerBars,
+        landscapePlayer = settings.landscapePlayer,
+        onLandscapePlayer = settings::changeLandscapePlayer,
         onReplayHints = settings::replayWelcome,
         equalizer = settings.eqOutput?.let { EqControls(it, settings.eqCurve, settings::changeEq) },
     )

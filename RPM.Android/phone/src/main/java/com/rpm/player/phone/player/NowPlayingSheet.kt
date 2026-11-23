@@ -123,6 +123,10 @@ import kotlin.math.hypot
 import kotlin.math.roundToInt
 import com.rpm.player.phone.ui.CoverCorner
 import com.rpm.player.phone.ui.coverSquare
+import com.rpm.player.core.playback.AudioTap
+import com.rpm.player.phone.stage.HideSystemBars
+import com.rpm.player.phone.stage.StageLook
+import com.rpm.player.phone.stage.StageSurface
 
 /** The stiffness of a spring with no bounce and a response of 0.35 s: SwiftUI's `spring(duration: 0.35)`. */
 private const val SHEET_STIFFNESS = 322f
@@ -131,7 +135,7 @@ private const val SHEET_STIFFNESS = 322f
 private const val HOME_STIFFNESS = 439f
 
 /** The size of the cover, and the scale it shrinks to while the record is paused. */
-private val SLEEVE = 260.dp
+internal val SLEEVE = 260.dp
 private const val PAUSED_SCALE = 0.9f
 
 /** The room one spectrum bar needs, with its gap; at less the run looks like a texture, not bars. */
@@ -191,6 +195,14 @@ private const val QUEUE_GLYPH = ""
  * @param leaving set when the listening ended under the sheet: it goes down by itself.
  * @param onClosed called once the sheet is down, so the caller can remove it.
  * @param bars whether the spectrum bars beside the cover move with the music: the setting ([PhoneSettings.playerBars]).
+ * @param sideways lays the sheet out for a phone on its side ([SidewaysPlayer]): the modern style of the setting
+ *   ([PhoneSettings.landscapePlayer]). Back then asks for portrait, as the stage does, and the sheet stays up.
+ * @param onPortrait turns the app upright: Back while [sideways], and every way out of the sheet while it is sideways,
+ *   because the pages under it are drawn for a phone held upright.
+ * @param tap the sound being heard, for a visualiser behind the sheet on its side; null offers only the room.
+ * @param visual what is drawn behind the sheet on its side: one of the stage's looks, or null for the room
+ *   ([PhoneSettings.landscapeVisual]).
+ * @param onVisual keeps the choice made with the visualiser key.
  */
 @Composable
 fun NowPlayingSheet(
@@ -216,6 +228,11 @@ fun NowPlayingSheet(
     leaving: Boolean,
     onClosed: () -> Unit,
     bars: Boolean = true,
+    sideways: Boolean = false,
+    onPortrait: () -> Unit = {},
+    tap: AudioTap? = null,
+    visual: StageLook? = null,
+    onVisual: (StageLook?) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -228,6 +245,7 @@ fun NowPlayingSheet(
     var showingSpeakers by remember { mutableStateOf(false) }
     var showingSleepTimer by remember { mutableStateOf(false) }
     var showingQueue by remember { mutableStateOf(false) }
+    var showingVisuals by remember { mutableStateOf(false) }
     var menuAt by remember { mutableStateOf<Rect?>(null) }
     val timer by sleep.timer.collectAsStateWithLifecycle()
     val castState = speakers?.casting?.state?.collectAsStateWithLifecycle()?.value
@@ -246,6 +264,8 @@ fun NowPlayingSheet(
     LaunchedEffect(now.mediaId, karaoke, lyrics) { if (karaoke) onNeedTiming() }
     // The sleep timer's drawer is shown only while a timer runs, so it closes when the timer ends.
     LaunchedEffect(timer.isOn) { if (!timer.isOn) showingSleepTimer = false }
+    // On its side the sheet fills the whole screen, as the stage does.
+    if (sideways) HideSystemBars()
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val height = with(density) { maxHeight.toPx() }
@@ -255,14 +275,18 @@ fun NowPlayingSheet(
         val stage = remember { Stage() }
         stage.top = { offset.value }
         stage.height = height
+        stage.footFollows = !sideways
         val fullyUp by remember { derivedStateOf { offset.value == 0f } }
         var up by remember { mutableStateOf(true) }
         val sheetSpring = spring<Float>(dampingRatio = 1f, stiffness = SHEET_STIFFNESS)
-        LaunchedEffect(Unit) { offset.animateTo(0f, sheetSpring) }
+        // Raised by turning the phone, the sheet is simply there, as the stage is: a sheet rising over the pages turned
+        // on their side would show them for a moment.
+        LaunchedEffect(Unit) { if (sideways) offset.snapTo(0f) else offset.animateTo(0f, sheetSpring) }
 
         fun putAway(then: () -> Unit = {}) {
             if (!up) return
             up = false
+            if (sideways) onPortrait()
             PageColour.release(colourPage)
             scope.launch {
                 offset.animateTo(height, sheetSpring)
@@ -271,7 +295,7 @@ fun NowPlayingSheet(
             }
         }
         LaunchedEffect(leaving) { if (leaving) putAway() }
-        BackHandler { putAway() }
+        BackHandler { if (sideways) onPortrait() else putAway() }
 
         // The song menu on the queue's rows. It is drawn over the sheet, in its own layer, and its add to playlist puts
         // the player away first: the picker is drawn under it, as for the playlist item in the player's own menu.
@@ -295,70 +319,108 @@ fun NowPlayingSheet(
                 // Every touch on the player stops at the player: one between the controls must not reach the page under it.
                 .clickable(remember { MutableInteractionSource() }, indication = null) {},
         ) {
-            // The ground is what the glass on the sheet blurs: the speaker picker, the menu, the row of keys.
-            Box(Modifier.fillMaxSize().backdropSource(backdrop)) { StageGround(lit, images, stage, covers = fullyUp, Modifier.fillMaxSize()) }
-            Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-                Grip(
-                    onDrag = { delta -> scope.launch { offset.snapTo((offset.value + delta).coerceAtLeast(0f)) } },
-                    onLetGo = { velocity ->
-                        val far = with(density) { FAR.toPx() }
-                        val thrown = with(density) { THROWN.toPx() }
-                        // Where the hand was heading: the iPhone projects a throw half a second on.
-                        if (offset.value > far || offset.value + velocity * 0.5f > thrown) putAway()
-                        else scope.launch { offset.animateTo(0f, spring(dampingRatio = 1f, stiffness = HOME_STIFFNESS)) }
-                    },
-                    onTap = { putAway() },
-                ) {
-                    // Over the grip, not in a row of its own. Hidden while the sheet is being put away.
-                    if (speakers != null) {
-                        val label = playingOn?.let { stringResource(R.string.Rpm_Cast_Playing, it) } ?: stringResource(R.string.Rpm_Cast_PlayOn)
-                        Box(
-                            Modifier
-                                .align(Alignment.CenterEnd)
-                                .padding(end = 12.dp)
-                                .coachTarget(CoachTargets.PLAYER_SPEAKERS)
-                                .graphicsLayer { alpha = 1f - putDown() },
-                        ) {
-                            GlassKey(backdrop, onClick = { if (putDown() == 0f) showingSpeakers = true }, Modifier.semantics { contentDescription = label }) {
-                                CastMark(live = playingOn != null, color = if (playingOn == null) Ink.white(0xB8) else Color.White, edge = 17.dp)
-                            }
+            // The ground is what the glass on the sheet blurs: the speaker picker, the menu, the row of keys. On its side a
+            // visualiser can take the room's place, and the glass then frosts the plain ground, as on the stage.
+            val drawn = visual.takeIf { sideways && tap != null }
+            Box(Modifier.fillMaxSize().backdropSource(backdrop)) {
+                if (drawn == null) {
+                    StageGround(lit, images, stage, covers = fullyUp, Modifier.fillMaxSize(), foot = if (sideways) 1f else -1f)
+                } else {
+                    Box(Modifier.fillMaxSize().background(Ink.ground))
+                }
+            }
+            if (drawn != null && tap != null) {
+                // The room stays under the visualiser, one dp square and unseen, because the spectrum beside the cover
+                // reads its run. It is outside the ground, so its pictures do not make the glass blur again.
+                StageGround(lit, images, stage, covers = fullyUp, Modifier.size(1.dp).alpha(0f), foot = 1f)
+                StageSurface(drawn, tap, Modifier.fillMaxSize())
+            }
+            if (sideways) SidewaysShade(Modifier.fillMaxSize())
+
+            // The pieces of the sheet, laid out upright or on its side. The speaker key is over the grip upright, and in
+            // the top right corner on its side. It is hidden while the sheet is being put away.
+            val speakerKey: @Composable (Modifier) -> Unit = { modifier ->
+                if (speakers != null) {
+                    val label = playingOn?.let { stringResource(R.string.Rpm_Cast_Playing, it) } ?: stringResource(R.string.Rpm_Cast_PlayOn)
+                    Box(
+                        modifier
+                            .coachTarget(CoachTargets.PLAYER_SPEAKERS)
+                            .graphicsLayer { alpha = 1f - putDown() },
+                    ) {
+                        GlassKey(backdrop, onClick = { if (putDown() == 0f) showingSpeakers = true }, Modifier.semantics { contentDescription = label }) {
+                            CastMark(live = playingOn != null, color = if (playingOn == null) Ink.white(0xB8) else Color.White, edge = 17.dp)
                         }
                     }
                 }
-                // The lyrics take the place of the cover. The ground stays: its colours come from the record, and the
-                // lyrics are read against it.
-                Crossfade(lyricsUp, Modifier.weight(1f).fillMaxWidth(), animationSpec = tween(250, easing = FastOutSlowInEasing), label = "lyrics") { up ->
+            }
+            // The lyrics take the place of the cover. The ground stays: its colours come from the record, and the lyrics
+            // are read against it.
+            val record: @Composable (Modifier, Dp) -> Unit = { modifier, edge ->
+                Crossfade(lyricsUp, modifier, animationSpec = tween(250, easing = FastOutSlowInEasing), label = "lyrics") { up ->
                     if (up) {
                         LyricView(lyrics, now, karaoke, measured)
                     } else {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Sleeve(now, player, images, stage, SLEEVE, bars) }
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Sleeve(now, player, images, stage, edge, bars) }
                     }
                 }
-                Column(Modifier.padding(horizontal = 24.dp).padding(top = 8.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    // The title, the artist and the heart are about the record. While the lyrics show, the lyrics are the
-                    // text, and two sets of words over one ground would make the reader choose.
-                    val wordsAlpha by animateFloatAsState(if (lyricsUp) 0f else 1f, tween(250), label = "words")
-                    Box(Modifier.graphicsLayer { alpha = wordsAlpha }) {
-                        Words(
-                            now,
-                            enabled = !lyricsUp,
-                            onAlbum = onAlbum?.let { open -> { putAway(open) } },
-                            marked = marked,
-                            onMark = onMark,
-                        )
-                    }
-                    Needle(now, player, playingOn)
-                    Transport(now, player)
-                    Below(
-                        backdrop,
-                        lyricsLit = lyricsUp,
-                        lyricsShown = lyrics.isSynced || lookingUpLyrics,
-                        lyricsEnabled = lyrics.isSynced,
-                        onLyrics = { haptics.pick(); showingLyrics = !showingLyrics },
-                        queueEnabled = player.mediaItemCount > 0 && !onStation,
-                        onQueue = { haptics.pick(); showingQueue = true },
-                        onMenu = { menuAt = it },
+            }
+            val panel: @Composable (Boolean) -> Unit = { large ->
+                // The title, the artist and the heart are about the record. While the lyrics show, the lyrics are the
+                // text, and two sets of words over one ground would make the reader choose.
+                val wordsAlpha by animateFloatAsState(if (lyricsUp) 0f else 1f, tween(250), label = "words")
+                Box(Modifier.graphicsLayer { alpha = wordsAlpha }) {
+                    Words(
+                        now,
+                        enabled = !lyricsUp,
+                        onAlbum = onAlbum?.let { open -> { putAway(open) } },
+                        marked = marked,
+                        onMark = onMark,
+                        large = large,
                     )
+                }
+                Needle(now, player, playingOn)
+                Transport(now, player)
+                Below(
+                    backdrop,
+                    lyricsLit = lyricsUp,
+                    lyricsShown = lyrics.isSynced || lookingUpLyrics,
+                    lyricsEnabled = lyrics.isSynced,
+                    onLyrics = { haptics.pick(); showingLyrics = !showingLyrics },
+                    queueEnabled = player.mediaItemCount > 0 && !onStation,
+                    onQueue = { haptics.pick(); showingQueue = true },
+                    onMenu = { menuAt = it },
+                )
+            }
+
+            if (sideways) {
+                SidewaysPlayer(
+                    record = record,
+                    panel = { panel(true) },
+                    keys = {
+                        VisualKey(backdrop, visual, onClick = { if (putDown() == 0f) showingVisuals = true })
+                        speakerKey(Modifier)
+                    },
+                )
+            } else {
+                Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+                    Grip(
+                        onDrag = { delta -> scope.launch { offset.snapTo((offset.value + delta).coerceAtLeast(0f)) } },
+                        onLetGo = { velocity ->
+                            val far = with(density) { FAR.toPx() }
+                            val thrown = with(density) { THROWN.toPx() }
+                            // Where the hand was heading: the iPhone projects a throw half a second on.
+                            if (offset.value > far || offset.value + velocity * 0.5f > thrown) putAway()
+                            else scope.launch { offset.animateTo(0f, spring(dampingRatio = 1f, stiffness = HOME_STIFFNESS)) }
+                        },
+                        onTap = { putAway() },
+                    ) {
+                        // Over the grip, not in a row of its own.
+                        speakerKey(Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
+                    }
+                    record(Modifier.weight(1f).fillMaxWidth(), SLEEVE)
+                    Column(Modifier.padding(horizontal = 24.dp).padding(top = 8.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        panel(false)
+                    }
                 }
             }
             if (showingQueue) {
@@ -392,6 +454,19 @@ fun NowPlayingSheet(
             }
             if (showingSleepTimer && timer.isOn) {
                 SleepTimerSheet(sleep, onStation = onStation, hasTrack = !onStation, backdrop, onClose = { showingSleepTimer = false })
+            }
+            if (showingVisuals && sideways) {
+                BackHandler { showingVisuals = false }
+                SidewaysVisualPicker(
+                    backdrop,
+                    showing = visual,
+                    offersLooks = tap != null,
+                    onPick = { picked ->
+                        onVisual(picked)
+                        showingVisuals = false
+                    },
+                    onClose = { showingVisuals = false },
+                )
             }
         }
     }
@@ -434,8 +509,9 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
     val context = LocalContext.current
     val standIn = LocalDiscStandIn.current
 
-    // Where the cover's box sits across the window, for the spectrum, which runs out to the window's edges.
-    val across = remember { FloatArray(2) }
+    // Where the cover's box sits across the window, and the left and right edges of the space it is centred in, for the
+    // spectrum, which runs out to that space's edges: the width of the window upright, the left half on its side.
+    val across = remember { FloatArray(3) }
     Box(
         Modifier
             .size(edge)
@@ -443,7 +519,14 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
             .onGloballyPositioned {
                 val at = it.positionInRoot()
                 across[0] = at.x
-                across[1] = it.findRootCoordinates().size.width.toFloat()
+                val space = it.parentLayoutCoordinates
+                if (space != null) {
+                    across[1] = space.positionInRoot().x
+                    across[2] = across[1] + space.size.width
+                } else {
+                    across[1] = 0f
+                    across[2] = it.findRootCoordinates().size.width.toFloat()
+                }
                 stage.footAt(at.y + it.size.height)
             }
             // Under the cover's own layer, so it is measured against the cover as drawn (paused smaller, pushed aside by a
@@ -452,9 +535,10 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
                 if (!bars) return@drawBehind
                 val room = stage.room ?: return@drawBehind
                 val side = size.width * scale
-                val middle = across[0] + size.width / 2 + flick.value
-                translate(left = -across[0]) {
-                    spectrumRun(room, across[1], middle - side / 2, middle + side / 2, size.height / 2, side, SPECTRUM_PITCH.toPx())
+                // Drawn from the left edge of the space, so the run's own left edge is 0.
+                val middle = across[0] - across[1] + size.width / 2 + flick.value
+                translate(left = across[1] - across[0]) {
+                    spectrumRun(room, across[2] - across[1], middle - side / 2, middle + side / 2, size.height / 2, side, SPECTRUM_PITCH.toPx())
                 }
             }
             .graphicsLayer {
@@ -544,10 +628,11 @@ internal fun NowPlaying.shownArtist(): String {
 /**
  * The title over the artist, with the heart beside them. A tap on either line opens the record's page. Both lines walk
  * sideways when they do not fit ([Marquee]). The heart is about the record, not about how it plays, and it is filled or
- * hollow and never changes colour.
+ * hollow and never changes colour. [large] sets both lines larger, for the player on its side, where the words have a
+ * half of the screen to themselves.
  */
 @Composable
-private fun Words(now: NowPlaying, enabled: Boolean, onAlbum: (() -> Unit)?, marked: Boolean, onMark: ((Boolean) -> Unit)?) {
+private fun Words(now: NowPlaying, enabled: Boolean, onAlbum: (() -> Unit)?, marked: Boolean, onMark: ((Boolean) -> Unit)?, large: Boolean = false) {
     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         val hint = if (onAlbum != null) stringResource(R.string.AlbumMenu_AlbumPage) else ""
         Column(
@@ -557,8 +642,12 @@ private fun Words(now: NowPlaying, enabled: Boolean, onAlbum: (() -> Unit)?, mar
                 .semantics { if (hint.isNotEmpty()) contentDescription = hint },
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Marquee(now.shownTitle(stringResource(R.string.Rpm_NowPlaying_Nothing)), com.rpm.player.phone.design.displayBold(22f).copy(color = Color.White), 28.dp)
-            Marquee(now.shownArtist(), display(15f).copy(color = Ink.white(0xB3)), 20.dp)
+            Marquee(
+                now.shownTitle(stringResource(R.string.Rpm_NowPlaying_Nothing)),
+                com.rpm.player.phone.design.displayBold(if (large) 28f else 22f).copy(color = Color.White),
+                if (large) 36.dp else 28.dp,
+            )
+            Marquee(now.shownArtist(), display(if (large) 18f else 15f).copy(color = Ink.white(0xB3)), if (large) 24.dp else 20.dp)
         }
         // A station is not a song, so it cannot be marked. The key is hidden, not greyed: a heart that cannot be
         // pressed raises the question of what it would do.

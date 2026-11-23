@@ -537,6 +537,30 @@ class PhoneSettings(context: Context) {
     }
 
     /**
+     * How the player looks on its side (`player.landscape`): the stage, or the now playing sheet laid out for it
+     * ([com.rpm.player.phone.player.LandscapeStyle]). The stage at first.
+     */
+    var landscapePlayer by mutableStateOf(com.rpm.player.phone.player.LandscapeStyle.read(prefs.getString(KEY_LANDSCAPE, null)))
+        private set
+
+    fun changeLandscapePlayer(style: com.rpm.player.phone.player.LandscapeStyle) {
+        landscapePlayer = style
+        prefs.edit().putString(KEY_LANDSCAPE, style.stored).apply()
+    }
+
+    /**
+     * What is drawn behind the modern player on its side (`player.landscape.visual`): one of the stage's visualisers,
+     * or null for the room, which is the first choice ([com.rpm.player.phone.player.LandscapeVisual]).
+     */
+    var landscapeVisual by mutableStateOf(com.rpm.player.phone.player.LandscapeVisual.read(prefs.getString(KEY_LANDSCAPE_VISUAL, null)))
+        private set
+
+    fun changeLandscapeVisual(look: com.rpm.player.phone.stage.StageLook?) {
+        landscapeVisual = look
+        prefs.edit().putString(KEY_LANDSCAPE_VISUAL, com.rpm.player.phone.player.LandscapeVisual.stored(look)).apply()
+    }
+
+    /**
      * What the person added to home's Quick selection themselves, newest first (`home.quick`): each one a song, a record
      * or a list, by [QuickRef]. Shown after the suggested mixtapes. Something the collection no longer holds is skipped
      * when home is drawn, and kept here, so it comes back when the collection has it again.
@@ -644,6 +668,8 @@ class PhoneSettings(context: Context) {
         const val KEY_OPENING_SOUND = "sound.opening"
         const val KEY_ARTICLE_LANGUAGE = "papers.language"
         const val KEY_PLAYER_BARS = "player.bars"
+        const val KEY_LANDSCAPE = "player.landscape"
+        const val KEY_LANDSCAPE_VISUAL = "player.landscape.visual"
         const val KEY_QUICK = "home.quick"
         /** The most the person can add to Quick selection; home shows sixteen lines in all. */
         const val QUICK_ADDED = 16

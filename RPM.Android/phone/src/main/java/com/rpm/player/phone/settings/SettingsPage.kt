@@ -109,6 +109,8 @@ import com.rpm.player.phone.design.rememberBackdrop
 import com.rpm.player.phone.design.system
 import com.rpm.player.phone.library.FOOT
 import com.rpm.player.phone.library.KeyGroup
+import com.rpm.player.phone.library.Segments
+import com.rpm.player.phone.player.LandscapeStyle
 import com.rpm.player.phone.ui.Ground
 import com.rpm.player.phone.ui.GroundTile
 import com.rpm.player.phone.ui.VinylGround
@@ -225,6 +227,8 @@ fun SettingsPage(
     onArticleLanguage: (String) -> Unit = {},
     playerBars: Boolean = true,
     onPlayerBars: (Boolean) -> Unit = {},
+    landscapePlayer: LandscapeStyle = LandscapeStyle.Classic,
+    onLandscapePlayer: (LandscapeStyle) -> Unit = {},
     onReplayHints: () -> Unit = {},
     equalizer: EqControls? = null,
 ) {
@@ -270,6 +274,7 @@ fun SettingsPage(
                             cards.Colour()
                             CoverCornerCard()
                             cards.Player(playerBars, onPlayerBars)
+                            cards.Landscape(landscapePlayer, onLandscapePlayer)
                         }
                         SettingsSection.Playback -> {
                             cards.Playback(onWifi, onCellular, onRates, reachSavesData, quota, karaoke, onKaraoke)
@@ -538,6 +543,26 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
     fun Player(bars: Boolean, onBars: (Boolean) -> Unit) {
         Card(Glyph.play, stringResource(R.string.Playlists_NowPlaying)) {
             Toggle(stringResource(R.string.Settings_PlayerBars), bars, onBars)
+        }
+    }
+
+    /** How the player looks with the phone on its side: the stage (Classic) or the sheet laid out sideways (Modern). */
+    @Composable
+    fun Landscape(style: LandscapeStyle, onStyle: (LandscapeStyle) -> Unit) {
+        val haptics = LocalHapticFeedback.current
+        Card(Glyph.phone, stringResource(R.string.Settings_LandscapePlayer)) {
+            BasicText(stringResource(R.string.Settings_LandscapePlayerHint), style = display(13f).copy(color = Ink.white(0xB3)))
+            Segments(
+                listOf(stringResource(R.string.Settings_LandscapeClassic), stringResource(R.string.Settings_LandscapeModern)),
+                chosen = LandscapeStyle.entries.indexOf(style),
+                onChoose = { at ->
+                    val chosen = LandscapeStyle.entries[at]
+                    if (chosen != style) {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onStyle(chosen)
+                    }
+                },
+            )
         }
     }
 

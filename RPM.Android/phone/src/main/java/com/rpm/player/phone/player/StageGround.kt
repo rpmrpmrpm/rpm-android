@@ -38,8 +38,15 @@ class Stage {
     internal var top: () -> Float = { 0f }
     internal var height = 1f
 
+    /**
+     * Whether the room is dimmed below the cover's foot. True for the upright sheet, where the words are under the
+     * cover. On its side the words are beside the cover, and the room is not dimmed below it ([StageGround]'s `foot`).
+     */
+    internal var footFollows = true
+
     /** Tells the room where the cover's foot is, given the cover's foot in the window. */
     internal fun footAt(bottom: Float) {
+        if (!footFollows) return
         room?.foot = ((bottom - top()) / height.coerceAtLeast(1f)).coerceIn(0f, 1f)
     }
 }
@@ -50,16 +57,19 @@ class Stage {
  * colours are those of [lit] ([rememberLitPicture]), dissolving to the next one's. It runs while the sheet is up, at half
  * its rate while the phone saves power ([com.rpm.player.core.room.RoomPainter.saving]), and while the sheet covers the
  * screen every other room stops ([covers]).
+ *
+ * [foot] is where the room starts to be darker, as a share of its height from the top. Below 0 leaves it to the cover
+ * ([Stage.footAt]).
  */
 @Composable
-fun StageGround(lit: Any?, images: ImageLoader, stage: Stage, covers: Boolean, modifier: Modifier) {
+fun StageGround(lit: Any?, images: ImageLoader, stage: Stage, covers: Boolean, modifier: Modifier, foot: Float = -1f) {
     val read = rememberRoomColours(lit, images)
     // A picture's colours are read a moment after it arrives. Until then the room keeps the colours it has, so a
     // station's songs go from cover to cover and not through the app's blue on the way.
     val held = remember { HeldPalette() }
     SideEffect { if (read != null) held.palette = read }
     val colours = if (lit == null) null else read ?: held.palette
-    StageRoom(colours ?: RoomPalette.FALLBACK, running = true, covers = covers, foot = -1f, modifier) { stage.room = it }
+    StageRoom(colours ?: RoomPalette.FALLBACK, running = true, covers = covers, foot = foot, modifier) { stage.room = it }
 }
 
 /** The colours the room was last given from a picture. Not state: it is only read when the picture changes. */
