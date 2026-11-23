@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.wrapContentHeight
-import com.rpm.player.phone.design.header
+import com.rpm.player.phone.design.HeaderText
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
@@ -290,12 +290,7 @@ private fun Header(
         }
         // The display face's line box has room for long descenders under the word, so its ink sits high in the box;
         // the nudge puts the ink, not the box, on the keys' centre line.
-        BasicText(
-            title,
-            Modifier.weight(1f).wrapContentHeight(unbounded = true).offset(y = TITLE_NUDGE),
-            maxLines = 1,
-            style = header().copy(color = Color.White),
-        )
+        HeaderText(title, Modifier.weight(1f).wrapContentHeight(unbounded = true).offset(y = TITLE_NUDGE))
         KeyGroup(backdrop) {
             // The playlists' layout key: a menu, not a toggle, so the key never has to show either the layout in
             // force or the one a press would give.

@@ -1,7 +1,6 @@
 package com.rpm.player.phone.design
 
 import android.content.Context
-import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import androidx.compose.foundation.layout.Box
@@ -19,8 +18,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import androidx.core.content.res.ResourcesCompat
-import com.rpm.player.phone.R
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -46,7 +43,8 @@ fun PageHeading(title: String, line: String, keys: @Composable () -> Unit) {
     val density = LocalDensity.current
     val size = 96f
     val sizePx = with(density) { size.dp.toPx() }
-    val metrics = remember(title, sizePx) { TitleMetrics.of(context, title, sizePx) }
+    val shown = remember(title, sizePx) { TitleText.of(context, title, sizePx) }
+    val metrics = remember(shown) { TitleMetrics.of(context, shown) }
 
     // Placed by baselines, not stacked: the line's baseline is SUBTITLE_GAP plus the iPhone's ascent for the line's
     // 11 points under the title's baseline, which is where the iPhone's stack puts it (the title trimmed to its
@@ -54,7 +52,7 @@ fun PageHeading(title: String, line: String, keys: @Composable () -> Unit) {
     // line boxes for both texts are not the iPhone's.
     Layout(
         content = {
-            BasicText(title, maxLines = 1, style = header(size).copy(color = Color.White))
+            HeaderText(shown, Modifier, size, Color.White)
             Box { keys() }
             BasicText(line, maxLines = 1, style = kicker())
         },
@@ -101,8 +99,9 @@ fun PageTitle(title: String, modifier: Modifier = Modifier) {
     val density = LocalDensity.current
     val size = 96f
     val sizePx = with(density) { size.dp.toPx() }
-    val metrics = remember(title, sizePx) { TitleMetrics.of(context, title, sizePx) }
-    BasicText(title, modifier.trimBottom(metrics.slack), maxLines = 1, style = header(size).copy(color = Color.White))
+    val shown = remember(title, sizePx) { TitleText.of(context, title, sizePx) }
+    val metrics = remember(shown) { TitleMetrics.of(context, shown) }
+    HeaderText(shown, modifier.trimBottom(metrics.slack), size, Color.White)
 }
 
 /** Takes [px] off the foot of what this lays out, so what follows starts that much higher. */
@@ -127,11 +126,10 @@ private class TitleMetrics(
     val slack: Float,
 ) {
     companion object {
-        fun of(context: Context, said: String, sizePx: Float): TitleMetrics {
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                typeface = ResourcesCompat.getFont(context, R.font.thiamine_rpm)
-                textSize = sizePx
-            }
+        fun of(context: Context, shown: TitleText): TitleMetrics {
+            val said = shown.text
+            val paint = titlePaint(context, shown.sizePx)
+            val descent = paint.fontMetrics.descent
             // A letter counts as a descender only if it goes more than half a dp below the baseline.
             // So a round letter that dips slightly under it is not counted. The ink is measured from the
             // glyphs' outlines, not getTextBounds: that rounds out to whole pixels, and at 450 dpi it turns
@@ -146,19 +144,28 @@ private class TitleMetrics(
                 outline.computeBounds(ink, true)
                 return ink
             }
-            val slack = max(0f, paint.fontMetrics.descent - max(0f, inkOf(0, said.length).bottom))
+            // Each run is measured at its own size, and a lifted run where it is drawn (see [TitleText]).
+            var depth = if (shown.inTitleFace) inkOf(0, said.length).bottom else 0f
             var start = Float.POSITIVE_INFINITY
             var end = 0f
-            for (i in said.indices) {
-                val letter = inkOf(i, i + 1)
-                if (letter.bottom > dip) {
-                    val at = paint.measureText(said, 0, i)
-                    start = min(start, at + letter.left)
-                    end = max(end, at + letter.right)
+            var x = 0f
+            for (run in shown.runs) {
+                paint.textSize = run.sizePx
+                for (i in run.start until run.end) {
+                    val letter = inkOf(i, i + 1)
+                    val bottom = letter.bottom - run.liftPx
+                    if (!shown.inTitleFace && !letter.isEmpty) depth = max(depth, bottom)
+                    if (bottom > dip) {
+                        val at = x + paint.measureText(said, run.start, i)
+                        start = min(start, at + letter.left)
+                        end = max(end, at + letter.right)
+                    }
                 }
+                x += paint.measureText(said, run.start, run.end)
             }
+            val slack = max(0f, descent - max(0f, depth))
             return TitleMetrics(
-                descent = paint.fontMetrics.descent,
+                descent = descent,
                 descenderEnd = end,
                 descenderStart = if (start.isFinite()) max(0f, start) else 0f,
                 slack = slack,
