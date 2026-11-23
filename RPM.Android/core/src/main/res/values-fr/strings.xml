@@ -842,6 +842,39 @@
     <string name="Settings_MusicFolder">Dossier musical</string>
     <string name="Settings_MusicFolderHint">L’endroit où rpm range votre collection.</string>
 
+    <!-- Settings > Collection: title of the card that says where the collection database is kept. Also a jump link at the top of the page. -->
+    <string name="Settings_Database">Base de données de la collection</string>
+
+    <!-- Settings > Collection: hint under the collection database card's title. -->
+    <string name="Settings_DatabaseHint">rpm garde tout ce qu’il sait de votre musique dans une seule base de données : vos playlists, vos écoutes, vos favoris et tout ce qu’il a appris sur chaque piste. D’habitude, elle se trouve dans votre dossier musical, juste à côté de votre musique.</string>
+
+    <!-- Settings > Collection: switch that keeps the collection database in the folder below instead of in the music folder. -->
+    <string name="Settings_DatabaseOffDisk">Garder la base de données sur un disque plus rapide</string>
+
+    <!-- Settings > Collection: hint under the switch that keeps the collection database on a faster disk. -->
+    <string name="Settings_DatabaseOffDiskHint">Votre musique est sur un disque plus lent ? Gardez la base de données dans le dossier ci-dessous, et rpm démarre et défile bien plus vite. Votre musique reste exactement où elle est, seule la base de données change de place. Les collections sur un réseau gardent toujours la leur dans ce dossier.</string>
+
+    <!-- Settings > Collection: label over the folder where collection databases are kept when they are not in the music folder. -->
+    <string name="Settings_DatabaseFolder">Dossier de la base de données</string>
+
+    <!-- Settings > Collection: button that puts the database folder back to the app's own folder. Shown only when another folder was chosen. -->
+    <string name="Settings_DatabaseFolderDefault">Utiliser l’emplacement par défaut</string>
+
+    <!-- Settings > Collection: line in the collection database card. {0} is the full path of the database file the app has open. -->
+    <string name="Settings_DatabaseNow">En ce moment, votre base de données est ici : %1$s</string>
+
+    <!-- Settings > Collection: shown after the switch or the database folder changes. The move happens when the app next opens the collection. -->
+    <string name="Settings_DatabaseNextStart">C’est noté ! Le changement s’applique au prochain démarrage de rpm. Quand votre base de données change de place, rpm garde aussi l’ancienne copie, renommée, au cas où.</string>
+
+    <!-- Settings > Collection: one-time note in the collection database card when the music folder is on a spinning disk and the database folder is on an SSD. -->
+    <string name="Settings_DatabaseSpinning">Votre musique est sur un disque dur mécanique, ce qui peut ralentir le démarrage de rpm. Cet ordinateur a aussi un SSD rapide : y garder la base de données pourrait vraiment changer les choses. Vous voulez essayer ?</string>
+
+    <!-- Settings > Collection: button on the spinning-disk note. Turns the faster-disk switch on. -->
+    <string name="Settings_DatabaseSpinningYes">Oui, déplacer</string>
+
+    <!-- Settings > Collection: button on the spinning-disk note. Closes the note for good. -->
+    <string name="Settings_DatabaseSpinningNo">Non merci</string>
+
     <!-- Settings, Music folder card: the chosen folder has files in it and no RPM mirror. -->
     <string name="Settings_MusicFolderNotEmpty">Ce dossier contient d\'autres fichiers. Choisissez un dossier vide, un dossier de musique ou un dossier musical rpm existant.</string>
 
@@ -7905,4 +7938,43 @@
 
     <!-- Phone welcome, the layout step: the line under Wizard_LayoutTitle. The phone's Wizard_LayoutBody, with two choices. -->
     <string name="Wizard_Phone_LayoutBody">Choisissez comment vos albums s’affichent dans la collection. Vous pouvez changer à tout moment, en haut de la collection.</string>
+
+    <!-- Wide button on the phone's radio home, under the banner. Opens the tuner page with the dial and the full station list. -->
+    <string name="Radio_HomeTuner">Ouvrir le tuner</string>
+
+    <!-- Title of the phone's tuner page (the dial, the search field and the station list), opened from the radio home. -->
+    <string name="Radio_TunerTitle">Tuner</string>
+
+    <!-- Line over a banner card on the phone's radio home that holds up one of the most played stations of the listener's country. -->
+    <string name="Radio_HomeNearYou">Près de chez vous</string>
+
+    <!-- Line over a banner card on the phone's radio home that holds up a station the listener tunes to often. -->
+    <string name="Radio_HomeOnRepeat">En boucle</string>
+
+    <!-- Heading over the row of the listener's country's most played stations on the phone's radio home. -->
+    <string name="Radio_HomeLocal">Stations locales</string>
+
+    <!-- Heading over the row of the world's most played stations on the phone's radio home. -->
+    <string name="Radio_HomePopular">Les plus populaires</string>
+
+    <!-- Line under a station on the radio home's Quick selection (phone): the listener pinned it there. -->
+    <string name="Radio_HomePinned">Épinglée</string>
+
+    <!-- Line under a station on the radio home's Quick selection (phone): one of the listener's saved (hearted) stations. -->
+    <string name="Radio_HomeSaved">Enregistrée</string>
+
+    <!-- Line under a station on the radio home's Quick selection (phone): suggested because it plays the genres the listener tunes to. -->
+    <string name="Radio_HomeForYou">Pour vous</string>
+
+    <!-- Shown under the radio home's Quick selection heading (phone) while it has no stations yet. -->
+    <string name="Radio_HomeQuickEmpty">Maintenez une station appuyée pour l\'épingler ici. Vos stations enregistrées s\'affichent ici aussi.</string>
+
+    <!-- Long-press menu on a radio station (phone): puts it first on the radio home's Quick selection. -->
+    <string name="Radio_Pin">Épingler à la sélection rapide</string>
+
+    <!-- Long-press menu on a pinned radio station (phone): takes it off the radio home's Quick selection. -->
+    <string name="Radio_Unpin">Désépingler de la sélection rapide</string>
+
+    <!-- Long-press menu on a saved radio station (phone): the opposite of Radio_Save. -->
+    <string name="Radio_Unsave">Retirer des stations enregistrées</string>
 </resources>
