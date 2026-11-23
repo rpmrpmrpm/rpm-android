@@ -127,7 +127,10 @@ import com.rpm.player.phone.library.AlbumPage
 import com.rpm.player.phone.library.AlbumCreditsRead
 import com.rpm.player.phone.library.ArtistPage
 import com.rpm.player.phone.library.GenrePage
+import com.rpm.player.phone.radio.LocalStationHolds
+import com.rpm.player.phone.radio.RadioHome
 import com.rpm.player.phone.radio.RadioPage
+import com.rpm.player.phone.radio.StationHolds
 import com.rpm.player.phone.settings.SettingsTab
 import com.rpm.player.phone.profile.ListeningShare
 import com.rpm.player.phone.design.LocalSongCovers
@@ -291,6 +294,8 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var opened by rememberSaveable(stateSaver = Step.stack) { mutableStateOf(listOf<Step>()) }
     var homeOpened by rememberSaveable(stateSaver = Step.stack) { mutableStateOf(listOf<Step>()) }
+    // The radio tab's stack: its home, and over it the tuner ([RADIO_TUNER]) or the tuner opened to search ([RADIO_SEARCH]).
+    var radioOpened by rememberSaveable { mutableStateOf(listOf<String>()) }
     var playerUp by rememberSaveable { mutableStateOf(false) }
     var chrome by remember { mutableStateOf(0.dp) }
     val pages = rememberSaveableStateHolder()
@@ -452,6 +457,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     // The long-press menus on records and playlists, and what they offer.
     val holdMenus = remember { HoldMenus() }
     val resources = LocalContext.current.resources
+    val stationHolds = remember(resources) { StationHolds(resources, settings, services.radio) }
     val holds = remember(collection, controller, resources) {
         Holds(resources, settings) { album ->
             // As play next on a song: into an empty queue the record waits, paused.
@@ -716,7 +722,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     CompositionLocalProvider(LocalPlayable provides downloads.playable, LocalOverChrome provides overChrome, LocalSongCovers provides services.songCovers, LocalCoachTargets provides coachTargets) {
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(backdrop)) {
-          CompositionLocalProvider(LocalSongMenu provides songMenu, LocalTopTaps provides topTaps.getValue(tab), LocalHoldMenus provides holdMenus, LocalHolds provides holds) {
+          CompositionLocalProvider(LocalSongMenu provides songMenu, LocalTopTaps provides topTaps.getValue(tab), LocalHoldMenus provides holdMenus, LocalHolds provides holds, LocalStationHolds provides stationHolds) {
             // The tabs' pages slide: to a tab further right, the page goes out to the left and the new one comes in
             // from the right, and the other way to a tab further left. The tab bar ([Chrome]) is outside and stays.
             AnimatedContent(targetState = tab, transitionSpec = { tabSlide() }, label = "tabs") { shown ->
@@ -780,16 +786,36 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                             }
                         }
                     }
-                    Tab.Radio -> RadioPage(
-                        services.radio,
-                        images,
-                        tuned = now?.station?.logo?.uuid,
-                        said = now?.station?.said,
-                        bottomRoom = chrome,
-                        onTune = homeActions.onTune,
-                        // The saved stations of a shared collection are its owner's, and are never changed from here.
-                        onSave = { station -> if (services.radio.saved.value.mine) services.radio.favorites.toggle(station) },
-                    )
+                    // The radio's home, and the tuner sliding in over it, as a page opened on home does.
+                    Tab.Radio -> AnimatedContent(targetState = radioOpened, transitionSpec = { pushOrPop() }, label = "radio stack") { stack ->
+                        val step = stack.lastOrNull()
+                        if (step == null) {
+                            RadioHome(
+                                services.radio,
+                                collection,
+                                images,
+                                pinned = settings.pinnedStations,
+                                bottomRoom = chrome,
+                                onScreen = tab == Tab.Radio && radioOpened.isEmpty(),
+                                onTune = homeActions.onTune,
+                                onOpenTuner = { radioOpened = radioOpened + RADIO_TUNER },
+                                onSearch = { radioOpened = radioOpened + RADIO_SEARCH },
+                            )
+                        } else {
+                            RadioPage(
+                                services.radio,
+                                images,
+                                tuned = now?.station?.logo?.uuid,
+                                said = now?.station?.said,
+                                bottomRoom = chrome,
+                                onTune = homeActions.onTune,
+                                // The saved stations of a shared collection are its owner's, and are never changed from here.
+                                onSave = { station -> if (services.radio.saved.value.mine) services.radio.favorites.toggle(station) },
+                                searching = step == RADIO_SEARCH,
+                                onBack = { radioOpened = radioOpened.dropLast(1) },
+                            )
+                        }
+                    }
                     Tab.Feed -> CompositionLocalProvider(LocalSampleFaces provides sampleFaces) {
                         FeedScreen(
                             feed,
@@ -1123,12 +1149,16 @@ private fun Stage(shown: Boolean, now: NowPlaying?, controller: Player?, service
  */
 private const val HOME_STATIONS = 7
 
+/** The radio tab's pages over its home: the tuner, and the tuner opened with its search field ready. */
+private const val RADIO_TUNER = "tuner"
+private const val RADIO_SEARCH = "search"
+
 /**
  * A page that is opened slides in from the right, over the page it was opened from. That page moves back by a
  * third. When the page is put away, it slides back out over that page. This matches a push and a pop on the
  * iPhone's stacks.
  */
-private fun AnimatedContentTransitionScope<List<Step>>.pushOrPop(): ContentTransform =
+private fun <T> AnimatedContentTransitionScope<List<T>>.pushOrPop(): ContentTransform =
     if (targetState.size >= initialState.size) {
         slideInHorizontally { it } togetherWith slideOutHorizontally { -it / 3 }
     } else {

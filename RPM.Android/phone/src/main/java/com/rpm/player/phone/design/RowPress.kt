@@ -10,6 +10,9 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onClick
@@ -34,12 +37,18 @@ private const val FADE_MS = 250
  *   thumb covered the row.
  *
  * The veil's strength is read while drawing, so a press redraws the row and recomposes nothing.
+ *
+ * @param held the items of the menu a long press opens on the row ([HoldMenus]). They are asked for only at the long
+ * press. Null, or no [HoldMenus] set, and a long press does nothing.
  */
-fun Modifier.rowPress(onClick: () -> Unit): Modifier = composed {
+fun Modifier.rowPress(held: (() -> List<MenuItem>)? = null, onClick: () -> Unit): Modifier = composed {
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val lit = remember { Animatable(0f) }
+    val menus = LocalHoldMenus.current
+    val placed = remember { RowPlace() }
     this
+        .onPlaced { placed.at = it }
         .semantics {
             role = Role.Button
             onClick { onClick(); true }
@@ -66,6 +75,18 @@ fun Modifier.rowPress(onClick: () -> Unit): Modifier = composed {
                         }
                     }
                 },
+                onLongPress = if (menus != null && held != null) {
+                    {
+                        val at = placed.at?.takeIf { it.isAttached }
+                        val items = held().takeIf { it.isNotEmpty() }
+                        if (at != null && items != null) {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            menus.open = HoldMenus.Open(at.boundsInRoot(), items)
+                        }
+                    }
+                } else {
+                    null
+                },
                 onTap = {
                     light()
                     scope.launch {
@@ -80,4 +101,9 @@ fun Modifier.rowPress(onClick: () -> Unit): Modifier = composed {
             val strength = lit.value
             if (strength > 0f) drawRect(Ink.white(0x24), alpha = strength)
         }
+}
+
+/** Where a row was last placed, for the menu a long press opens on it. Held outside the state system: nothing draws from it. */
+private class RowPlace {
+    var at: LayoutCoordinates? = null
 }

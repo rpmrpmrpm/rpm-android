@@ -1,5 +1,6 @@
 package com.rpm.player.phone.radio
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -46,6 +47,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -73,6 +75,7 @@ import com.rpm.player.core.radio.TunerAnswer
 import com.rpm.player.core.radio.TunerList
 import com.rpm.player.core.radio.TunerSettings
 import com.rpm.player.core.radio.countryName
+import com.rpm.player.phone.design.BackKey
 import com.rpm.player.phone.design.GlassField
 import com.rpm.player.phone.design.Glyph
 import com.rpm.player.phone.design.Ink
@@ -89,6 +92,7 @@ import com.rpm.player.phone.design.rememberBackdrop
 import com.rpm.player.phone.design.rowPress
 import com.rpm.player.phone.design.scrolled
 import com.rpm.player.phone.design.system
+import com.rpm.player.phone.library.BACK_ROW
 import com.rpm.player.phone.library.FOOT
 import com.rpm.player.phone.ui.RecordSpinner
 import com.rpm.player.phone.ui.VinylGround
@@ -110,7 +114,7 @@ private val ORDERS = listOf(
 )
 
 /**
- * Internet radio. It matches the iPhone's `RadioPage` (RPMUI/RadioPage.swift). From the top: the dial, then the
+ * The tuner, opened from the radio tab's home ([RadioHome]). It matches the iPhone's `RadioPage` (RPMUI/RadioPage.swift). From the top: the dial, then the
  * stations it can reach. The dial and the list are one list of stations. So dragging the needle and tapping a
  * row tune the same station. Below the dial is the search field, and a row of filters: the genre, the country,
  * the order, and the saved stations only. Each filter opens a menu that drops from its key, as SwiftUI's `Menu` does.
@@ -127,6 +131,8 @@ private val ORDERS = listOf(
  * @param tuned the id of the station that is playing. The row's mark and the needle follow it.
  * @param said what that station announces now.
  * @param onSave saves a station, or unsaves it. It is only offered for the person's own saved stations.
+ * @param searching whether the page opens with the search field ready to type in: the radio home's search key opens it so.
+ * @param onBack puts the page away, back to the radio home ([RadioHome]). The page then has a back key over its title.
  */
 @Composable
 fun RadioPage(
@@ -137,6 +143,8 @@ fun RadioPage(
     bottomRoom: Dp,
     onTune: (RadioStation) -> Unit,
     onSave: (RadioStation) -> Unit,
+    searching: Boolean = false,
+    onBack: (() -> Unit)? = null,
 ) {
     val tuner = radio.tuner
     val settings by tuner.settings.collectAsStateWithLifecycle()
@@ -148,6 +156,14 @@ fun RadioPage(
     val focus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     var picking by remember { mutableStateOf<Picking?>(null) }
+    val keyboard = LocalSoftwareKeyboardController.current
+    if (onBack != null) BackHandler(onBack = onBack)
+    LaunchedEffect(searching) {
+        if (searching) {
+            focus.requestFocus()
+            keyboard?.show()
+        }
+    }
 
     // Each time the radio is shown: the directory, the rules, and the saved stations (the owner's again on a shared
     // collection), as the iPhone's tasks on the radio tab.
@@ -166,8 +182,10 @@ fun RadioPage(
         Box(Modifier.fillMaxSize().backdropSource(page)) {
             VinylGround()
             Column(Modifier.fillMaxSize().statusBarsPadding()) {
+                // Room for the back key, which is drawn over the page so that it can frost it.
+                if (onBack != null) Spacer(Modifier.height(BACK_ROW))
                 Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    PageTitle(stringResource(R.string.Rpm_Tab_Radio))
+                    PageTitle(stringResource(if (onBack != null) R.string.Radio_TunerTitle else R.string.Rpm_Tab_Radio))
                     BasicText(stringResource(R.string.Radio_Subtitle), style = kicker())
                 }
                 RadioDial(list.stations, tuned, announced, onTune, Modifier.padding(horizontal = 20.dp).padding(top = 4.dp))
@@ -189,6 +207,11 @@ fun RadioPage(
                 Box(Modifier.weight(1f).imePadding()) {
                     Stations(list, settings, answer, images, rules.logoStamp, tuned, saved, bottomRoom, onTune, onSave)
                 }
+            }
+        }
+        if (onBack != null) {
+            Box(Modifier.statusBarsPadding().height(BACK_ROW).padding(start = 20.dp), contentAlignment = Alignment.Center) {
+                BackKey(page, onBack = onBack)
             }
         }
         picking?.let { open ->
@@ -406,11 +429,12 @@ private fun StationRow(
     onSave: (RadioStation) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
+    val holds = LocalStationHolds.current
     Row(
         Modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = 58.dp)
-            .rowPress { onTune(station) }
+            .rowPress(held = holds?.let { { it.of(station) } }) { onTune(station) }
             .padding(start = 6.dp, end = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,

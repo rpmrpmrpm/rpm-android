@@ -11,12 +11,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 /** The essential stations as last read: the stations, which country they are for (null when that
  * country had none and the world's most popular stations stand in), and when they were read. */
@@ -101,9 +103,19 @@ class RadioRepository(
     /** The tuner page's questions and answers, kept for the life of the app so the page opens as it was left. */
     val tuner = Tuner(browser, scope, if (tunerOpensOn == TunerOpensOn.ListenersCountry) listenerCountry() else null, rules)
 
+    private val _popular = MutableStateFlow<List<RadioStation>>(emptyList())
+
+    /** The world's most played stations, one entry per station, before the rules are applied. Empty until read. */
+    val popular: StateFlow<List<RadioStation>> = _popular.asStateFlow()
+
     private val reading = Mutex()
+    private val readingPopular = Mutex()
+    private var popularAtMs = 0L
     private var rulesAskedAtMs = 0L
     private var rulesTag: String? = null
+
+    /** The directory's answers for one genre, by genre, with when they were read ([stationsOf]). */
+    private val genreAnswers = ConcurrentHashMap<String, Pair<Long, List<RadioStation>>>()
 
     /** Reads what is stale: the essential stations after 30 minutes or a failure, the rules after an
      * hour. Also syncs the station listens and the saved stations. Called when the radio screen opens.
@@ -119,6 +131,46 @@ class RadioRepository(
                 val essential = _essential.value
                 if (essential !is Essential.Read || now - essential.atMs >= ESSENTIAL_GOOD_FOR_MS) readEssential(now)
             }
+        }
+        // Read beside the essential stations, not after them, so the local stations are not kept waiting.
+        scope.launch(Dispatchers.IO) {
+            readingPopular.withLock {
+                val now = clock()
+                if (_popular.value.isEmpty() || now - popularAtMs >= ESSENTIAL_GOOD_FOR_MS) readPopular(now)
+            }
+        }
+    }
+
+    /** The world's most played stations. A failure keeps what is held, and the next visit asks again. */
+    private suspend fun readPopular(now: Long) {
+        try {
+            val found = browser.search(RadioQuery(name = null, tag = null, countryCode = null, limit = POPULAR_COUNT * 4))
+            _popular.value = RadioResults.onePerStation(found)
+            popularAtMs = now
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+        }
+    }
+
+    /**
+     * The world's most played stations of [genre] (a name from [RadioGenres.all]), one entry per station, before the rules
+     * are applied. Kept for 30 minutes. Empty for a name that is not a genre, or when the directory does not answer.
+     */
+    suspend fun stationsOf(genre: String): List<RadioStation> {
+        val term = RadioGenres.term(genre) ?: return emptyList()
+        val now = clock()
+        genreAnswers[genre]?.let { (at, stations) -> if (now - at < ESSENTIAL_GOOD_FOR_MS) return stations }
+        return try {
+            val found = withContext(Dispatchers.IO) {
+                RadioResults.onePerStation(browser.search(RadioQuery(name = null, tag = term, countryCode = null, limit = GENRE_COUNT)))
+            }
+            genreAnswers[genre] = now to found
+            found
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            emptyList()
         }
     }
 
@@ -217,6 +269,12 @@ class RadioRepository(
         /** The desktop's `RadioEssentialCount`: twelve cards, asked for four times over so folding and
          * hiding still leave twelve. */
         const val ESSENTIAL_COUNT = 12
+
+        /** The phone's radio home shows twenty of the world's most played stations; asked for four times over, as above. */
+        const val POPULAR_COUNT = 20
+
+        /** How many stations a genre's suggestions are chosen from. */
+        const val GENRE_COUNT = 40
         const val ESSENTIAL_GOOD_FOR_MS = 30 * 60_000L
         const val RULES_GOOD_FOR_MS = 60 * 60_000L
     }

@@ -159,7 +159,7 @@ private val BANNER_SLEEVE = 124.dp
 private val BANNER_MARGIN = 22.dp
 
 /** The cover size in a row (`HomeRowView.art` on iPhone). */
-private const val ROW_ART = 132.0
+internal const val ROW_ART = 132.0
 
 /**
  * How deep the banner's reflection runs under the card (`HomeBannerMetrics.reflection` on iPhone): past the dots, the
@@ -217,16 +217,16 @@ private const val BANNER_BLUR_FROM = 0.6f
  * iPhone).
  */
 private const val QUICK_PICKS = 16
-private const val QUICK_TALL = 4
-private val QUICK_LINE = 60.dp
-private val QUICK_ART = 44.dp
+internal const val QUICK_TALL = 4
+internal val QUICK_LINE = 60.dp
+internal val QUICK_ART = 44.dp
 /** How far a station's logo stands in from the edges of its square on a line of the quick selection. */
-private val QUICK_STATION_INSET = 4.dp
-private val PEEK = 32.dp
-private val PANELS_APART = 16.dp
+internal val QUICK_STATION_INSET = 4.dp
+internal val PEEK = 32.dp
+internal val PANELS_APART = 16.dp
 
 /** The space between the sections of the page. */
-private val SECTIONS_APART = 26.dp
+internal val SECTIONS_APART = 26.dp
 
 /** What home's taps do: open a record or a list, play songs, tune a station. */
 class HomeActions(
@@ -410,7 +410,13 @@ fun HomePage(
  * What the banner's front card dresses the page in: the picture it wears, its photograph or its cover, and whether it
  * stands on a room, which gives the page no leading colour (`BannerDress` on iPhone).
  */
-private data class BannerDress(val wearing: Any, val roomed: Boolean)
+internal data class BannerDress(val wearing: Any, val roomed: Boolean)
+
+/**
+ * What a station's banner card says over its title and under it, where the page has its own words for it. The radio
+ * home says why the station is there; home says nothing more than that it is a station.
+ */
+internal class BannerWords(val kicker: String, val line: String?)
 
 /** Where the ground starts to move to the card's colour: when this share of the way to the quick selection is scrolled. */
 private const val LEAD_FROM = 0.4f
@@ -456,7 +462,7 @@ private const val DWELL_MS = 7_000L
  * for each card. The card in front sets the page's colours.
  */
 @Composable
-private fun Banner(
+internal fun Banner(
     cards: List<BannerCard>,
     collection: Collection,
     images: ImageLoader,
@@ -470,6 +476,7 @@ private fun Banner(
     onReady: () -> Unit,
     actions: HomeActions,
     modifier: Modifier = Modifier,
+    stationWords: ((RadioStation) -> BannerWords)? = null,
 ) {
     // Every card's room runs on one clock, so the copy of the first card after the last draws the same frame as the first
     // card when one takes the other's place (`RoomView.Zero.shared` on iPhone).
@@ -553,7 +560,7 @@ private fun Banner(
                     onWhole = { cardReady[card] = it },
                     onRunOff = { baked -> if (baked != null) runOffs[card] = baked else runOffs.remove(card) },
                     onRoom = { room, here -> if (here) rooms[card] = room else if (rooms[card] === room) rooms.remove(card) },
-                    onDress = onDress, onReady = onReady, actions = actions,
+                    onDress = onDress, onReady = onReady, actions = actions, stationWords = stationWords,
                 )
             }
             BannerReflections(pager, cards.size, runOffs, rooms, plate, mirror, pull, platePx)
@@ -615,6 +622,7 @@ private fun BannerCardView(
     onDress: (BannerDress) -> Unit,
     onReady: () -> Unit,
     actions: HomeActions,
+    stationWords: ((RadioStation) -> BannerWords)?,
 ) {
     val album = (card as? BannerCard.OfAlbum)?.album
     val list = (card as? BannerCard.OfList)?.list
@@ -657,10 +665,11 @@ private fun BannerCardView(
     LaunchedEffect(live, looked, runOff) { if (live && looked && (photo == null || runOff != null)) onReady() }
     LaunchedEffect(looked, photo, runOff) { onWhole(looked && (photo == null || runOff != null)) }
 
+    val words = station?.let { stationWords?.invoke(it) }
     val kicker = when (card) {
         is BannerCard.OfAlbum -> stringResource(kickerOf(card.kicker))
         is BannerCard.OfList -> stringResource(R.string.Home_MadeForYou)
-        is BannerCard.OfStation -> stringResource(R.string.Rpm_Tab_Radio)
+        is BannerCard.OfStation -> words?.kicker ?: stringResource(R.string.Rpm_Tab_Radio)
     }
     val title = album?.album ?: list?.let { listName(it.name) } ?: station?.display.orEmpty()
     // A generated list's card stands on the room in the list's own colours, and its sleeve wears the list's frame, as
@@ -673,7 +682,7 @@ private fun BannerCardView(
     LaunchedEffect(live, wearing, roomed) { if (live && wearing != null) onDress(BannerDress(wearing, roomed)) }
     val colours = rememberRoomColours(if (roomed && framed == null) station?.let { StationLogo.of(it, logoStamp) } ?: cover else null, images)
     val seed = album?.key ?: station?.uuid ?: title
-    val subtitle = album?.artist
+    val subtitle = album?.artist ?: words?.line
     // The photograph and its run-off come in together, faded in: drawn apart, the photograph shows for a fifth of a
     // second with no blur or fade at the card's foot (Chivan, 2026-11-04: the front card at launch "lost its blur and
     // popped it back in").

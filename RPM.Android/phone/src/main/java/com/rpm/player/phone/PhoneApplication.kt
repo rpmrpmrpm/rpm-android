@@ -20,6 +20,9 @@ import com.rpm.player.core.library.AlbumOrdering
 import com.rpm.player.core.library.BlankDisc
 import com.rpm.player.core.library.DiscStandIn
 import com.rpm.player.core.library.StarterTracks
+import com.rpm.player.core.net.WireJson
+import com.rpm.player.core.radio.RadioStation
+import kotlinx.serialization.builtins.ListSerializer
 import com.rpm.player.core.library.ArtistOrdering
 import com.rpm.player.core.library.ArtistTrackGrouping
 import com.rpm.player.core.playback.EqCurve
@@ -537,6 +540,31 @@ class PhoneSettings(context: Context) {
         prefs.edit().putString(KEY_QUICK, quickAdded.joinToString("\n")).apply()
     }
 
+    /**
+     * The stations the person pinned to the radio home's Quick selection, in the order they were pinned (`radio.pinned`).
+     * Each is kept whole, as a saved station is, so it is shown and plays even when the directory does not answer.
+     */
+    var pinnedStations by mutableStateOf(readStations(KEY_RADIO_PINNED))
+        private set
+
+    /** Whether [station] is pinned, by its uuid or one of the entries folded into it. */
+    fun isPinned(station: RadioStation): Boolean = pinnedStations.any { station.answersTo(it.uuid) }
+
+    /** Pins [station] after the others, or unpins it. At most [PINNED_STATIONS]; the oldest pin goes first. */
+    fun pinStation(station: RadioStation, on: Boolean) {
+        val others = pinnedStations.filterNot { station.answersTo(it.uuid) }
+        // Kept as the directory files it: the folded entries and the admin's edit are worked out again when it is shown.
+        val kept = station.copy(shownName = null, otherLogos = emptyList(), alsoFiledAs = emptyList(), edit = null)
+        pinnedStations = if (on) (others + kept).takeLast(PINNED_STATIONS) else others
+        prefs.edit().putString(KEY_RADIO_PINNED, WireJson.encodeToString(ListSerializer(RadioStation.serializer()), pinnedStations)).apply()
+    }
+
+    private fun readStations(key: String): List<RadioStation> = try {
+        prefs.getString(key, null)?.let { WireJson.decodeFromString(ListSerializer(RadioStation.serializer()), it) }.orEmpty()
+    } catch (_: Exception) {
+        emptyList()
+    }
+
     /** The ids of the playlists the person pinned to the top of the playlists view, in the order they were pinned
      * (`playlists.pinned`). */
     var pinnedLists by mutableStateOf(readRefs(KEY_PINNED))
@@ -606,6 +634,9 @@ class PhoneSettings(context: Context) {
         /** The most the person can add to Quick selection; home shows sixteen lines in all. */
         const val QUICK_ADDED = 16
         const val KEY_PINNED = "playlists.pinned"
+        const val KEY_RADIO_PINNED = "radio.pinned"
+        /** The most stations the person can pin: the radio home's Quick selection shows sixteen lines in all. */
+        const val PINNED_STATIONS = 16
         const val KEY_COACH = "coach.seen"
         const val KEY_WELCOMED = "welcome.done"
         /** In [coachSeen], every hint at once. */
