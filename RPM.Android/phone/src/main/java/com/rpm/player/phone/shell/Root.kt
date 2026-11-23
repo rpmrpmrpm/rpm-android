@@ -219,6 +219,8 @@ fun Root(services: Services, settings: PhoneSettings, signIn: SignIn, controller
     // Whether the shell has lifted its own wait cover, home's front card in: the opening waits for that and not only for
     // the library, or it fades onto that cover and home comes in under the person's eyes.
     var shellShown by remember { mutableStateOf(false) }
+    // The colour of the app's glass: an open page's, else the person's, faded as it changes ([GlassTint]).
+    com.rpm.player.phone.design.GlassColourFade()
     Box(Modifier.fillMaxSize()) {
         when {
             session == null -> SignInScreen(signIn)

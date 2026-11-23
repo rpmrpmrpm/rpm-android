@@ -68,6 +68,7 @@ import com.rpm.player.phone.design.Weight
 import com.rpm.player.phone.design.display
 import com.rpm.player.phone.design.displayBold
 import com.rpm.player.phone.design.icon
+import com.rpm.player.phone.design.AppColourChoice
 import com.rpm.player.phone.design.kicker
 import com.rpm.player.phone.design.system
 import com.rpm.player.phone.downloads.LocalPlayable
@@ -130,6 +131,8 @@ fun Welcome(
                 0 -> Hello(onContinue = { page = 1 })
                 1 -> Step(1, steps, stringResource(R.string.Wizard_LookTitle), stringResource(R.string.Wizard_Phone_LookHint), next = { page = 2 }) {
                     Backdrops(settings)
+                    // The colour of the app's glass, under the backdrops, as on iPhone.
+                    AppColourChoice()
                 }
                 2 -> Step(
                     2,

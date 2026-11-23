@@ -1,7 +1,9 @@
 package com.rpm.player.phone.player
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -14,6 +16,7 @@ import com.rpm.player.core.room.PaintedRoom
 import com.rpm.player.core.room.RoomLevels
 import com.rpm.player.core.room.RoomPalette
 import com.rpm.player.core.room.Rgb
+import com.rpm.player.phone.design.rememberSongCover
 import com.rpm.player.phone.ui.StageRoom
 import com.rpm.player.phone.ui.rememberRoomColours
 import kotlin.math.max
@@ -44,14 +47,34 @@ class Stage {
 /**
  * The sheet's background: the room, lit by the record that is playing (the iPhone's `NowPlayingSheet.ground`). It is the
  * one room in the app that IS the record being played, so the music lights it and it does not breathe on its own. Its
- * colours are the cover's, or the station's logo's while a station plays, dissolving to the next record's. It runs while
- * the sheet is up, at half its rate while the phone saves power ([com.rpm.player.core.room.RoomPainter.saving]), and while
- * the sheet covers the screen every other room stops ([covers]).
+ * colours are those of [lit] ([rememberLitPicture]), dissolving to the next one's. It runs while the sheet is up, at half
+ * its rate while the phone saves power ([com.rpm.player.core.room.RoomPainter.saving]), and while the sheet covers the
+ * screen every other room stops ([covers]).
  */
 @Composable
-fun StageGround(now: NowPlaying, images: ImageLoader, stage: Stage, covers: Boolean, modifier: Modifier) {
-    val colours = rememberRoomColours(now.cover ?: now.station?.logo, images)
+fun StageGround(lit: Any?, images: ImageLoader, stage: Stage, covers: Boolean, modifier: Modifier) {
+    val read = rememberRoomColours(lit, images)
+    // A picture's colours are read a moment after it arrives. Until then the room keeps the colours it has, so a
+    // station's songs go from cover to cover and not through the app's blue on the way.
+    val held = remember { HeldPalette() }
+    SideEffect { if (read != null) held.palette = read }
+    val colours = if (lit == null) null else read ?: held.palette
     StageRoom(colours ?: RoomPalette.FALLBACK, running = true, covers = covers, foot = -1f, modifier) { stage.room = it }
+}
+
+/** The colours the room was last given from a picture. Not state: it is only read when the picture changes. */
+private class HeldPalette {
+    var palette: RoomPalette? = null
+}
+
+/**
+ * What lights the sheet's room and its glass: the record's cover; for a station, the cover of the song it announces
+ * while one shows over its logo ([rememberSongCover]), else the logo (`NowPlayingSheet.lit` on iPhone).
+ */
+@Composable
+internal fun rememberLitPicture(now: NowPlaying): Any? {
+    val song = rememberSongCover(now.station)
+    return now.cover ?: song ?: now.station?.logo
 }
 
 /**

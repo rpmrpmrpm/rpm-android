@@ -195,7 +195,7 @@ val LocalOnGlass = staticCompositionLocalOf { false }
 /**
  * A panel that floats over the page: a picker, a sheet's body, the sign-in form. It matches the iPhone's
  * `GlassCard` before iOS 26: the frost, the wash and the edge, in an 18 dp rounded rectangle. Everything on
- * it is on glass ([LocalOnGlass]).
+ * it is on glass ([LocalOnGlass]). The glass colour ([AppColour]) lies over the frost as Liquid Glass's tint does.
  */
 @Composable
 fun GlassCard(backdrop: Backdrop, modifier: Modifier = Modifier, radius: Dp = 18.dp, content: @Composable () -> Unit) {
@@ -203,6 +203,7 @@ fun GlassCard(backdrop: Backdrop, modifier: Modifier = Modifier, radius: Dp = 18
     Box(
         modifier
             .frost(backdrop, shape, CARD_BLUR)
+            .glassTint(shape, AppColour.ON_GLASS)
             .border(1.dp, Ink.cardBorder, shape)
             .clip(shape),
     ) {
@@ -210,10 +211,13 @@ fun GlassCard(backdrop: Backdrop, modifier: Modifier = Modifier, radius: Dp = 18
     }
 }
 
-/** The chrome's glass in [shape]: the frost with a thin edge, as `rpmGlass` on iPhone before iOS 26. */
+/**
+ * The chrome's glass in [shape]: the frost with a thin edge, as `rpmGlass` on iPhone before iOS 26, and the glass colour
+ * ([AppColour]) over the frost as Liquid Glass's tint is on iOS 26.
+ */
 @Composable
 fun Modifier.chromeGlass(backdrop: Backdrop, shape: Shape): Modifier =
-    frost(backdrop, shape, CHROME_BLUR).border(1.dp, Ink.chromeEdge, shape)
+    frost(backdrop, shape, CHROME_BLUR).glassTint(shape, AppColour.ON_GLASS).border(1.dp, Ink.chromeEdge, shape)
 
 // ── keys ──
 
@@ -222,7 +226,7 @@ enum class Weight { Primary, Ghost }
 
 /**
  * A key drawn flat, as the iPhone's `RPMGlassButton` is drawn before iOS 26. It is a translucent fill with
- * the glass edge, and a white veil while pressed. It is 44 dp high, with a 10 dp corner. The label uses the
+ * the glass edge, the glass colour as a wash over the fill ([AppColour]), and a white veil while pressed. It is 44 dp high, with a 10 dp corner. The label uses the
  * system font, size 15, semi-bold.
  *
  * When disabled, the face stays lit and only the label fades. A key that goes dark would look like a hole
@@ -255,6 +259,7 @@ fun GlassButton(
             .defaultMinSize(minHeight = height)
             .clip(shape)
             .background(if (weight == Weight.Primary) Ink.primaryFace else Ink.ghostFace)
+            .glassTint(shape, AppColour.ON_FILL)
             .then(if (pressed) Modifier.background(Ink.pressedVeil) else Modifier)
             .border(1.dp, Ink.glassEdge, shape)
             .clickable(interactionSource = presses, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
@@ -331,6 +336,7 @@ fun GlassField(
             .height(44.dp)
             .clip(shape)
             .background(Ink.ghostFace)
+            .glassTint(shape, AppColour.ON_FILL)
             .border(1.dp, Ink.glassEdge, shape),
         decorationBox = { field ->
             Box(Modifier.padding(horizontal = 14.dp), contentAlignment = Alignment.CenterStart) {

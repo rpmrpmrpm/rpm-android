@@ -89,6 +89,10 @@ import com.rpm.player.phone.design.MarkedTitle
 import com.rpm.player.core.library.SongLevel
 import com.rpm.player.core.library.Cover
 import com.rpm.player.phone.design.BackKey
+import com.rpm.player.phone.design.HoldsPageColour
+import com.rpm.player.phone.design.PageColour
+import com.rpm.player.phone.design.rememberColourPage
+import com.rpm.player.phone.design.rememberGlassColour
 import com.rpm.player.phone.design.GlassButton
 import com.rpm.player.phone.design.Glyph
 import com.rpm.player.phone.design.Ink
@@ -206,7 +210,15 @@ fun AlbumPage(
     canPlay: (CloudTrack) -> Boolean = { true },
     onPerson: (String) -> Unit = {},
 ) {
-    BackHandler(onBack = onBack)
+    // The glass takes the main colour of the sleeve while the record is on screen ([PageColour]). Back lets go of it
+    // first, so the glass changes as the page slides away and not after it has gone.
+    val colourPage = rememberColourPage()
+    HoldsPageColour(rememberGlassColour(cover, images), colourPage)
+    val goBack = {
+        PageColour.release(colourPage)
+        onBack()
+    }
+    BackHandler(onBack = goBack)
     val page = rememberBackdrop()
     val list = rememberLazyListState()
     ScrollsToTop(list)
@@ -339,7 +351,7 @@ fun AlbumPage(
         // The back key floats over the page. It does not scroll with the page. It sits in the row kept free under the
         // status bar.
         Box(Modifier.padding(top = top - BACK_ROW).height(BACK_ROW).padding(start = 20.dp), contentAlignment = Alignment.Center) {
-            BackKey(page, onBack)
+            BackKey(page, goBack)
         }
         // The mark on the record, across from the back key and in the same glass. It goes to the shared wall, so a
         // record loved on the phone is loved on the computer.

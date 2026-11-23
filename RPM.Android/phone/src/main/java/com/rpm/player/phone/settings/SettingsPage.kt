@@ -48,6 +48,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawWithContent
@@ -86,7 +88,11 @@ import com.rpm.player.core.playback.EqCurve
 import com.rpm.player.core.playback.EqPreset
 import com.rpm.player.core.playback.Equalizer
 import com.rpm.player.core.playback.LevelMode
+import com.rpm.player.phone.design.AppColour
+import com.rpm.player.phone.design.AppColourBubbles
 import com.rpm.player.phone.design.Backdrop
+import com.rpm.player.phone.design.controlColour
+import com.rpm.player.phone.design.glassTint
 import com.rpm.player.phone.design.OverChrome
 import com.rpm.player.phone.design.GlassButton
 import com.rpm.player.phone.design.GlassCard
@@ -260,6 +266,7 @@ fun SettingsPage(
                         }
                         SettingsSection.Appearance -> {
                             cards.Backdrops(ground, isGold, onGround, nightMode, onNightMode, discStandIn, onDiscStandIn)
+                            cards.Colour()
                             cards.Player(playerBars, onPlayerBars)
                         }
                         SettingsSection.Playback -> {
@@ -514,6 +521,12 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
                 onAsk(MenuAsk(anchor, standIns, discStandIn.ordinal) { onDiscStandIn(DiscStandIn.entries[it]) })
             }
         }
+    }
+
+    /** The colour of the app's glass: the profile badge's colours as bubbles, no colour first ([AppColour]). */
+    @Composable
+    fun Colour() {
+        Card(Glyph.palette, stringResource(R.string.Settings_Colour)) { AppColourBubbles() }
     }
 
     /** The player's look: whether the bars beside the cover move with the music. */
@@ -872,7 +885,8 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
             // The 0 dB mark, a short line across.
             val tick = 5.dp.toPx()
             drawLine(track, Offset(x - tick, y(0.0)), Offset(x + tick, y(0.0)), stroke / 2)
-            drawLine(lit, Offset(x, y(0.0)), Offset(x, y(db)), stroke, StrokeCap.Round)
+            // The raised part is lit in the glass colour, as a switch is ([controlColour]).
+            drawLine(controlColour(lit), Offset(x, y(0.0)), Offset(x, y(db)), stroke, StrokeCap.Round)
             drawCircle(Color.White, radius = knob.toPx(), center = Offset(x, y(db)))
         }
     }
@@ -938,7 +952,8 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
 
 /**
  * A card: a glyph and a kicker, then the content, on the flat section fill (`rpmSection` on iPhone: white at 7%, a
- * 22 dp corner). A plain panel, not glass, as the iPhone's grouped sections are.
+ * 22 dp corner, and the glass colour as a light wash, [AppColour]). A plain panel, not glass, as the iPhone's grouped
+ * sections are.
  */
 @Composable
 private fun Card(glyph: String, kicker: String, content: @Composable ColumnScope.() -> Unit) {
@@ -947,6 +962,7 @@ private fun Card(glyph: String, kicker: String, content: @Composable ColumnScope
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
             .background(Ink.white(0x12))
+            .glassTint(RectangleShape, AppColour.ON_SECTION)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -993,7 +1009,10 @@ private fun ClosedMenu(text: String, dimmed: Boolean, modifier: Modifier = Modif
     }
 }
 
-/** An iOS switch: a 51 by 31 capsule with a white knob, lit in the tint the iPhone gives it (white at 0x88). */
+/**
+ * An iOS switch: a 51 by 31 capsule with a white knob, lit in the tint the iPhone gives it: the glass colour, or white at
+ * 0x88 without one (`rpmControlTint`, [controlColour]).
+ */
 @Composable
 internal fun Switch(on: Boolean) {
     val knob by animateDpAsState(if (on) 22.dp else 2.dp, tween(180), label = "switch")
@@ -1001,7 +1020,7 @@ internal fun Switch(on: Boolean) {
         Modifier
             .size(51.dp, 31.dp)
             .clip(CircleShape)
-            .background(if (on) Ink.white(0x88) else Color(0x52787880)),
+            .drawBehind { drawRect(if (on) controlColour(Ink.white(0x88)) else Color(0x52787880)) },
     ) {
         Box(Modifier.offset(x = knob, y = 2.dp).size(27.dp).clip(CircleShape).background(Color.White))
     }

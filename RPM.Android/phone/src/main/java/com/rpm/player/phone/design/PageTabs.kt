@@ -75,7 +75,8 @@ internal fun <T> PageTabs(
             .padding(3.dp),
     ) {
         val lit = maxWidth - unlit * (choices.size - 1)
-        Box(Modifier.offset(x = unlit * moving.pill.value).width(lit).height(32.dp).clip(capsule).background(Ink.white(0x24)))
+        // The pill takes the glass colour ([AppColour]) in place of its white.
+        Box(Modifier.offset(x = unlit * moving.pill.value).width(lit).height(32.dp).clip(capsule).tintedFill(Ink.white(0x24), AppColour.ON_PILL))
         Row {
             choices.forEachIndexed { index, choice ->
                 val isChosen = index == at

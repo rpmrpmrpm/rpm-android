@@ -103,6 +103,10 @@ import com.rpm.player.phone.design.display
 import com.rpm.player.phone.design.icon
 import com.rpm.player.phone.design.iconOutline
 import com.rpm.player.phone.design.rememberBackdrop
+import com.rpm.player.phone.design.HoldsPageColour
+import com.rpm.player.phone.design.PageColour
+import com.rpm.player.phone.design.rememberColourPage
+import com.rpm.player.phone.design.rememberGlassColour
 import com.rpm.player.phone.library.SleeveSquare
 import com.rpm.player.phone.library.SongMenu
 import com.rpm.player.phone.library.SongMenuLayer
@@ -227,6 +231,11 @@ fun NowPlayingSheet(
     val castState = speakers?.casting?.state?.collectAsStateWithLifecycle()?.value
     val playingOn = (castState as? CastState.On)?.device?.name
     val onStation = now.station != null
+    // What lights the room and the glass: the record's cover, or for a station the cover of the song it plays, else its
+    // logo. The glass takes its colour while the player is on screen ([PageColour]), and lets go as the sheet goes down.
+    val lit = rememberLitPicture(now)
+    val colourPage = rememberColourPage()
+    HoldsPageColour(rememberGlassColour(lit, images), colourPage)
 
     // Asked when the sheet is shown and again when the record changes, and only while it is shown.
     LaunchedEffect(now.mediaId) { onNeedLyrics() }
@@ -252,6 +261,7 @@ fun NowPlayingSheet(
         fun putAway(then: () -> Unit = {}) {
             if (!up) return
             up = false
+            PageColour.release(colourPage)
             scope.launch {
                 offset.animateTo(height, sheetSpring)
                 onClosed()
@@ -284,7 +294,7 @@ fun NowPlayingSheet(
                 .clickable(remember { MutableInteractionSource() }, indication = null) {},
         ) {
             // The ground is what the glass on the sheet blurs: the speaker picker, the menu, the row of keys.
-            Box(Modifier.fillMaxSize().backdropSource(backdrop)) { StageGround(now, images, stage, covers = fullyUp, Modifier.fillMaxSize()) }
+            Box(Modifier.fillMaxSize().backdropSource(backdrop)) { StageGround(lit, images, stage, covers = fullyUp, Modifier.fillMaxSize()) }
             Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
                 Grip(
                     onDrag = { delta -> scope.launch { offset.snapTo((offset.value + delta).coerceAtLeast(0f)) } },

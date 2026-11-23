@@ -80,6 +80,11 @@ import com.rpm.player.core.library.isExplicit
 import com.rpm.player.phone.design.ExplicitMark
 import com.rpm.player.core.library.moodSentence
 import com.rpm.player.phone.design.BackKey
+import com.rpm.player.phone.design.HoldsPageColour
+import com.rpm.player.phone.design.PageColour
+import com.rpm.player.phone.design.rememberColourPage
+import com.rpm.player.phone.design.rememberGlassColour
+import com.rpm.player.phone.ui.color
 import com.rpm.player.phone.design.GlassButton
 import com.rpm.player.phone.design.Glyph
 import com.rpm.player.phone.design.Ink
@@ -173,7 +178,17 @@ fun PlaylistPage(
     // Rearranging needs two songs or more, and a list this phone may write.
     val rearranging = asked && canReorder && rowsOf.size > 1
     val haptics = rememberHaptics()
-    BackHandler(onBack = { if (rearranging) asked = false else onBack() })
+    // The glass takes the list's colour while it is on screen ([PageColour]): a generated list's own middle colour, as
+    // its frame and room have, else the main colour of its own picture, never a record's in it. Back lets go of it
+    // first, so the glass changes as the page slides away and not after it has gone.
+    val colourPage = rememberColourPage()
+    val pictureColour = rememberGlassColour(if (framed == null) picture else null, images)
+    HoldsPageColour(framed?.look?.trio?.mid?.color() ?: pictureColour, colourPage)
+    val goBack = {
+        PageColour.release(colourPage)
+        onBack()
+    }
+    BackHandler(onBack = { if (rearranging) asked = false else goBack() })
     val page = rememberBackdrop()
     val rows = rememberLazyListState()
     ScrollsToTop(rows)
@@ -301,7 +316,7 @@ fun PlaylistPage(
             }
         }
         Box(Modifier.padding(top = top - BACK_ROW).height(BACK_ROW).padding(start = 20.dp), contentAlignment = Alignment.Center) {
-            BackKey(page, onBack = { if (rearranging) asked = false else onBack() })
+            BackKey(page, onBack = { if (rearranging) asked = false else goBack() })
         }
         PlaylistCorner(
             menu,
