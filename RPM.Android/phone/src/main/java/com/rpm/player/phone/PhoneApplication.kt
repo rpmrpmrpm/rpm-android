@@ -197,6 +197,7 @@ class PhoneApplication : RpmApplication() {
  */
 class PhoneSettings(context: Context) {
     private val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+    private val app = context.applicationContext
 
     var libraryOrder by mutableStateOf(AlbumOrdering.of(prefs.getString(KEY_ORDER, null)) ?: AlbumOrdering.Artist)
         private set
@@ -426,9 +427,11 @@ class PhoneSettings(context: Context) {
     var backdrop by mutableStateOf(prefs.getString(KEY_BACKDROP, null).orEmpty())
         private set
 
+    /** Keeps the backdrop, and sets the glass colour back to the backdrop's own, so the two stay one theme. */
     fun changeBackdrop(id: String) {
         backdrop = id
         prefs.edit().putString(KEY_BACKDROP, id).apply()
+        com.rpm.player.phone.design.AppColour.choose(app, "")
     }
 
     /**

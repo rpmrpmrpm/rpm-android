@@ -52,6 +52,8 @@ import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
 import com.rpm.player.core.R
+import com.rpm.player.phone.ui.Ground
+import com.rpm.player.phone.ui.LocalGround
 import com.rpm.player.core.cloud.ProfileBadges
 import com.rpm.player.core.room.CoverColor
 import com.rpm.player.core.room.Rgb
@@ -63,19 +65,35 @@ import kotlinx.coroutines.withContext
  * The colour the person gives the app's glass: the cards, the chrome, the keys, the switches and the faders. It is the
  * iPhone's `AppColour`, chosen on the Appearance settings and in the welcome's look step.
  *
- * **None is the default**, and it is the app as it is drawn without a choice: white frost on dark glass. A colour is
- * laid over that frost as a light wash ([ON_GLASS] and the others), so white text on it stays readable whichever colour
- * is chosen.
+ * **The background's colour is the default** ([theme]): each background has a colour, so a background and the glass on
+ * it go together like a theme. Choosing a background goes back to its colour. The person can pick another colour, or
+ * none ([NONE]): the app's white frost on dark glass. A colour is laid over that frost as a light wash ([ON_GLASS] and
+ * the others), so white text on it stays readable whichever colour is chosen.
  *
  * The colours offered are the profile badge's colours ([ProfileBadges.colours]), shown as the same round bubbles as on
- * the profile page, so the app and the badge can match. The choice is stored as `#RRGGBB`, the badge's own form, under
- * [KEY], the iPhone's key.
+ * the profile page, so the app and the badge can match. The choice is stored under [KEY], the iPhone's key, as
+ * `#RRGGBB` (the badge's own form), as [NONE], or empty for the background's colour.
  *
  * **An album, a playlist or the player on screen colours the glass with its cover** while it is shown ([PageColour]).
  * That colour comes before the person's. What the glass is drawn in now is [GlassTint], which fades between the two.
  */
 object AppColour {
     const val KEY = "look.colour"
+
+    /** What is stored for no colour: the app's own white frost. Empty is the background's colour. */
+    const val NONE = "none"
+
+    /**
+     * The colour each background gives the glass, as 0xRRGGBB, so the two look like one theme (the iPhone's
+     * `AppColour.theme`). The badge's own blue, red, orange and yellow, and a grey for the grey background.
+     */
+    fun theme(ground: Ground): Long = when (ground) {
+        Ground.Standard, Ground.Vinyl -> 0x2563EB
+        Ground.Pegasus -> 0xD12A4E
+        Ground.SheetMusic, Ground.Cocoa -> 0xE0701B
+        Ground.Aero, Ground.Gold -> 0xB8901F
+        Ground.Graphite -> 0x8E939B
+    }
 
     /** The colours offered, as 0xRRGGBB. */
     val offered: List<Long> get() = ProfileBadges.colours
@@ -86,14 +104,14 @@ object AppColour {
     const val ON_SECTION = 0.16f
     const val ON_PILL = 0.55f
 
-    /** The choice as stored: `#RRGGBB`, or empty for none. */
+    /** The choice as stored: `#RRGGBB`, [NONE], or empty for the background's colour. */
     var stored by mutableStateOf("")
         private set
 
     private var loaded = false
 
-    /** The colour chosen, or null for none. */
-    val chosen: Color? get() = colour(stored)
+    /** The colour the choice gives on [ground]: the background's when nothing is chosen, null for [NONE]. */
+    fun chosen(ground: Ground): Color? = if (stored.isEmpty()) Color(0xFF000000 or theme(ground)) else colour(stored)
 
     /** Reads the stored choice once. The settings file is the one [com.rpm.player.phone.PhoneSettings] keeps. */
     fun load(context: Context) {
@@ -102,7 +120,7 @@ object AppColour {
         stored = prefs(context).getString(KEY, null).orEmpty()
     }
 
-    /** Keeps [wire] (`#RRGGBB`, or empty for none) and shows it on every face at once. */
+    /** Keeps [wire] (`#RRGGBB`, [NONE], or empty for the background's colour) and shows it on every face at once. */
     fun choose(context: Context, wire: String) {
         loaded = true
         stored = wire
@@ -210,8 +228,9 @@ object GlassTint {
 @Composable
 fun GlassColourFade() {
     AppColour.load(LocalContext.current)
-    GlassTint.start(AppColour.chosen)
-    val target = PageColour.current ?: AppColour.chosen
+    val chosen = AppColour.chosen(LocalGround.current)
+    GlassTint.start(chosen)
+    val target = PageColour.current ?: chosen
     LaunchedEffect(target) { GlassTint.fadeTo(target) }
 }
 
@@ -281,25 +300,52 @@ private val GLASS = LruCache<Any, Tinted>(64)
 // ── the bubbles ──
 
 /**
- * The round colour bubbles, as the profile page draws them for the badge: no colour first, then each colour offered.
- * The one chosen has a thick white ring (the iPhone's `AppColourBubbles`).
+ * The round colour bubbles, as the profile page draws them for the badge: the background's own colour first, then no
+ * colour, then each colour offered. The one chosen has a thick white ring (the iPhone's `AppColourBubbles`).
  */
 @Composable
 fun AppColourBubbles() {
     val context = LocalContext.current
     val haptics = rememberHaptics()
     AppColour.load(context)
-    val chosen = AppColour.value(AppColour.stored)
+    val stored = AppColour.stored
+    val chosen = AppColour.value(stored)
     Row(
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        ThemeBubble(Color(0xFF000000 or AppColour.theme(LocalGround.current)), picked = stored.isEmpty()) {
+            haptics.pick()
+            AppColour.choose(context, "")
+        }
         for (value in listOf<Long?>(null) + AppColour.offered) {
-            Bubble(value, picked = chosen == value) {
+            val picked = if (value == null) stored == AppColour.NONE else chosen == value
+            Bubble(value, picked = picked) {
                 haptics.pick()
-                AppColour.choose(context, value?.let(AppColour::wire).orEmpty())
+                AppColour.choose(context, value?.let(AppColour::wire) ?: AppColour.NONE)
             }
         }
+    }
+}
+
+/** The background's own colour, with the palette mark on it: the glass follows the background. */
+@Composable
+private fun ThemeBubble(colour: Color, picked: Boolean, onClick: () -> Unit) {
+    val label = stringResource(R.string.Settings_ColourTheme)
+    Box(
+        Modifier
+            .size(34.dp)
+            .clip(CircleShape)
+            .background(colour)
+            .border(if (picked) 3.dp else 1.dp, Ink.white(if (picked) 0xF2 else 0x44), CircleShape)
+            .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.RadioButton, onClick = onClick)
+            .semantics {
+                contentDescription = label
+                selected = picked
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        BasicText(Glyph.palette, style = icon(13f).copy(color = Ink.white(0xF2)))
     }
 }
 
