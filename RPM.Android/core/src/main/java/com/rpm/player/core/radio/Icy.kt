@@ -17,7 +17,7 @@ object Icy {
      * print: blank, the end of an ad break, or only the station's own name.
      */
     fun said(announced: String?, station: String): Said? {
-        val spoken = Fields.read(announced) ?: return null
+        val spoken = Fields.read(announced?.let(::repaired)) ?: return null
         if (isBreakOver(spoken)) return null
         if (isAdBreak(spoken)) return Said.AdBreak
         val text = withoutStation(spoken, station)?.takeIf { it.isNotBlank() } ?: return null
@@ -25,6 +25,36 @@ object Icy {
         val (artist, title) = split(text)
         return Said.Song(artist, title ?: text)
     }
+
+    /**
+     * The announcement with a common station fault undone: text the station had already turned into UTF-8 once, read
+     * as Windows-1252 and turned into UTF-8 again, so "TIËSTO" arrives as "TIÃ‹STO". The iPhone's
+     * `StationSaid.repaired` does the same.
+     *
+     * Only text with the fault's mark ("Ã", "Â" or "â€") is tried, and only a result that is whole UTF-8 is kept, so
+     * correct text such as "Beyoncé" or "Ã la carte" is never changed.
+     */
+    fun repaired(text: String): String {
+        if (!text.contains('Ã') && !text.contains('Â') && !text.contains("â€")) return text
+        val bytes = try {
+            WINDOWS_1252.newEncoder()
+                .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+                .encode(java.nio.CharBuffer.wrap(text))
+        } catch (failed: java.nio.charset.CharacterCodingException) {
+            return text
+        }
+        return try {
+            Charsets.UTF_8.newDecoder()
+                .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+                .decode(bytes).toString()
+        } catch (failed: java.nio.charset.CharacterCodingException) {
+            text
+        }
+    }
+
+    private val WINDOWS_1252: java.nio.charset.Charset = java.nio.charset.Charset.forName("windows-1252")
 
     private val SEPARATORS = listOf(" - ", " – ", " — ", " -- ")
 
