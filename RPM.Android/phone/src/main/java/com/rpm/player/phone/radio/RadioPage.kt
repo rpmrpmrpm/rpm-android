@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.wrapContentHeight
+import com.rpm.player.phone.design.header
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -97,7 +100,6 @@ import com.rpm.player.phone.design.rememberHaptics
 import com.rpm.player.phone.design.rowPress
 import com.rpm.player.phone.design.scrolled
 import com.rpm.player.phone.design.system
-import com.rpm.player.phone.design.PageHeading
 import com.rpm.player.phone.design.UnderHeader
 import com.rpm.player.phone.design.holdPress
 import com.rpm.player.phone.library.AlbumCaption
@@ -216,7 +218,7 @@ fun RadioPage(
             }) { top ->
                 Column(Modifier.fillMaxSize()) {
                     Spacer(Modifier.height(top))
-                    RadioDial(list.stations, tuned, announced, onTune, Modifier.padding(horizontal = 20.dp).padding(top = 4.dp))
+                    RadioDial(list.stations, tuned, announced, onTune, Modifier.padding(horizontal = 20.dp))
                     Controls(
                         text = settings.text,
                         onText = { typed -> tuner.update { it.copy(text = typed) } },
@@ -261,8 +263,9 @@ fun RadioPage(
 }
 
 /**
- * The title, with the back key to its left as inside a folder of the playlists view, and on the title's line the keys
- * on one glass capsule: the layout, the order and the saved stations only.
+ * One line: the back key, the title beside it, and at the right the keys on one glass capsule (the layout, the order
+ * and the saved stations only). The three are centred on one line and there is no line under the title, so the dial
+ * starts close under them.
  */
 @Composable
 private fun Header(
@@ -276,24 +279,41 @@ private fun Header(
     onSaved: () -> Unit,
 ) {
     val haptics = rememberHaptics()
-    Row(Modifier.statusBarsPadding().padding(start = 20.dp, end = 16.dp, bottom = 8.dp)) {
+    // The row is as tall as the back key, so the key stays where every page's back key is; the title and the capsule
+    // are centred on it, the title's taller line box spilling over the row without moving it.
+    Row(
+        Modifier.statusBarsPadding().padding(start = 20.dp, end = 16.dp, bottom = 12.dp).height(KEY_LINE),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         if (onBack != null) {
             BackKey(backdrop, onBack = { haptics.pick(); onBack() }, modifier = Modifier.padding(end = BESIDE_TITLE))
         }
-        PageHeading(title, stringResource(R.string.Radio_Subtitle)) {
-            KeyGroup(backdrop) {
-                // The playlists' layout key: a menu, not a toggle, so the key never has to show either the layout in
-                // force or the one a press would give.
-                GroupKey(layout.mark, on = false, label = stringResource(R.string.Rpm_Library_View)) { onPick(Picking.Which.Layout, it) }
-                GroupKey(Glyph.sortAmount, on = sorted, label = stringResource(R.string.Radio_Sort)) { onPick(Picking.Which.Order, it) }
-                GroupKey(Glyph.heart, on = savedOnly, label = stringResource(R.string.Radio_ShowFavorites)) { onSaved() }
-            }
+        // The display face's line box has room for long descenders under the word, so its ink sits high in the box;
+        // the nudge puts the ink, not the box, on the keys' centre line.
+        BasicText(
+            title,
+            Modifier.weight(1f).wrapContentHeight(unbounded = true).offset(y = TITLE_NUDGE),
+            maxLines = 1,
+            style = header().copy(color = Color.White),
+        )
+        KeyGroup(backdrop) {
+            // The playlists' layout key: a menu, not a toggle, so the key never has to show either the layout in
+            // force or the one a press would give.
+            GroupKey(layout.mark, on = false, label = stringResource(R.string.Rpm_Library_View)) { onPick(Picking.Which.Layout, it) }
+            GroupKey(Glyph.sortAmount, on = sorted, label = stringResource(R.string.Radio_Sort)) { onPick(Picking.Which.Order, it) }
+            GroupKey(Glyph.heart, on = savedOnly, label = stringResource(R.string.Radio_ShowFavorites)) { onSaved() }
         }
     }
 }
 
 /** The space between the back key and the title beside it (`RPMBackKey.besideTitle` on iPhone). */
 private val BESIDE_TITLE = 12.dp
+
+/** How far the title is moved down so its ink, not its line box, is centred on the keys. */
+private val TITLE_NUDGE = 6.dp
+
+/** The header's line: the back key's height. */
+private val KEY_LINE = 40.dp
 
 /**
  * One plain key on the header's capsule. **Its mark is cyan while it is in force**, which is the whole of its state:
@@ -326,7 +346,8 @@ private fun Controls(
     onPick: (Picking.Which, Rect) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
-    Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    // The same gap between the dial, the search field and the two choosers, so the cards stand evenly spaced.
+    Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // The iPhone's `rpmField()`, not the library's search box: 44 dp, the system face at 15, and no clear key.
         GlassField(
             value = text,
