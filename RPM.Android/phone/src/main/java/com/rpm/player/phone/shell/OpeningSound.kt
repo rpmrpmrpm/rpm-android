@@ -10,7 +10,7 @@ import com.rpm.player.phone.R
 
 /**
  * The short sound rpm plays as it opens: the desktop's opening sound (`AppSound.PlayOpen`), at the same seven tenths of
- * full volume. It plays once per start of the app, as the opening screen shows, and only when:
+ * full volume. It plays once per start of the app, as the opening screen fades away and home fades in, and only when:
  *
  * - the setting is on ([com.rpm.player.phone.PhoneSettings.openingSound]);
  * - no other music plays: a sound over somebody else's music is noise;

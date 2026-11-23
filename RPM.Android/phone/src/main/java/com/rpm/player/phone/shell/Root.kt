@@ -211,9 +211,8 @@ fun Root(services: Services, settings: PhoneSettings, signIn: SignIn, controller
     }
     val reach by (LocalContext.current.applicationContext as com.rpm.player.phone.PhoneApplication).line.collectAsStateWithLifecycle()
     var opening by rememberSaveable { mutableStateOf(true) }
-    // The opening sound, as the opening screen shows: once per start of the app ([OpeningSound]).
+    // The opening sound starts with the hand-over, as home fades in under the opening screen ([OpeningSound]).
     val soundContext = LocalContext.current
-    LaunchedEffect(Unit) { if (opening) OpeningSound.play(soundContext, settings.openingSound) }
     var fading by remember { mutableStateOf(false) }
     // Whether the shell has lifted its own wait cover, home's front card in: the opening waits for that and not only for
     // the library, or it fades onto that cover and home comes in under the person's eyes.
@@ -259,7 +258,10 @@ fun Root(services: Services, settings: PhoneSettings, signIn: SignIn, controller
             Opening(
                 ready = session == null || shellShown,
                 reading = if (reading != null) stringResource(R.string.Rpm_Library_Reading) else null,
-                onSwept = { fading = true },
+                onSwept = {
+                    fading = true
+                    OpeningSound.play(soundContext, settings.openingSound)
+                },
                 modifier = Modifier.fillMaxSize().graphicsLayer { alpha = shownNow },
             )
         }
