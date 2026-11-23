@@ -54,6 +54,7 @@ import com.rpm.player.core.radio.RadioStation
 import com.rpm.player.core.radio.StationSign
 import com.rpm.player.core.radio.countryName
 import com.rpm.player.phone.design.Ink
+import com.rpm.player.phone.design.RpmFont
 import com.rpm.player.phone.design.pt
 import com.rpm.player.phone.design.system
 import java.util.Locale
@@ -184,7 +185,7 @@ internal fun RadioDial(stations: List<RadioStation>, tuned: String?, announced: 
                 )
                 val text = measurer.measure(
                     mark.caption,
-                    TextStyle(fontSize = (DialCard.NAME_SIZE / density.fontScale).sp, fontWeight = FontWeight.Medium, color = if (lit) DIAL_CYAN else LABEL_INK.copy(alpha = 0.85f)),
+                    TextStyle(fontFamily = RpmFont.cabin, fontSize = (DialCard.NAME_SIZE / density.fontScale).sp, fontWeight = FontWeight.Medium, color = if (lit) DIAL_CYAN else LABEL_INK.copy(alpha = 0.85f)),
                 )
                 drawText(text, topLeft = Offset((mark.nameLeft + mark.width).toFloat() * unit - text.size.width + slid, rowTop))
             }

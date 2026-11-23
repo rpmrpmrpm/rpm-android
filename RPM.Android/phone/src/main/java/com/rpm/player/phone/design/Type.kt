@@ -56,10 +56,19 @@ fun pt(size: Float): TextUnit = with(LocalDensity.current) { size.dp.toSp() }
  */
 val LocalTextFeather = staticCompositionLocalOf<Shadow?> { null }
 
-/** `.system(size:weight:)`: the platform's own font, Roboto here, where the iPhone uses SF Pro. */
+/**
+ * `RPMFont.text(_:weight:)`: a size and a weight given as for the platform's font, set in Cabin. Cabin Medium, and Cabin
+ * Bold from semibold up: the app ships Cabin in these two weights only. Every text in the app is set in Cabin; a script
+ * that Cabin does not have, such as Chinese, falls back to the system font letter by letter.
+ *
+ * The name is kept from when these sizes were drawn in the platform's font, so the many places that use it read as before.
+ */
 @Composable
 fun system(size: Float, weight: FontWeight = FontWeight.Normal): TextStyle =
-    TextStyle(fontSize = pt(size), fontWeight = weight, shadow = LocalTextFeather.current)
+    TextStyle(fontFamily = RpmFont.cabin, fontSize = pt(size), fontWeight = cabinWeight(weight), shadow = LocalTextFeather.current)
+
+/** The Cabin weight for a weight given as for the platform's font: Bold from semibold up, else Medium. */
+fun cabinWeight(weight: FontWeight): FontWeight = if (weight >= FontWeight.SemiBold) FontWeight.Bold else FontWeight.Medium
 
 /** `RPMFont.display`: Cabin Medium. */
 @Composable
