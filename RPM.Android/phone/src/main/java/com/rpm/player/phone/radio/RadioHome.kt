@@ -217,15 +217,7 @@ fun RadioHome(
                     onDress = { dress = it },
                     onReady = {},
                     actions = actions,
-                    stationWords = { station ->
-                        // The admin's description where there is one, on up to two lines, else the genre and the country.
-                        val described = station.edit?.description
-                        BannerWords(
-                            if (why[station.uuid] == StationWhy.Local) nearYou else onRepeat,
-                            described ?: shortLine(station),
-                            lines = if (described == null) 1 else 2,
-                        )
-                    },
+                    stationWords = { station -> stationCardWords(station, if (why[station.uuid] == StationWhy.Local) nearYou else onRepeat) },
                     stationPicture = { rules.cards.addressOf(it) },
                 )
             } else {
@@ -378,6 +370,15 @@ private fun Trouble() {
         Modifier.padding(horizontal = 20.dp),
         style = system(13f).copy(color = Ink.secondary),
     )
+}
+
+/**
+ * A station's card as the banners draw it, on home and on the radio home: the admin's description under the name, on up
+ * to two lines, where there is one, else the genre and the country.
+ */
+internal fun stationCardWords(station: RadioStation, kicker: String): BannerWords {
+    val described = station.edit?.description
+    return BannerWords(kicker, described ?: shortLine(station), lines = if (described == null) 1 else 2)
 }
 
 /** Example: "Jazz · Netherlands". The station's first genre and its country, either of them, or null with neither. */

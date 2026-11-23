@@ -812,6 +812,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                                     onSwitch = if (shelfRows.size > 1) ({ picking = true }) else null,
                                     onReady = { homeReady = true },
                                     quickAdded = settings.quickAdded,
+                                    stationCards = rules.cards,
                                 )
                             }
                         }

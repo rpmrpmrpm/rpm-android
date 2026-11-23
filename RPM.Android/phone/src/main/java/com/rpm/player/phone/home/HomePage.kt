@@ -107,6 +107,7 @@ import com.rpm.player.phone.library.FramedList
 import com.rpm.player.phone.library.PlaylistSleeve
 import com.rpm.player.core.library.listName
 import com.rpm.player.core.radio.RadioStation
+import com.rpm.player.core.radio.StationCards
 import com.rpm.player.core.radio.StationLogo
 import com.rpm.player.phone.design.Glyph
 import com.rpm.player.phone.design.Ink
@@ -126,6 +127,7 @@ import com.rpm.player.phone.ui.ArtGround
 import com.rpm.player.phone.ui.RunOff
 import com.rpm.player.phone.ui.rememberAccent
 import com.rpm.player.phone.radio.StationFace
+import com.rpm.player.phone.radio.stationCardWords
 import com.rpm.player.phone.design.TopPull
 import com.rpm.player.phone.design.growsWithPull
 import com.rpm.player.phone.design.rememberTopPull
@@ -272,6 +274,8 @@ class HomeActions(
  * for, or no banner at all. The launch keeps its wait cover until then.
  * @param quickAdded what the person put on Quick selection themselves ([QuickRef]), newest first. Shown after the
  * suggested mixtapes.
+ * @param stationCards the stations with a card picture from the admin. A station's card on the banner shows its picture
+ * and description, as on the radio home.
  */
 @Composable
 fun HomePage(
@@ -285,6 +289,7 @@ fun HomePage(
     onSwitch: (() -> Unit)?,
     onReady: () -> Unit,
     quickAdded: List<String> = emptyList(),
+    stationCards: StationCards = StationCards.NONE,
 ) {
     val collection = ready.collection
     val home = ready.home
@@ -367,7 +372,14 @@ fun HomePage(
             verticalArrangement = Arrangement.spacedBy(SECTIONS_APART),
         ) {
             if (banner.isNotEmpty()) {
-                Banner(banner, collection, images, logoStamp, overhang, statusBar, turns = onScreen && atTop, pull, roomsRun = onScreen, onDress = { dress = it }, onReady = onReady, actions = actions, Modifier.onSizeChanged { bannerFoot = it.height })
+                // A station's card as the radio home draws it: the admin's card picture and description.
+                val radioKicker = stringResource(R.string.Rpm_Tab_Radio)
+                Banner(
+                    banner, collection, images, logoStamp, overhang, statusBar, turns = onScreen && atTop, pull, roomsRun = onScreen,
+                    onDress = { dress = it }, onReady = onReady, actions = actions, Modifier.onSizeChanged { bannerFoot = it.height },
+                    stationWords = { stationCardWords(it, radioKicker) },
+                    stationPicture = { stationCards.addressOf(it) },
+                )
             } else {
                 Spacer(Modifier.height(heading + statusBar))
                 // No banner to wait for.
