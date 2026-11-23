@@ -19,6 +19,17 @@ class RadioHomePicksTest {
     }
 
     @Test
+    fun `the banner puts the dressed stations first, from past the end of the plain banner, in its own order`() {
+        val heard = listOf(station("h1"), station("h2"), station("h3"), station("h4"))
+        val local = listOf(station("l1"), station("l2"), station("l3"), station("l4"))
+        val dressed = setOf("l2", "h4")
+        val banner = RadioHomePicks.banner(heard, local) { it.uuid in dressed }
+        assertEquals(listOf("l2", "h4", "h1", "l1", "h2", "h3"), banner.map { it.station.uuid })
+        assertEquals(StationWhy.Local, banner[0].why)
+        assertEquals(StationWhy.Heard, banner[1].why)
+    }
+
+    @Test
     fun `the banner fills from one list when the other runs out, and lists a station once`() {
         val banner = RadioHomePicks.banner(listOf(station("a")), listOf(station("A"), station("b"), station("c")))
         assertEquals(listOf("a", "b", "c"), banner.map { it.station.uuid })

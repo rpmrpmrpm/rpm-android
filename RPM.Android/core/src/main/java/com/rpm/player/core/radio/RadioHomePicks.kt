@@ -33,16 +33,25 @@ object RadioHomePicks {
     /**
      * The banner: the stations heard most and the local stations, one of each in turn, heard first. When one list runs
      * out, the other fills the banner.
+     *
+     * The stations that are [dressed] come first, from anywhere in either list, in that same order; the others follow in
+     * that order. The radio home passes the stations with both a card picture and a description from the admin, because
+     * their cards are the best looking ones.
      */
-    fun banner(heard: List<RadioStation>, local: List<RadioStation>, most: Int = BANNER_MOST): List<StationPick> {
-        val picks = Picks(most)
+    fun banner(
+        heard: List<RadioStation>,
+        local: List<RadioStation>,
+        most: Int = BANNER_MOST,
+        dressed: (RadioStation) -> Boolean = { false },
+    ): List<StationPick> {
+        val picks = Picks(Int.MAX_VALUE)
         val max = maxOf(heard.size, local.size)
         for (at in 0 until max) {
             heard.getOrNull(at)?.let { picks.add(it, StationWhy.Heard) }
             local.getOrNull(at)?.let { picks.add(it, StationWhy.Local) }
-            if (picks.full) break
         }
-        return picks.list
+        val (first, rest) = picks.list.partition { dressed(it.station) }
+        return (first + rest).take(maxOf(0, most))
     }
 
     /** The quick selection: what the person pinned, in the order they pinned it, then their saved stations, then the suggestions. */

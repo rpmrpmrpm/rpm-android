@@ -84,6 +84,11 @@ import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
+import coil3.size.Scale
+import coil3.toBitmap
+import android.content.Context
 import com.rpm.player.core.R
 import com.rpm.player.core.cloud.CloudTrack
 import com.rpm.player.core.art.ArtScene
@@ -425,9 +430,21 @@ internal data class BannerDress(val wearing: Any?, val roomed: Boolean, val colo
 
 /**
  * What a station's banner card says over its title and under it, where the page has its own words for it. The radio
- * home says why the station is there; home says nothing more than that it is a station.
+ * home says why the station is there; home says nothing more than that it is a station. [lines] is how many lines
+ * [line] may take: two for the station's description, which the admin keeps to 80 characters, one for anything else.
  */
-internal class BannerWords(val kicker: String, val line: String?)
+internal class BannerWords(val kicker: String, val line: String?, val lines: Int = 1)
+
+/**
+ * A station's card picture ([com.rpm.player.core.radio.StationCards]) read to fill a card [width] by [height] pixels,
+ * or null where it could not be read. Not hardware-backed, so [RunOff] can draw it. The card and the banner's reading
+ * ahead make the same request, so a picture read ahead is found in the image loader's caches.
+ */
+private suspend fun readStationPicture(context: Context, images: ImageLoader, address: String, width: Int, height: Int): Bitmap? {
+    if (width <= 0 || height <= 0) return null
+    val request = ImageRequest.Builder(context).data(address).size(width, height).scale(Scale.FILL).allowHardware(false).build()
+    return (images.execute(request) as? SuccessResult)?.image?.toBitmap()
+}
 
 /** Where the ground starts to move to the card's colour: when this share of the way to the quick selection is scrolled. */
 private const val LEAD_FROM = 0.4f
@@ -488,6 +505,7 @@ internal fun Banner(
     actions: HomeActions,
     modifier: Modifier = Modifier,
     stationWords: ((RadioStation) -> BannerWords)? = null,
+    stationPicture: ((RadioStation) -> String?)? = null,
 ) {
     // Every card's room runs on one clock, so the copy of the first card after the last draws the same frame as the first
     // card when one takes the other's place (`RoomView.Zero.shared` on iPhone).
@@ -534,10 +552,18 @@ internal fun Banner(
             // The other cards' photographs are cut ahead, one at a time, once the front card has had its turn, so a card
             // that turns in has its photograph already (`HomeBannerView.preload` on iPhone).
             val portraits = (LocalContext.current.applicationContext as PhoneApplication).portraits
+            // A station's card picture is read ahead the same way, at the card's size.
+            val context = LocalContext.current
+            val density = LocalDensity.current
             LaunchedEffect(cards, scene, overhang > 0.dp) {
                 if (overhang <= 0.dp) return@LaunchedEffect
                 delay(PRELOAD_AFTER_MS)
                 for (card in cards.drop(1)) {
+                    val address = (card as? BannerCard.OfStation)?.station?.let { stationPicture?.invoke(it) }
+                    if (address != null) {
+                        with(density) { readStationPicture(context, images, address, maxWidth.roundToPx(), (BANNER + overhang).roundToPx()) }
+                        continue
+                    }
                     val record = (card as? BannerCard.OfAlbum)?.album?.takeIf { it.artist.isNotBlank() } ?: continue
                     portraits.portrait(record.artist, record.album, scene)
                 }
@@ -577,6 +603,7 @@ internal fun Banner(
                     onRunOff = { baked -> if (baked != null) runOffs[card] = baked else runOffs.remove(card) },
                     onRoom = { room, here -> if (here) rooms[card] = room else if (rooms[card] === room) rooms.remove(card) },
                     onDress = onDress, onReady = onReady, actions = actions, stationWords = stationWords,
+                    cardPicture = (cards[card] as? BannerCard.OfStation)?.station?.let { stationPicture?.invoke(it) },
                 )
             }
             BannerReflections(pager, cards.size, runOffs, rooms, plate, mirror, pull, platePx)
@@ -615,6 +642,10 @@ private fun bannerScene(width: Dp, overhang: Dp, statusBar: Dp): ArtScene {
  * writing is. It also shows the cover, the kind of card, the title and the artist. A list's card, a station's card and
  * a record's card whose artist has no photograph stand on the room instead ([LiveRoom]), moving while the card is in
  * front ([roomRuns]), on the banner's one clock ([roomZero]).
+ *
+ * A station's card with a card picture from the admin ([cardPicture], its address) shows that picture in place of the
+ * room, drawn as a record's photograph is: blurred and mirrored at the foot, with the same shade behind the words. It
+ * fills the card from its middle. Where it cannot be read, the card stands on its room.
  */
 @Composable
 private fun BannerCardView(
@@ -639,6 +670,7 @@ private fun BannerCardView(
     onReady: () -> Unit,
     actions: HomeActions,
     stationWords: ((RadioStation) -> BannerWords)?,
+    cardPicture: String?,
 ) {
     val album = (card as? BannerCard.OfAlbum)?.album
     val list = (card as? BannerCard.OfList)?.list
@@ -648,8 +680,17 @@ private fun BannerCardView(
     // The artist's square photograph, if its face is clear of the frame. Otherwise the backdrop, cropped around the
     // faces. This is what the iPhone's card asks for (`BackdropStore.portrait`).
     // Whether the photograph has been looked for, found or not: the front card is drawn once it has (`onReady`).
-    var looked by remember(album?.key, scene) { mutableStateOf(false) }
-    val photo by produceState(held?.takeIf { it.scene == scene }?.photo, album?.key, scene) {
+    var looked by remember(album?.key, scene, cardPicture) { mutableStateOf(false) }
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val photo by produceState(held?.takeIf { it.scene == scene }?.photo, album?.key, scene, cardPicture) {
+        if (cardPicture != null) {
+            // Read once the frame is known, as a photograph is cut, at the size the banner reads it ahead.
+            if (scene == null) return@produceState
+            value = with(density) { readStationPicture(context, images, cardPicture, width.roundToPx(), plate.roundToPx()) }
+            looked = true
+            return@produceState
+        }
         val record = album?.takeIf { it.artist.isNotBlank() }
         if (record == null) {
             looked = true
@@ -691,10 +732,11 @@ private fun BannerCardView(
     // A generated list's card stands on the room in the list's own colours, and its sleeve wears the list's frame, as
     // on the playlists view (`HomeBannerView`'s list card on iPhone).
     val framed = list?.let { FramedList.of(it, title) }
-    // A list's card and a station's stand on their room; a record's card stands on it once its photograph has been
-    // looked for and not found (`HomeFeatureCard.standingOnARoom`). The room is in a generated list's own colours, or
-    // in those of the card's cover or the station's logo. It moves only on the card in front, while home is showing.
-    val roomed = list != null || station != null || (looked && photo == null)
+    // A list's card and a station's without a card picture stand on their room; a record's card, and a station's with
+    // one, stand on it once the picture has been looked for and not found (`HomeFeatureCard.standingOnARoom`). The room
+    // is in a generated list's own colours, or in those of the card's cover or the station's logo. It moves only on the
+    // card in front, while home is showing.
+    val roomed = list != null || (station != null && cardPicture == null) || (looked && photo == null)
     val colours = rememberRoomColours(if (roomed && framed == null) station?.let { StationLogo.of(it, logoStamp) } ?: cover else null, images)
     // A card on its room dresses the page in the room's colours once they are known, so the page does not flash the
     // fallback blue first. Any other card dresses it in its picture.
@@ -783,7 +825,7 @@ private fun BannerCardView(
                 BasicText(kicker, style = display(12f).copy(color = Ink.white(0xCC), letterSpacing = pt(1.5f), shadow = shadow))
                 BasicText(title, maxLines = 2, overflow = TextOverflow.Ellipsis, style = displayBold(22f).copy(color = Color.White, shadow = shadow))
                 if (!subtitle.isNullOrEmpty()) {
-                    BasicText(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = system(13f).copy(color = Ink.white(0xD1), shadow = shadow))
+                    BasicText(subtitle, maxLines = words?.lines ?: 1, overflow = TextOverflow.Ellipsis, style = system(13f).copy(color = Ink.white(0xD1), shadow = shadow))
                 }
             }
         }

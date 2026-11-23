@@ -111,8 +111,10 @@ private const val POPULAR_ROW = 20
 /**
  * The radio tab's first page, built like home ([com.rpm.player.phone.home.HomePage]). From the top:
  *
- * - **The banner**: the stations heard most and the local stations, one of each in turn ([RadioHomePicks.banner]). Each
- *   card stands on its station's room, as home's radio card does, and says why the station is there.
+ * - **The banner**: the stations heard most and the local stations, one of each in turn ([RadioHomePicks.banner]), the
+ *   stations with both a card picture and a description from the admin first. Each card shows its card picture, or else
+ *   stands on its station's room, as home's radio card does. It says why the station is there, and under the name the
+ *   station's description, or else its genre and country.
  * - **Quick selection**, drawn as home's is: the stations the person pinned, then their saved stations, then stations
  *   suggested from the genres they listen to ([RadioHomePicks.quick]). A long press on any station pins it here
  *   ([StationHolds]).
@@ -122,8 +124,8 @@ private const val POPULAR_ROW = 20
  *
  * The round key on the title's line opens the tuner: the dial, the search and the full list of stations ([RadioPage]).
  *
- * The page is dressed in the front card's colours, as home is: each card stands on its station's room, and the
- * ground under the whole page takes that room's colours ([BannerDress]).
+ * The page is dressed in the front card's look, as home is: the ground under the whole page takes the card's picture,
+ * or the colours of the room it stands on ([BannerDress]).
  *
  * @param pinned the stations pinned to Quick selection, in the order they were pinned.
  * @param onScreen whether this page is the one showing: the banner turns only then.
@@ -151,7 +153,10 @@ fun RadioHome(
         (essential as? Essential.Read)?.takeIf { it.countryCode != null }?.let { rules.shown(it.stations) }.orEmpty().take(LOCAL_ROW)
     }
     val heard = remember(heardRows, rules) { rules.shown(heardRows.map { it.station }) }
-    val banner = remember(heard, local) { RadioHomePicks.banner(heard, local) }
+    // The stations the admin gave both a card picture and a description first: their cards are the best looking ones.
+    val banner = remember(heard, local, rules) {
+        RadioHomePicks.banner(heard, local) { rules.cards.addressOf(it) != null && it.edit?.description != null }
+    }
     val pinnedShown = remember(pinned, rules) { rules.shown(pinned) }
     val savedShown = remember(saved, rules) { rules.shown(saved.stations) }
     // The person's own stations, the pinned and saved ones first: they decide a tie between two genres.
@@ -186,8 +191,9 @@ fun RadioHome(
     val onRepeat = stringResource(R.string.Radio_HomeOnRepeat)
 
     Box(Modifier.fillMaxSize()) {
-        // The front card's colours, as home's ground takes them. The app's own ground until a card has dressed the page.
-        Box(Modifier.fillMaxSize().backdropSource(ground)) { ArtGround(null, images, colours = dress?.colours.orEmpty()) }
+        // The front card's picture or colours, as home's ground takes them. The app's own ground until a card has dressed
+        // the page.
+        Box(Modifier.fillMaxSize().backdropSource(ground)) { ArtGround(dress?.wearing, images, colours = dress?.colours.orEmpty()) }
         Column(
             Modifier
                 .fillMaxSize()
@@ -212,8 +218,15 @@ fun RadioHome(
                     onReady = {},
                     actions = actions,
                     stationWords = { station ->
-                        BannerWords(if (why[station.uuid] == StationWhy.Local) nearYou else onRepeat, shortLine(station))
+                        // The admin's description where there is one, on up to two lines, else the genre and the country.
+                        val described = station.edit?.description
+                        BannerWords(
+                            if (why[station.uuid] == StationWhy.Local) nearYou else onRepeat,
+                            described ?: shortLine(station),
+                            lines = if (described == null) 1 else 2,
+                        )
                     },
+                    stationPicture = { rules.cards.addressOf(it) },
                 )
             } else {
                 Spacer(Modifier.height(heading + statusBar))
