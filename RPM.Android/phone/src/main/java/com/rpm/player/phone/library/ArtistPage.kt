@@ -446,13 +446,13 @@ private class Baked(val plate: Dp, val depth: Dp, val image: ImageBitmap)
 private val BAKES = LruCache<Baking, Baked>(4)
 
 /** How long the photograph and its blur take to fade in once both are ready (`.easeOut(duration: 0.35)` on iPhone). */
-private const val PHOTO_FADE_MS = 350
+internal const val PHOTO_FADE_MS = 350
 
 /** How long a new bake of the blur takes to fade in over the one on screen. */
 private const val REBAKE_FADE_MS = 250
 
 /** Where the photograph's blur starts, as a share of the plate from the top (`ArtistPage.blurFrom` on iPhone). */
-private const val BLUR_FROM = 0.6f
+internal const val BLUR_FROM = 0.6f
 
 /**
  * The photograph behind the band, as wide as the page and as tall, blurred toward its foot and mirrored [depth] under it,
@@ -727,8 +727,8 @@ private val INVERTED = ColorFilter.colorMatrix(
 )
 
 /** The soft outline on every text of the page ([LocalTextFeather]): how far it is feathered, and how dark it is. */
-private val FEATHER = 5.dp
-private const val FEATHER_ALPHA = 0.55f
+internal val FEATHER = 5.dp
+internal const val FEATHER_ALPHA = 0.55f
 
 /**
  * The band's title, and whose it is: the artist's logo, or the artist's name if there is no logo or it could

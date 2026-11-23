@@ -3,6 +3,38 @@ package com.rpm.player.phone.library
 import com.rpm.player.phone.design.rememberPicture
 import com.rpm.player.phone.design.UnderHeader
 import android.graphics.Paint
+import android.graphics.Bitmap
+import android.util.LruCache
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.IntSize
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
+import coil3.size.Scale
+import coil3.toBitmap
+import com.rpm.player.core.room.GroundLead
+import com.rpm.player.core.room.Rgb
+import com.rpm.player.phone.design.LocalTextFeather
+import com.rpm.player.phone.design.TopPull
+import com.rpm.player.phone.design.rememberTopPull
+import com.rpm.player.phone.ui.ArtGround
+import com.rpm.player.phone.ui.RunOff
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -240,7 +272,7 @@ internal fun GenrePicture(genre: String, images: ImageLoader, modifier: Modifier
     val colour = remember(genre) { genreColour(genre) }
     BoxWithConstraints(modifier.background(colour)) {
         AsyncImage(
-            model = rememberPicture("file:///android_asset/genre-photos/${GenreMarks.photoName(genre)}.jpg", maxWidth, maxHeight),
+            model = rememberPicture(genrePhoto(genre), maxWidth, maxHeight),
             contentDescription = null,
             imageLoader = images,
             contentScale = ContentScale.Crop,
@@ -310,6 +342,11 @@ private fun GenreLettering(genre: String, modifier: Modifier) {
  * a wall. The shelves are [GenreShelves]. They are worked out when the page is drawn for a genre, or for a
  * collection that has not been drawn before.
  *
+ * The photograph is drawn as the artist page draws its band ([HeadPhotograph]): blurred toward its foot and mirrored
+ * one plate deep under the first rows, fading out into the page, and grown about its foot while the page is pulled down
+ * past its top ([TopPull]). The page stands on [ArtGround] led by the genre's colour ([genreLead]), and its text takes
+ * the soft outline the artist page has ([LocalTextFeather]), so white text stays readable on the bright genres.
+ *
  * Not yet implemented: a song's menu on the most-played songs.
  */
 @Composable
@@ -341,17 +378,28 @@ fun GenrePage(
     val spoken = remember(genre) { com.rpm.player.core.library.Genres.spoken(genre.name) }
     val picks = HomeActions(onOpen = onOpen, onOpenList = onList, onPlay = onPlay, onTune = {})
     fun albums(keys: List<String>) = keys.mapNotNull { byKey[it] }
+    val pull = rememberTopPull()
+    val lead = remember(genre.name) { genreLead(genre.name) }
+    val photo = genrePhoto(genre.name)
+    val feather = with(density) { Shadow(Color.Black.copy(alpha = FEATHER_ALPHA), Offset.Zero, blurRadius = FEATHER.toPx()) }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val width = maxWidth
         val height = maxHeight
         val (columns, art) = WallLayout.wall(width.value.toDouble(), 194.0, EDGE, WALL_GUTTER, WALL_COLUMNS)
         val caption = remember(art) { AlbumCaption.of(art) }
+        val plate = minOf(width * HEAD_SHAPE, height * HEAD_MOST) + statusBar
         Box(Modifier.fillMaxSize().backdropSource(page)) {
-            VinylGround()
-            LazyColumn(state = rows, modifier = Modifier.fillMaxSize().dissolvesAtTop(statusBar + BACK_ROW) { rows.scrolled() }) {
+            // The genre's colour under the whole page, with its photograph blurred over it faintly, as the artist page
+            // stands on its photograph's colour. The reflection under the head fades out into it.
+            ArtGround(photo, images, lead = lead)
+            // The photograph and the rows dissolve together under the status bar and the back key.
+            Box(Modifier.fillMaxSize().dissolvesAtTop(statusBar + BACK_ROW) { rows.scrolled() }) {
+            HeadPhotograph(genre.name, photo, lead, width, plate, rows, pull, images)
+            CompositionLocalProvider(LocalTextFeather provides feather) {
+            LazyColumn(state = rows, modifier = Modifier.fillMaxSize(), overscrollEffect = pull) {
                 item(key = "head") {
-                    Head(genre.name, albums = genre.albums.size, acts = shelves.actCount, minOf(width * HEAD_SHAPE, height * HEAD_MOST) + statusBar, images)
+                    Head(genre.name, albums = genre.albums.size, acts = shelves.actCount, plate)
                 }
                 if (shelves.added.isNotEmpty()) {
                     item(key = "added") {
@@ -429,6 +477,8 @@ fun GenrePage(
                 }
                 item(key = "foot") { Spacer(Modifier.height(FOOT + bottomRoom)) }
             }
+            }
+            }
         }
         Box(Modifier.padding(top = statusBar).height(BACK_ROW).padding(start = 20.dp), contentAlignment = Alignment.Center) {
             BackKey(page, onBack)
@@ -437,15 +487,12 @@ fun GenrePage(
 }
 
 /**
- * The genre's photograph, as wide as the page. It fades into the page's background at its foot. The name and the counts
- * are drawn on it.
+ * The head: as tall as the photograph's plate, with the name in its lettering and the counts on its foot. The
+ * photograph itself is drawn behind the list ([HeadPhotograph]), so the head takes its place in the rows and no more.
  */
 @Composable
-private fun Head(genre: String, albums: Int, acts: Int, tall: Dp, images: ImageLoader) {
+private fun Head(genre: String, albums: Int, acts: Int, tall: Dp) {
     Box(Modifier.fillMaxWidth().height(tall)) {
-        GenrePicture(genre, images, Modifier.fillMaxSize())
-        // Fades into the page's background at the foot, so the content below does not start on a hard edge.
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.7f to Ink.ground.copy(alpha = 0f), 1f to Ink.ground.copy(alpha = 0.85f))))
         Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 20.dp).padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             GenreLettering(genre, Modifier.fillMaxWidth().height(52.dp))
             BasicText(stringResource(R.string.Genres_InLibrary, albums, acts), style = kicker())
@@ -457,3 +504,150 @@ private fun Head(genre: String, albums: Int, acts: Int, tall: Dp, images: ImageL
 private fun Heading(text: String) {
     BasicText(text, Modifier.padding(horizontal = 20.dp), style = display(19f).copy(color = Color.White))
 }
+
+/** A genre's portrait photograph, shipped with the app (`GenreLooks.photo` on iPhone). */
+private fun genrePhoto(genre: String): String = "file:///android_asset/genre-photos/${GenreMarks.photoName(genre)}.jpg"
+
+/**
+ * The genre's colour, no brighter than white text allows ([GroundLead], `GenreLooks.lead` on iPhone). The genre page
+ * stands on it, and the foot of its photograph is washed with it, so the name and the rows over the photograph's
+ * reflection stay readable on the bright colours of the palette. A genre with no colour stands on the app's ground.
+ */
+private fun genreLead(genre: String): Rgb {
+    val glow = GenreMarks.of(genre)?.let { mark -> GenreMarks.channels(mark).let { (r, g, b) -> Rgb(r, g, b) } }
+    return GroundLead.of(glow = glow, dominant = null) ?: Ink.ground.let { Rgb(it.red, it.green, it.blue) }
+}
+
+/**
+ * The photograph behind the genre page's head (`GenrePage.photograph` on iPhone): the photograph as wide as the page and
+ * one [plate] tall, with the genre's colour washed in toward its foot ([HeadPlate]), blurred toward its foot and mirrored
+ * one plate deep under it, fading out into the page's ground ([RunOff], with the artist band's [BLUR_FROM] and
+ * reflection).
+ *
+ * **Behind the list, not in it.** The mirror runs under the first rows, past the head's own row, so it is drawn under
+ * the whole list and moved with the head as the list scrolls ([headTop]); in the list it would vanish with the head's
+ * row while its lower half was still on screen. Only its layer reads the scroll and the pull.
+ *
+ * While the page is pulled down past its top, it comes down with the list and is scaled up about its foot by just enough
+ * that its top stays at the top of the screen ([TopPull], `growsWithPull` on iPhone). The name is not scaled.
+ *
+ * **Nothing pops in.** The photograph is read and baked off the main thread, and the photograph and its bake fade in
+ * together ([PHOTO_FADE_MS]), as on the artist page. A bake is kept for the genre ([HEAD_BAKES]), so a page shown again
+ * starts with it, at full strength.
+ */
+@Composable
+private fun HeadPhotograph(genre: String, photo: String, lead: Rgb, width: Dp, plate: Dp, rows: LazyListState, pull: TopPull, images: ImageLoader) {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val platePx = with(density) { plate.toPx() }
+    val wide = with(density) { width.roundToPx() }.coerceAtLeast(1)
+    val tall = with(density) { plate.roundToPx() }.coerceAtLeast(1)
+    val key = HeadBaking(genre, width, plate)
+    val kept = remember(key) { HEAD_BAKES.get(key) }
+    var made by remember(key) { mutableStateOf(kept) }
+    val shown = remember(key) { Animatable(if (kept != null) 1f else 0f) }
+    LaunchedEffect(key) {
+        if (made != null) return@LaunchedEffect
+        // Filled, not fitted: the photograph is a portrait and the plate is wider than it is tall.
+        val request = ImageRequest.Builder(context).data(photo).size(wide, tall).scale(Scale.FILL).allowHardware(false).build()
+        val picture = (images.execute(request) as? SuccessResult)?.image?.toBitmap()
+        val baked = withContext(Dispatchers.Default) { HeadPlate.make(picture, lead, width.value, plate.value) }
+        HEAD_BAKES.put(key, baked)
+        made = baked
+        shown.animateTo(1f, tween(PHOTO_FADE_MS, easing = LinearOutSlowInEasing))
+    }
+    val drawn = made ?: return
+    val ink = remember(lead) { Color(lead.r, lead.g, lead.b) }
+    Box(
+        Modifier.fillMaxWidth().height(plate * 2).graphicsLayer {
+            val top = headTop(rows, platePx)
+            if (top == null) {
+                alpha = 0f
+                return@graphicsLayer
+            }
+            alpha = shown.value
+            translationY = top + pull.pulled
+            val grown = 1f + pull.pulled / platePx.coerceAtLeast(1f)
+            scaleX = grown
+            scaleY = grown
+            // The plate's foot, half way down the plate and its mirror.
+            transformOrigin = TransformOrigin(0.5f, 0.5f)
+        },
+    ) {
+        // The sharp face, at the screen's resolution: the colour fills the plate with or without a photograph.
+        Box(Modifier.fillMaxWidth().height(plate).background(ink)) {
+            drawn.picture?.let { Image(it, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(*washStops(ink))))
+        }
+        // The blur toward the foot and the mirror under it, over the sharp face.
+        Box(
+            Modifier.matchParentSize().drawBehind {
+                val baked = drawn.runOff
+                val scale = size.width / baked.width
+                drawImage(baked, dstSize = IntSize(size.width.roundToInt(), (baked.height * scale).roundToInt()), filterQuality = FilterQuality.Low)
+            },
+        )
+    }
+}
+
+/**
+ * Where the head's top is, in pixels from the top of the list, or null when neither the head nor the row after it is
+ * on screen and so the mirror is off it too. Read in a layer, so a scroll moves the photograph and recomposes nothing.
+ */
+private fun headTop(rows: LazyListState, head: Float): Float? {
+    if (rows.firstVisibleItemIndex == 0) return -rows.firstVisibleItemScrollOffset.toFloat()
+    val next = rows.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 } ?: return null
+    return next.offset - head
+}
+
+/** The genre's colour washed in toward the photograph's foot, where the name stands, as on the genre's card. */
+private fun washStops(ink: Color): Array<Pair<Float, Color>> = arrayOf(
+    0.35f to ink.copy(alpha = 0f),
+    0.72f to ink.copy(alpha = 0.6f),
+    1f to ink.copy(alpha = 0.92f),
+)
+
+/** The head's photograph as read ([picture], null for a genre with none) and its run-off baked over it. */
+private class HeadPlate(val picture: ImageBitmap?, val runOff: ImageBitmap) {
+    companion object {
+        /** Bakes the plate [width] by [plate] dp: the face (colour, photograph, wash) drawn small, then blurred toward its
+         * foot and mirrored one plate deep ([RunOff.bake]). Call it off the main thread. */
+        fun make(picture: Bitmap?, lead: Rgb, width: Float, plate: Float): HeadPlate {
+            val w = width.roundToInt().coerceAtLeast(1)
+            val p = plate.roundToInt().coerceAtLeast(2)
+            val face = Bitmap.createBitmap(w, p, Bitmap.Config.ARGB_8888)
+            android.graphics.Canvas(face).apply {
+                val colour = android.graphics.Color.rgb((lead.r * 255).roundToInt(), (lead.g * 255).roundToInt(), (lead.b * 255).roundToInt())
+                drawColor(colour)
+                if (picture != null) {
+                    // The part of the photograph that ContentScale.Crop shows in the plate.
+                    val fit = maxOf(w.toFloat() / picture.width, p.toFloat() / picture.height)
+                    val cropW = (w / fit).roundToInt().coerceIn(1, picture.width)
+                    val cropH = (p / fit).roundToInt().coerceIn(1, picture.height)
+                    val left = (picture.width - cropW) / 2
+                    val top = (picture.height - cropH) / 2
+                    drawBitmap(picture, android.graphics.Rect(left, top, left + cropW, top + cropH), android.graphics.Rect(0, 0, w, p), Paint(Paint.FILTER_BITMAP_FLAG))
+                }
+                val stops = washStops(Color(colour))
+                val wash = Paint().apply {
+                    shader = android.graphics.LinearGradient(
+                        0f, 0f, 0f, p.toFloat(),
+                        IntArray(stops.size) { stops[it].second.toArgb() },
+                        FloatArray(stops.size) { stops[it].first },
+                        android.graphics.Shader.TileMode.CLAMP,
+                    )
+                }
+                drawRect(0f, 0f, w.toFloat(), p.toFloat(), wash)
+            }
+            val runOff = RunOff.bake(face, width, plate, plate, BLUR_FROM, RunOff.Reflection.Blurred, darkened = false)
+            face.recycle()
+            return HeadPlate(picture?.asImageBitmap(), runOff)
+        }
+    }
+}
+
+/** A bake is for one genre at one width and plate. */
+private data class HeadBaking(val genre: String, val width: Dp, val plate: Dp)
+
+/** The heads baked lately: the genre open and the one it was opened from. */
+private val HEAD_BAKES = LruCache<HeadBaking, HeadPlate>(3)
