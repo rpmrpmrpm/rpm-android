@@ -294,7 +294,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var opened by rememberSaveable(stateSaver = Step.stack) { mutableStateOf(listOf<Step>()) }
     var homeOpened by rememberSaveable(stateSaver = Step.stack) { mutableStateOf(listOf<Step>()) }
-    // The radio tab's stack: its home, and over it the tuner ([RADIO_TUNER]) or the tuner opened to search ([RADIO_SEARCH]).
+    // The radio tab's stack: its home, and over it the tuner ([RADIO_TUNER]).
     var radioOpened by rememberSaveable { mutableStateOf(listOf<String>()) }
     var playerUp by rememberSaveable { mutableStateOf(false) }
     var chrome by remember { mutableStateOf(0.dp) }
@@ -788,8 +788,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                     }
                     // The radio's home, and the tuner sliding in over it, as a page opened on home does.
                     Tab.Radio -> AnimatedContent(targetState = radioOpened, transitionSpec = { pushOrPop() }, label = "radio stack") { stack ->
-                        val step = stack.lastOrNull()
-                        if (step == null) {
+                        if (stack.isEmpty()) {
                             RadioHome(
                                 services.radio,
                                 collection,
@@ -799,7 +798,6 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                                 onScreen = tab == Tab.Radio && radioOpened.isEmpty(),
                                 onTune = homeActions.onTune,
                                 onOpenTuner = { radioOpened = radioOpened + RADIO_TUNER },
-                                onSearch = { radioOpened = radioOpened + RADIO_SEARCH },
                             )
                         } else {
                             RadioPage(
@@ -811,7 +809,6 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                                 onTune = homeActions.onTune,
                                 // The saved stations of a shared collection are its owner's, and are never changed from here.
                                 onSave = { station -> if (services.radio.saved.value.mine) services.radio.favorites.toggle(station) },
-                                searching = step == RADIO_SEARCH,
                                 onBack = { radioOpened = radioOpened.dropLast(1) },
                             )
                         }
@@ -1149,9 +1146,8 @@ private fun Stage(shown: Boolean, now: NowPlaying?, controller: Player?, service
  */
 private const val HOME_STATIONS = 7
 
-/** The radio tab's pages over its home: the tuner, and the tuner opened with its search field ready. */
+/** The radio tab's page over its home: the tuner. */
 private const val RADIO_TUNER = "tuner"
-private const val RADIO_SEARCH = "search"
 
 /**
  * A page that is opened slides in from the right, over the page it was opened from. That page moves back by a

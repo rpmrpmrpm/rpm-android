@@ -21,6 +21,8 @@ import com.rpm.player.core.room.Rgb
 /**
  * [picture] is anything the image loader can draw: a record's cover, or an artist's photograph on the home page.
  * [accent] is the cover's accent ([rememberAccent]), laid over the blurred picture; none for a photograph.
+ * [colours] are the colours of a room, from the top of the page to its foot: the ground of a page that shows a room
+ * and no picture, as home does under a banner card that stands on its room. Fewer than two, and there is none.
  *
  * The background of a page that uses a record as its look. The iPhone app has the same `ArtGround`
  * (RPMUI/ArtGround.swift), and the album page and the player both use it. It is the app's own background,
@@ -30,13 +32,15 @@ import com.rpm.player.core.room.Rgb
  * it loads ([BlurredPicture]), not on every frame.
  */
 @Composable
-fun ArtGround(picture: Any?, images: ImageLoader, accent: Rgb? = null, lead: Rgb? = null) {
+fun ArtGround(picture: Any?, images: ImageLoader, accent: Rgb? = null, lead: Rgb? = null, colours: List<Rgb> = emptyList()) {
     val night = LocalNightMode.current
     Box(Modifier.fillMaxSize()) {
         VinylGround()
         // A new picture fades in over the old one, with its colour. The iPhone app does the same when the record changes.
-        Crossfade(picture to lead, animationSpec = tween(350), label = "ground") { (shown, colour) ->
+        Crossfade(Worn(picture, lead, colours), animationSpec = tween(350), label = "ground") { (shown, colour, ink) ->
             val led = if (night) null else colour
+            // Under the picture, not instead of it: a room's colours fill the page from top to foot.
+            if (ink.size > 1) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(ink.map { it.color() })))
             // A page with a colour and no picture (an artist's room) stands on the colour alone.
             if (shown == null) {
                 if (led != null) Box(Modifier.fillMaxSize().background(led.color()))
@@ -97,3 +101,6 @@ private val NIGHT_VEIL = Brush.verticalGradient(
     0.42f to Color.Black.copy(alpha = 0x8C / 255f),
     1f to Color.Black.copy(alpha = 0xBF / 255f),
 )
+
+/** What the ground shows: the picture, the leading colour and a room's colours. A change of any of them fades in. */
+private data class Worn(val picture: Any?, val lead: Rgb?, val colours: List<Rgb>)

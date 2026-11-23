@@ -144,6 +144,7 @@ import com.rpm.player.phone.ui.roomReflection
 import com.rpm.player.core.room.PaintedRoom
 import com.rpm.player.phone.ui.rememberRoomColours
 import com.rpm.player.core.room.RoomPalette
+import com.rpm.player.core.room.Rgb
 import com.rpm.player.core.playback.Tapped
 import com.rpm.player.phone.ui.LocalNightMode
 import com.rpm.player.phone.ui.rememberLead
@@ -341,7 +342,7 @@ fun HomePage(
             // The ground on the front card's picture. With a colour coming in over it, it is taken away once covered,
             // so its picture is not drawn under an opaque layer.
             Box(Modifier.fillMaxSize().then(if (lead != null) Modifier.graphicsLayer { alpha = if (share() >= 1f) 0f else 1f } else Modifier)) {
-                ArtGround(wearing, images, accent)
+                ArtGround(wearing, images, accent, colours = dress?.colours.orEmpty())
             }
             // **Lower down the page, the card's colour leads the ground**, with its picture faint over it, as on the
             // artist page and the album page. The blurred picture is the ground only while the banner is in view. Its
@@ -407,10 +408,19 @@ fun HomePage(
 }
 
 /**
- * What the banner's front card dresses the page in: the picture it wears, its photograph or its cover, and whether it
- * stands on a room, which gives the page no leading colour (`BannerDress` on iPhone).
+ * What the banner's front card dresses the page in: the picture it wears, its photograph or its cover, or, for a card that
+ * stands on a room, the room's colours and no picture. A card on a room gives the page no leading colour (`BannerDress`
+ * on iPhone).
  */
-internal data class BannerDress(val wearing: Any, val roomed: Boolean)
+internal data class BannerDress(val wearing: Any?, val roomed: Boolean, val colours: List<Rgb> = emptyList()) {
+    companion object {
+        /**
+         * A card on its room: no picture, and the room's colours from the top of the page to its foot, the vivid accent
+         * at the top through the main tone to the room's dark ground (`BannerDress.colours` on iPhone).
+         */
+        fun onRoom(room: RoomPalette) = BannerDress(null, roomed = true, colours = listOf(room.glow, room.tint, room.ground))
+    }
+}
 
 /**
  * What a station's banner card says over its title and under it, where the page has its own words for it. The radio
@@ -497,7 +507,12 @@ internal fun Banner(
     // and that must not stop the step itself.
     val stepping = rememberCoroutineScope()
     // Which cards have their photograph and run-off in, or have none to wait for, by card.
-    val cardReady = remember(cards) { mutableStateMapOf<Int, Boolean>() }
+    //
+    // This map, and the run-offs and rooms below, are NOT started again when the list of cards changes: each card reports
+    // only when its own state changes, so a card that stays where it is would never report again, and its reflection
+    // would be lost. That happens on the radio home, whose local stations arrive after the first cards are drawn. A card
+    // that is replaced reports its own state, which takes the old card's place.
+    val cardReady = remember { mutableStateMapOf<Int, Boolean>() }
     LaunchedEffect(ring, turns, pager) {
         if (!ring || !turns) return@LaunchedEffect
         snapshotFlow { pager.settledPage to pager.isScrollInProgress }.collectLatest { (at, moving) ->
@@ -531,14 +546,14 @@ internal fun Banner(
             val platePx = with(LocalDensity.current) { plate.toPx() }
             // Each card's photograph as baked for its run-off and reflection ([RunOff]), by card. The strip draws the
             // reflections from here, under the dots and the rows.
-            val runOffs = remember(cards) { mutableStateMapOf<Int, ImageBitmap>() }
+            val runOffs = remember { mutableStateMapOf<Int, ImageBitmap>() }
             // Each card's photograph and run-off once made, by card, so a card that turns in again starts with them and
             // does not cut and bake them again in front of the person (Chivan, 2026-11-04: "the photo loads in again
             // every time"). The pager lets go of a card once it is out of view.
             val held = remember(cards) { mutableMapOf<Int, HeldPhoto>() }
             // Each card's room, by card, for a card that stands on one: the strip turns it over under the card as its
             // reflection (`RoomView.fold` on iPhone).
-            val rooms = remember(cards) { mutableStateMapOf<Int, PaintedRoom>() }
+            val rooms = remember { mutableStateMapOf<Int, PaintedRoom>() }
             // Scaled up about the card's foot while the page is pulled down past its top, so the picture zooms and the
             // page's ground does not show above it (`growsWithPull` on iPhone). The whole strip is scaled, because a
             // pager clips its pages to itself; the writing is scaled back (`keepsSize`), so only the picture grows.
@@ -679,8 +694,17 @@ private fun BannerCardView(
     // looked for and not found (`HomeFeatureCard.standingOnARoom`). The room is in a generated list's own colours, or
     // in those of the card's cover or the station's logo. It moves only on the card in front, while home is showing.
     val roomed = list != null || station != null || (looked && photo == null)
-    LaunchedEffect(live, wearing, roomed) { if (live && wearing != null) onDress(BannerDress(wearing, roomed)) }
     val colours = rememberRoomColours(if (roomed && framed == null) station?.let { StationLogo.of(it, logoStamp) } ?: cover else null, images)
+    // A card on its room dresses the page in the room's colours once they are known, so the page does not flash the
+    // fallback blue first. Any other card dresses it in its picture.
+    val room = if (roomed) framed?.look?.room ?: colours else null
+    LaunchedEffect(live, wearing, roomed, room) {
+        if (!live) return@LaunchedEffect
+        when {
+            room != null -> onDress(BannerDress.onRoom(room))
+            !roomed && wearing != null -> onDress(BannerDress(wearing, roomed = false))
+        }
+    }
     val seed = album?.key ?: station?.uuid ?: title
     val subtitle = album?.artist ?: words?.line
     // The photograph and its run-off come in together, faded in: drawn apart, the photograph shows for a fifth of a

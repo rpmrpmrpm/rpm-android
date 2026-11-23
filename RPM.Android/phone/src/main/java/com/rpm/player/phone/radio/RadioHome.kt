@@ -66,7 +66,6 @@ import com.rpm.player.core.radio.StationPick
 import com.rpm.player.core.radio.StationWhy
 import com.rpm.player.core.radio.countryName
 import com.rpm.player.phone.design.Backdrop
-import com.rpm.player.phone.design.GlassButton
 import com.rpm.player.phone.design.GlassKey
 import com.rpm.player.phone.design.Glyph
 import com.rpm.player.phone.design.Ink
@@ -83,6 +82,7 @@ import com.rpm.player.phone.design.rememberTopPull
 import com.rpm.player.phone.design.system
 import com.rpm.player.phone.design.tapsToTop
 import com.rpm.player.phone.home.Banner
+import com.rpm.player.phone.home.BannerDress
 import com.rpm.player.phone.home.BannerWords
 import com.rpm.player.phone.home.HomeActions
 import com.rpm.player.phone.home.PANELS_APART
@@ -95,7 +95,7 @@ import com.rpm.player.phone.home.ROW_ART
 import com.rpm.player.phone.home.SECTIONS_APART
 import com.rpm.player.phone.library.FOOT
 import com.rpm.player.phone.ui.RecordSpinner
-import com.rpm.player.phone.ui.VinylGround
+import com.rpm.player.phone.ui.ArtGround
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -112,7 +112,6 @@ private const val POPULAR_ROW = 20
  *
  * - **The banner**: the stations heard most and the local stations, one of each in turn ([RadioHomePicks.banner]). Each
  *   card stands on its station's room, as home's radio card does, and says why the station is there.
- * - **The key to the tuner**: the dial and the full list of stations ([RadioPage]).
  * - **Quick selection**, drawn as home's is: the stations the person pinned, then their saved stations, then stations
  *   suggested from the genres they listen to ([RadioHomePicks.quick]). A long press on any station pins it here
  *   ([StationHolds]).
@@ -120,7 +119,10 @@ private const val POPULAR_ROW = 20
  *   none for that country: the stations read then are the world's, and the last row already shows those.
  * - **A row of the world's most played stations**, without the local ones.
  *
- * The round key on the title's line searches the stations: it opens the tuner with the search field ready.
+ * The round key on the title's line opens the tuner: the dial, the search and the full list of stations ([RadioPage]).
+ *
+ * The page is dressed in the front card's colours, as home is: each card stands on its station's room, and the
+ * ground under the whole page takes that room's colours ([BannerDress]).
  *
  * @param pinned the stations pinned to Quick selection, in the order they were pinned.
  * @param onScreen whether this page is the one showing: the banner turns only then.
@@ -135,7 +137,6 @@ fun RadioHome(
     onScreen: Boolean,
     onTune: (RadioStation) -> Unit,
     onOpenTuner: () -> Unit,
-    onSearch: () -> Unit,
 ) {
     val essential by radio.essential.collectAsStateWithLifecycle()
     val rules by radio.rules.collectAsStateWithLifecycle()
@@ -170,9 +171,10 @@ fun RadioHome(
     val density = LocalDensity.current
     val statusBar = WindowInsets.statusBars.asPaddingValues(density).calculateTopPadding()
     var heading by remember { mutableStateOf(0.dp) }
+    var dress by remember { mutableStateOf<BannerDress?>(null) }
     val scroll = rememberScrollState()
     ScrollsToTop(scroll)
-    // The ground, which the search key frosts, and the rows as they scroll, which the band under the title frosts.
+    // The ground, which the tuner key frosts, and the rows as they scroll, which the band under the title frosts.
     val ground = rememberBackdrop()
     val rows = rememberBackdrop()
     val pull = rememberTopPull()
@@ -183,7 +185,8 @@ fun RadioHome(
     val onRepeat = stringResource(R.string.Radio_HomeOnRepeat)
 
     Box(Modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize().backdropSource(ground)) { VinylGround() }
+        // The front card's colours, as home's ground takes them. The app's own ground until a card has dressed the page.
+        Box(Modifier.fillMaxSize().backdropSource(ground)) { ArtGround(null, images, colours = dress?.colours.orEmpty()) }
         Column(
             Modifier
                 .fillMaxSize()
@@ -204,7 +207,7 @@ fun RadioHome(
                     turns = onScreen && atTop,
                     pull,
                     roomsRun = onScreen,
-                    onDress = {},
+                    onDress = { dress = it },
                     onReady = {},
                     actions = actions,
                     stationWords = { station ->
@@ -214,7 +217,6 @@ fun RadioHome(
             } else {
                 Spacer(Modifier.height(heading + statusBar))
             }
-            TunerKey(onOpenTuner)
             QuickStations(quick, images, rules.logoStamp, onTune)
             if (local.isNotEmpty()) StationShelf(stringResource(R.string.Radio_HomeLocal), local, images, rules.logoStamp, onTune)
             if (popular.isNotEmpty()) StationShelf(stringResource(R.string.Radio_HomePopular), popular, images, rules.logoStamp, onTune)
@@ -235,34 +237,24 @@ fun RadioHome(
                 .onSizeChanged { heading = with(density) { it.height.toDp() } + 10.dp },
         )
         // Where home has its collections key: on the title's line, 16 from the edge, over the title's band.
-        SearchKey(ground, onSearch, Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 4.dp, end = 16.dp))
+        TunerKey(ground, onOpenTuner, Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 4.dp, end = 16.dp))
     }
 }
 
-/** The round glass key that searches the stations. */
+/** The round glass key that opens the tuner. */
 @Composable
-private fun SearchKey(backdrop: Backdrop, onSearch: () -> Unit, modifier: Modifier) {
+private fun TunerKey(backdrop: Backdrop, onOpenTuner: () -> Unit, modifier: Modifier) {
     val haptics = LocalHapticFeedback.current
-    val label = stringResource(R.string.Radio_SearchPlaceholder)
+    val label = stringResource(R.string.Radio_HomeTuner)
     GlassKey(
         backdrop,
         onClick = {
             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            onSearch()
+            onOpenTuner()
         },
         modifier = modifier.semantics { contentDescription = label },
     ) {
-        BasicText(Glyph.search, style = icon(15f).copy(color = Ink.white(0xB8)))
-    }
-}
-
-/** The wide key under the banner that opens the tuner. */
-@Composable
-private fun TunerKey(onOpenTuner: () -> Unit) {
-    GlassButton(onClick = onOpenTuner, modifier = Modifier.padding(horizontal = 20.dp), height = 50.dp, radius = 12.dp) { style ->
-        BasicText(Glyph.radio, style = icon(14f).copy(color = style.color))
-        Spacer(Modifier.width(10.dp))
-        BasicText(stringResource(R.string.Radio_HomeTuner), style = style)
+        BasicText(Glyph.tuner, style = icon(15f).copy(color = Ink.white(0xB8)))
     }
 }
 

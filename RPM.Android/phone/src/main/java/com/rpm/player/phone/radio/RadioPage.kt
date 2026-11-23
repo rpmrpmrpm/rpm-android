@@ -47,7 +47,6 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -131,7 +130,6 @@ private val ORDERS = listOf(
  * @param tuned the id of the station that is playing. The row's mark and the needle follow it.
  * @param said what that station announces now.
  * @param onSave saves a station, or unsaves it. It is only offered for the person's own saved stations.
- * @param searching whether the page opens with the search field ready to type in: the radio home's search key opens it so.
  * @param onBack puts the page away, back to the radio home ([RadioHome]). The page then has a back key over its title.
  */
 @Composable
@@ -143,7 +141,6 @@ fun RadioPage(
     bottomRoom: Dp,
     onTune: (RadioStation) -> Unit,
     onSave: (RadioStation) -> Unit,
-    searching: Boolean = false,
     onBack: (() -> Unit)? = null,
 ) {
     val tuner = radio.tuner
@@ -156,14 +153,7 @@ fun RadioPage(
     val focus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     var picking by remember { mutableStateOf<Picking?>(null) }
-    val keyboard = LocalSoftwareKeyboardController.current
     if (onBack != null) BackHandler(onBack = onBack)
-    LaunchedEffect(searching) {
-        if (searching) {
-            focus.requestFocus()
-            keyboard?.show()
-        }
-    }
 
     // Each time the radio is shown: the directory, the rules, and the saved stations (the owner's again on a shared
     // collection), as the iPhone's tasks on the radio tab.
