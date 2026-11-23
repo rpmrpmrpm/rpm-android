@@ -337,9 +337,10 @@ fun NowPlayingSheet(
             }
             if (sideways) SidewaysShade(Modifier.fillMaxSize())
 
-            // The pieces of the sheet, laid out upright or on its side. The speaker key is over the grip upright, and in
-            // the top right corner on its side. It is hidden while the sheet is being put away.
-            val speakerKey: @Composable (Modifier) -> Unit = { modifier ->
+            // The pieces of the sheet, laid out upright or on its side, where they are sized by the screen ([SidewaysLayout]).
+            // The speaker key is over the grip upright, and in the top right corner on its side. It is hidden while the
+            // sheet is being put away.
+            val speakerKey: @Composable (Modifier, Float) -> Unit = { modifier, scale ->
                 if (speakers != null) {
                     val label = playingOn?.let { stringResource(R.string.Rpm_Cast_Playing, it) } ?: stringResource(R.string.Rpm_Cast_PlayOn)
                     Box(
@@ -347,39 +348,43 @@ fun NowPlayingSheet(
                             .coachTarget(CoachTargets.PLAYER_SPEAKERS)
                             .graphicsLayer { alpha = 1f - putDown() },
                     ) {
-                        GlassKey(backdrop, onClick = { if (putDown() == 0f) showingSpeakers = true }, Modifier.semantics { contentDescription = label }) {
-                            CastMark(live = playingOn != null, color = if (playingOn == null) Ink.white(0xB8) else Color.White, edge = 17.dp)
+                        GlassKey(backdrop, onClick = { if (putDown() == 0f) showingSpeakers = true }, Modifier.semantics { contentDescription = label }, edge = 40.dp * scale) {
+                            CastMark(live = playingOn != null, color = if (playingOn == null) Ink.white(0xB8) else Color.White, edge = 17.dp * scale)
                         }
                     }
                 }
             }
             // The lyrics take the place of the cover. The ground stays: its colours come from the record, and the lyrics
-            // are read against it.
-            val record: @Composable (Modifier, Dp) -> Unit = { modifier, edge ->
+            // are read against it. Upright both are centred in the space given; on its side each has its place.
+            val record: @Composable (Modifier, Dp, SidewaysLayout?) -> Unit = { modifier, edge, laid ->
                 Crossfade(lyricsUp, modifier, animationSpec = tween(250, easing = FastOutSlowInEasing), label = "lyrics") { up ->
-                    if (up) {
-                        LyricView(lyrics, now, karaoke, measured)
-                    } else {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Sleeve(now, player, images, stage, edge, bars) }
+                    when {
+                        up -> Box(if (laid == null) Modifier.fillMaxSize() else Modifier.at(laid.lyrics)) { LyricView(lyrics, now, karaoke, measured) }
+                        laid == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Sleeve(now, player, images, stage, edge, bars) }
+                        // The spectrum runs across its span, with the cover at its own place in it: the span is cut at a
+                        // notch, and the cover does not move for that.
+                        else -> Box(Modifier.at(laid.spectrum)) {
+                            Sleeve(now, player, images, stage, edge, bars, Modifier.offset(x = (laid.cover.x - laid.spectrum.x).dp))
+                        }
                     }
                 }
             }
-            val panel: @Composable (Boolean) -> Unit = { large ->
+            val words: @Composable (Modifier, Float) -> Unit = { modifier, scale ->
                 // The title, the artist and the heart are about the record. While the lyrics show, the lyrics are the
                 // text, and two sets of words over one ground would make the reader choose.
                 val wordsAlpha by animateFloatAsState(if (lyricsUp) 0f else 1f, tween(250), label = "words")
-                Box(Modifier.graphicsLayer { alpha = wordsAlpha }) {
+                Box(modifier.graphicsLayer { alpha = wordsAlpha }) {
                     Words(
                         now,
                         enabled = !lyricsUp,
                         onAlbum = onAlbum?.let { open -> { putAway(open) } },
                         marked = marked,
                         onMark = onMark,
-                        large = large,
+                        scale = scale,
                     )
                 }
-                Needle(now, player, playingOn)
-                Transport(now, player)
+            }
+            val below: @Composable (Modifier, Float) -> Unit = { modifier, scale ->
                 Below(
                     backdrop,
                     lyricsLit = lyricsUp,
@@ -389,16 +394,22 @@ fun NowPlayingSheet(
                     queueEnabled = player.mediaItemCount > 0 && !onStation,
                     onQueue = { haptics.pick(); showingQueue = true },
                     onMenu = { menuAt = it },
+                    modifier = modifier,
+                    scale = scale,
                 )
             }
 
             if (sideways) {
                 SidewaysPlayer(
-                    record = record,
-                    panel = { panel(true) },
-                    keys = {
-                        VisualKey(backdrop, visual, onClick = { if (putDown() == 0f) showingVisuals = true })
-                        speakerKey(Modifier)
+                    record = { modifier, laid -> record(modifier, laid.cover.width.dp, laid) },
+                    words = words,
+                    needle = { modifier, scale -> Needle(now, player, playingOn, modifier, scale) },
+                    transport = { modifier, scale -> Transport(now, player, modifier, scale) },
+                    below = below,
+                    cast = speakers != null,
+                    keys = { visualAt, castAt, scale ->
+                        VisualKey(backdrop, visual, visualAt, scale, onClick = { if (putDown() == 0f) showingVisuals = true })
+                        speakerKey(castAt, scale)
                     },
                 )
             } else {
@@ -415,11 +426,14 @@ fun NowPlayingSheet(
                         onTap = { putAway() },
                     ) {
                         // Over the grip, not in a row of its own.
-                        speakerKey(Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
+                        speakerKey(Modifier.align(Alignment.CenterEnd).padding(end = 12.dp), 1f)
                     }
-                    record(Modifier.weight(1f).fillMaxWidth(), SLEEVE)
+                    record(Modifier.weight(1f).fillMaxWidth(), SLEEVE, null)
                     Column(Modifier.padding(horizontal = 24.dp).padding(top = 8.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        panel(false)
+                        words(Modifier, 1f)
+                        Needle(now, player, playingOn)
+                        Transport(now, player, Modifier.padding(top = 8.dp, bottom = 4.dp))
+                        below(Modifier.padding(top = 2.dp), 1f)
                     }
                 }
             }
@@ -497,10 +511,11 @@ private fun Grip(onDrag: (Float) -> Unit, onLetGo: (Float) -> Unit, onTap: () ->
  * The cover: square and centred, full size while the record plays and a tenth smaller while it is paused, so a stopped
  * record is a smaller thing and the ground round it shows more. Flick it across for the next or the previous track. With
  * no cover, the record itself, not turning: the plain CD, or the vinyl when that is chosen in the profile
- * ([ScannedDisc.standIn]); a station shows its logo on a card.
+ * ([ScannedDisc.standIn]); a station shows its logo on a card. [modifier] can move it within its space, which the
+ * spectrum runs across.
  */
 @Composable
-private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: Stage, edge: Dp, bars: Boolean) {
+private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: Stage, edge: Dp, bars: Boolean, modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val scale by animateFloatAsState(if (now.playing) 1f else PAUSED_SCALE, spring(dampingRatio = 1f, stiffness = SHEET_STIFFNESS), label = "sleeve")
@@ -513,7 +528,7 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
     // spectrum, which runs out to that space's edges: the width of the window upright, the left half on its side.
     val across = remember { FloatArray(3) }
     Box(
-        Modifier
+        modifier
             .size(edge)
             .coachTarget(CoachTargets.PLAYER_COVER)
             .onGloballyPositioned {
@@ -628,39 +643,38 @@ internal fun NowPlaying.shownArtist(): String {
 /**
  * The title over the artist, with the heart beside them. A tap on either line opens the record's page. Both lines walk
  * sideways when they do not fit ([Marquee]). The heart is about the record, not about how it plays, and it is filled or
- * hollow and never changes colour. [large] sets both lines larger, for the player on its side, where the words have a
- * half of the screen to themselves.
+ * hollow and never changes colour. [scale] sizes all of it, for the player on its side ([SidewaysLayout.scale]).
  */
 @Composable
-private fun Words(now: NowPlaying, enabled: Boolean, onAlbum: (() -> Unit)?, marked: Boolean, onMark: ((Boolean) -> Unit)?, large: Boolean = false) {
-    Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun Words(now: NowPlaying, enabled: Boolean, onAlbum: (() -> Unit)?, marked: Boolean, onMark: ((Boolean) -> Unit)?, scale: Float = 1f) {
+    Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp * scale)) {
         val hint = if (onAlbum != null) stringResource(R.string.AlbumMenu_AlbumPage) else ""
         Column(
             Modifier
                 .weight(1f)
                 .clickable(remember { MutableInteractionSource() }, indication = null, enabled = enabled && onAlbum != null) { onAlbum?.invoke() }
                 .semantics { if (hint.isNotEmpty()) contentDescription = hint },
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp * scale),
         ) {
             Marquee(
                 now.shownTitle(stringResource(R.string.Rpm_NowPlaying_Nothing)),
-                com.rpm.player.phone.design.displayBold(if (large) 28f else 22f).copy(color = Color.White),
-                if (large) 36.dp else 28.dp,
+                com.rpm.player.phone.design.displayBold(22f * scale).copy(color = Color.White),
+                28.dp * scale,
             )
-            Marquee(now.shownArtist(), display(if (large) 18f else 15f).copy(color = Ink.white(0xB3)), if (large) 24.dp else 20.dp)
+            Marquee(now.shownArtist(), display(15f * scale).copy(color = Ink.white(0xB3)), 20.dp * scale)
         }
         // A station is not a song, so it cannot be marked. The key is hidden, not greyed: a heart that cannot be
         // pressed raises the question of what it would do.
         Box(
             Modifier
-                .offset(x = 12.dp)
-                .size(40.dp)
+                .offset(x = 12.dp * scale)
+                .size(40.dp * scale)
                 .then(if (onMark != null) Modifier.coachTarget(CoachTargets.PLAYER_HEART) else Modifier)
                 .alpha(if (onMark == null) 0f else 1f)
                 .clickable(remember { MutableInteractionSource() }, indication = null, enabled = enabled && onMark != null, role = Role.Button) { onMark?.invoke(!marked) },
             contentAlignment = Alignment.Center,
         ) {
-            BasicText(Glyph.heart, style = (if (marked) icon(15f) else iconOutline(15f)).copy(color = Ink.white(0xE6)))
+            BasicText(Glyph.heart, style = (if (marked) icon(15f * scale) else iconOutline(15f * scale)).copy(color = Ink.white(0xE6)))
         }
     }
 }
@@ -671,13 +685,13 @@ private fun Words(now: NowPlaying, enabled: Boolean, onAlbum: (() -> Unit)?, mar
  * and the player seeks once, where the finger lifts. A station has no bar, and says "On air".
  *
  * The status is what went wrong, else what is being waited for, else where the sound is going. It sits outside the
- * layout, over the gap above the bar, so buffering never moves the keys under a thumb.
+ * layout, over the gap above the bar, so buffering never moves the keys under a thumb. [scale] sizes all of it.
  */
 @Composable
-private fun Needle(now: NowPlaying, player: Player, playingOn: String?) {
+private fun Needle(now: NowPlaying, player: Player, playingOn: String?, modifier: Modifier = Modifier, scale: Float = 1f) {
     val position by rememberPosition(now)
     var scrubbing by remember { mutableStateOf<Long?>(null) }
-    val clocks = display(11f).copy(color = Ink.white(0x88))
+    val clocks = display(11f * scale).copy(color = Ink.white(0x88))
     // What went wrong comes first, and the player's own reason before its error: offline is the one the person can fix.
     val trouble = now.failure.said
     val status = when {
@@ -689,16 +703,16 @@ private fun Needle(now: NowPlaying, player: Player, playingOn: String?) {
         else -> null
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp * scale)) {
         Box {
             if (now.station != null) {
-                Spacer(Modifier.padding(top = 6.dp).height(20.dp))
+                Spacer(Modifier.padding(top = 6.dp * scale).height(20.dp * scale))
             } else {
                 BoxWithConstraints(
                     Modifier
-                        .padding(top = 6.dp)
+                        .padding(top = 6.dp * scale)
                         .fillMaxWidth()
-                        .height(20.dp)
+                        .height(20.dp * scale)
                         .pointerInput(now.durationMs) {
                             if (now.durationMs <= 0) return@pointerInput
                             awaitEachGesture {
@@ -721,15 +735,15 @@ private fun Needle(now: NowPlaying, player: Player, playingOn: String?) {
                     val shown = scrubbing ?: position
                     val through = if (now.durationMs > 0) (shown.toFloat() / now.durationMs).coerceIn(0f, 1f) else 0f
                     val played = maxWidth * through
-                    Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(percent = 50)).background(Ink.white(0x2E)))
-                    Box(Modifier.width(played).height(3.dp).clip(RoundedCornerShape(percent = 50)).background(Color.White))
-                    Box(Modifier.offset(x = (played - 1.dp).coerceAtLeast(0.dp)).size(2.dp, 14.dp).clip(RoundedCornerShape(percent = 50)).background(Color.White))
+                    Box(Modifier.fillMaxWidth().height(3.dp * scale).clip(RoundedCornerShape(percent = 50)).background(Ink.white(0x2E)))
+                    Box(Modifier.width(played).height(3.dp * scale).clip(RoundedCornerShape(percent = 50)).background(Color.White))
+                    Box(Modifier.offset(x = (played - 1.dp * scale).coerceAtLeast(0.dp)).size(2.dp * scale, 14.dp * scale).clip(RoundedCornerShape(percent = 50)).background(Color.White))
                 }
             }
             if (status != null) {
                 BasicText(
                     status,
-                    Modifier.align(Alignment.TopEnd).offset(y = (-8).dp).widthIn(max = 240.dp),
+                    Modifier.align(Alignment.TopEnd).offset(y = (-8).dp * scale).widthIn(max = 240.dp * scale),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = clocks.copy(textAlign = TextAlign.End),
@@ -758,26 +772,27 @@ private fun clock(ms: Long): String {
  * Play in the exact centre, where a thumb finds it without looking, previous and next on either side. Nothing else is
  * in the row: stop is a hold of the play key. **The glyph shows what was asked for**, not what is coming out, so a pause
  * just pressed does not turn back into play while the track opens; a ring shows once a wait is long ([BusyKey]).
+ * [scale] sizes the keys and their gaps.
  */
 @Composable
-private fun Transport(now: NowPlaying, player: Player) {
+private fun Transport(now: NowPlaying, player: Player, modifier: Modifier = Modifier, scale: Float = 1f) {
     val onStation = now.station != null
     Row(
-        Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
+        modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(24.dp * scale, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Key(Glyph.backward, 22f, stringResource(R.string.Transport_Previous), enabled = !onStation) { player.seekToPrevious() }
-        BusyKey(now.isBusy, 24.dp) { PlayKey(now, player) }
-        Key(Glyph.forward, 22f, stringResource(R.string.Transport_Next), enabled = !onStation && player.hasNextMediaItem()) { player.seekToNext() }
+        Key(Glyph.backward, 22f * scale, 56.dp * scale, stringResource(R.string.Transport_Previous), enabled = !onStation) { player.seekToPrevious() }
+        BusyKey(now.isBusy, 24.dp * scale) { PlayKey(now, player, scale) }
+        Key(Glyph.forward, 22f * scale, 56.dp * scale, stringResource(R.string.Transport_Next), enabled = !onStation && player.hasNextMediaItem()) { player.seekToNext() }
     }
 }
 
 @Composable
-private fun Key(glyph: String, size: Float, label: String, enabled: Boolean, onClick: () -> Unit) {
+private fun Key(glyph: String, size: Float, edge: Dp, label: String, enabled: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
-            .size(56.dp)
+            .size(edge)
             .alpha(if (enabled) 1f else 0.3f)
             .clickable(remember { MutableInteractionSource() }, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label },
@@ -795,7 +810,7 @@ private enum class Press { Brief, Held, Away }
  * lift, so a hold that turned the key into stop would toggle play as well.
  */
 @Composable
-private fun PlayKey(now: NowPlaying, player: Player) {
+private fun PlayKey(now: NowPlaying, player: Player, scale: Float) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     var press by remember { mutableStateOf<Press?>(null) }
@@ -808,7 +823,7 @@ private fun PlayKey(now: NowPlaying, player: Player) {
     val label = stringResource(R.string.Transport_PlayPause)
     Box(
         Modifier
-            .size(68.dp)
+            .size(68.dp * scale)
             .semantics { contentDescription = label }
             .pointerInput(player) {
                 val slip = with(density) { HOLD_SLIP.toPx() }
@@ -844,7 +859,7 @@ private fun PlayKey(now: NowPlaying, player: Player) {
             },
         contentAlignment = Alignment.Center,
     ) {
-        BasicText(glyph, style = icon(26f).copy(color = Color.White))
+        BasicText(glyph, style = icon(26f * scale).copy(color = Color.White))
     }
 }
 
@@ -865,34 +880,36 @@ private fun Below(
     queueEnabled: Boolean,
     onQueue: () -> Unit,
     onMenu: (Rect) -> Unit,
+    modifier: Modifier = Modifier,
+    scale: Float = 1f,
 ) {
     var menuKey by remember { mutableStateOf(Rect.Zero) }
-    Box(Modifier.fillMaxWidth().padding(top = 2.dp), contentAlignment = Alignment.Center) {
+    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Row(Modifier.chromeGlass(backdrop, RoundedCornerShape(percent = 50))) {
             Box(Modifier.coachTarget(CoachTargets.PLAYER_LYRICS)) {
-                Small(LYRICS_GLYPH, stringResource(R.string.Details_Lyrics), if (lyricsLit) Color.White else Ink.white(0x99), shown = lyricsShown, enabled = lyricsEnabled, onClick = onLyrics)
+                Small(LYRICS_GLYPH, stringResource(R.string.Details_Lyrics), if (lyricsLit) Color.White else Ink.white(0x99), shown = lyricsShown, enabled = lyricsEnabled, scale, onClick = onLyrics)
             }
             Box(Modifier.coachTarget(CoachTargets.PLAYER_QUEUE)) {
-                Small(QUEUE_GLYPH, stringResource(R.string.Viz_Queue), Ink.white(0x99), shown = queueEnabled, enabled = queueEnabled, onClick = onQueue)
+                Small(QUEUE_GLYPH, stringResource(R.string.Viz_Queue), Ink.white(0x99), shown = queueEnabled, enabled = queueEnabled, scale, onClick = onQueue)
             }
             Box(Modifier.coachTarget(CoachTargets.PLAYER_MENU).onGloballyPositioned { menuKey = it.boundsInRoot() }) {
-                Small(Glyph.more, "", Ink.white(0x99), shown = true, enabled = true) { onMenu(menuKey) }
+                Small(Glyph.more, "", Ink.white(0x99), shown = true, enabled = true, scale) { onMenu(menuKey) }
             }
         }
     }
 }
 
 @Composable
-private fun Small(glyph: String, label: String, ink: Color, shown: Boolean, enabled: Boolean, onClick: () -> Unit) {
+private fun Small(glyph: String, label: String, ink: Color, shown: Boolean, enabled: Boolean, scale: Float, onClick: () -> Unit) {
     Box(
         Modifier
-            .size(40.dp)
+            .size(40.dp * scale)
             .alpha(if (shown) 1f else 0.35f)
             .clickable(remember { MutableInteractionSource() }, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { if (label.isNotEmpty()) contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
-        BasicText(glyph, style = icon(16f).copy(color = ink))
+        BasicText(glyph, style = icon(16f * scale).copy(color = ink))
     }
 }
 

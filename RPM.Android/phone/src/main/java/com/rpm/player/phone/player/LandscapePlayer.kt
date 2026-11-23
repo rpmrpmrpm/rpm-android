@@ -1,32 +1,24 @@
 package com.rpm.player.phone.player
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.plus
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.rpm.player.core.R
 import com.rpm.player.phone.design.Backdrop
@@ -74,58 +66,62 @@ internal object LandscapeVisual {
 
 /**
  * The now playing sheet on its side: the modern style ([LandscapeStyle.Modern]). The cover, with the spectrum on both
- * sides of it, is centred in the left half; the words, the seek bar, the transport and the row of keys are in one column
- * in the right half, centred from top to bottom; the visualiser key and the speaker key are in the top right corner. The
- * sheet ([NowPlayingSheet]) gives the pieces, so they are the same ones, and behave the same, as upright.
+ * sides of it, is on the left; the words, the seek bar, the transport and the capsule of keys are in one column on the
+ * right; the visualiser key and the speaker key are in the top right corner. Each is put where the drawing has it, from
+ * the screen's size ([SidewaysLayout]). The sheet ([NowPlayingSheet]) gives the pieces, so they are the same ones, and
+ * behave the same, as upright; [SidewaysLayout.scale] sizes them.
  *
- * The notch is kept clear on both sides: the cover's half stops at a notch on the left, the column and the keys at a
- * notch on the right.
+ * The notch is kept clear: an element that would reach into it is moved in by the difference.
  *
- * @param record the cover, or the lyrics in its place, filling the modifier it is given, with the cover's side.
- * @param panel the column's contents: the words, the seek bar, the transport and the row of keys.
- * @param keys the keys in the top right corner, from left to right.
+ * @param record the cover, or the lyrics in its place, in a modifier that fills the screen, at the layout's places.
+ * @param words the title, the artist and the heart.
+ * @param needle the seek bar and its clocks.
+ * @param transport previous, play and next.
+ * @param below the capsule with the lyrics, queue and menu keys.
+ * @param cast whether the speaker key is shown. Without it, the visualiser key takes the corner.
+ * @param keys the visualiser key and the speaker key, in the modifiers that place them, with the scale.
  */
 @Composable
 internal fun SidewaysPlayer(
-    record: @Composable (Modifier, Dp) -> Unit,
-    panel: @Composable () -> Unit,
-    keys: @Composable RowScope.() -> Unit,
+    record: @Composable (Modifier, SidewaysLayout) -> Unit,
+    words: @Composable (Modifier, Float) -> Unit,
+    needle: @Composable (Modifier, Float) -> Unit,
+    transport: @Composable (Modifier, Float) -> Unit,
+    below: @Composable (Modifier, Float) -> Unit,
+    cast: Boolean,
+    keys: @Composable (visualAt: Modifier, castAt: Modifier, scale: Float) -> Unit,
 ) {
-    Box(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxSize()) {
-            BoxWithConstraints(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical)),
-            ) {
-                // Room is left on both sides of the cover for the spectrum to run out into.
-                val edge = minOf(SLEEVE, maxHeight * COVER_OF_HEIGHT, maxWidth * COVER_OF_WIDTH)
-                record(Modifier.fillMaxSize(), edge)
-            }
-            Box(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.End + WindowInsetsSides.Vertical))
-                    // Under the row of keys at the top, so the column never runs into them.
-                    .padding(start = 12.dp, end = COLUMN_END, top = KEYS_ROW, bottom = 12.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) { panel() }
-            }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val direction = LocalLayoutDirection.current
+        val cutout = WindowInsets.displayCutout
+        // The places are measured from the start edge, as the offsets that put them there are.
+        val left = cutout.getLeft(density, direction)
+        val right = cutout.getRight(density, direction)
+        val ltr = direction == LayoutDirection.Ltr
+        val start = if (ltr) left else right
+        val end = if (ltr) right else left
+        val laid = with(density) {
+            SidewaysLayout.of(
+                maxWidth.value,
+                maxHeight.value,
+                start.toDp().value,
+                cutout.getTop(density).toDp().value,
+                end.toDp().value,
+                cutout.getBottom(density).toDp().value,
+            )
         }
-        Row(
-            Modifier
-                .align(Alignment.TopEnd)
-                .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.End + WindowInsetsSides.Top))
-                .padding(top = 14.dp, end = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            content = keys,
-        )
+        record(Modifier.fillMaxSize(), laid)
+        words(Modifier.at(laid.words), laid.scale)
+        needle(Modifier.at(laid.needle), laid.scale)
+        transport(Modifier.at(laid.transport), laid.scale)
+        below(Modifier.at(laid.capsule), laid.scale)
+        keys(Modifier.at(if (cast) laid.visual else laid.cast), Modifier.at(laid.cast), laid.scale)
     }
 }
+
+/** Puts an element at [frame], measured from the screen's top start corner. */
+internal fun Modifier.at(frame: Frame): Modifier = offset(frame.x.dp, frame.y.dp).size(frame.width.dp, frame.height.dp)
 
 /**
  * The dark that runs in from the right over the room or the visualiser, so the column of words reads on any cover. The
@@ -151,10 +147,10 @@ internal fun SidewaysShade(modifier: Modifier) {
  * the room, as on the stage.
  */
 @Composable
-internal fun VisualKey(backdrop: Backdrop, showing: StageLook?, onClick: () -> Unit) {
+internal fun VisualKey(backdrop: Backdrop, showing: StageLook?, modifier: Modifier, scale: Float, onClick: () -> Unit) {
     val label = stringResource(R.string.Rpm_Stage_Visualiser)
-    GlassKey(backdrop, onClick, Modifier.semantics { contentDescription = label }) {
-        BasicText(StageLook.Ribbon.glyph, style = icon(16f).copy(color = if (showing == null) Ink.white(0xB8) else Color.White))
+    GlassKey(backdrop, onClick, modifier.semantics { contentDescription = label }, edge = 40.dp * scale) {
+        BasicText(StageLook.Ribbon.glyph, style = icon(16f * scale).copy(color = if (showing == null) Ink.white(0xB8) else Color.White))
     }
 }
 
@@ -177,16 +173,6 @@ internal fun SidewaysVisualPicker(
         }
     }
 }
-
-/** The cover's side as a share of the left half's height and width, as in the drawing the layout follows. */
-private const val COVER_OF_HEIGHT = 0.66f
-private const val COVER_OF_WIDTH = 0.62f
-
-/** The room the keys in the top right corner take, which the column stays under. */
-private val KEYS_ROW = 54.dp
-
-/** The column's distance from the right edge. The heart reaches 12 dp into it. */
-private val COLUMN_END = 32.dp
 
 /** The room's glyph in the picker: a drop, for the slow blobs of a lava lamp. */
 private const val LAVA_GLYPH = ""
