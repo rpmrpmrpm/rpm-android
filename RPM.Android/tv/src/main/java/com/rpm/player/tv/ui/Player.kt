@@ -64,6 +64,7 @@ import com.rpm.player.core.cast.CastState
 import com.rpm.player.core.cast.Casting
 import com.rpm.player.core.lyrics.LrcLib
 import com.rpm.player.core.lyrics.LyricSheet
+import com.rpm.player.core.playback.EXTRA_EXPLICIT
 import com.rpm.player.core.playback.KeyRules
 import com.rpm.player.core.playback.PlayerAction
 import com.rpm.player.core.playback.perform
@@ -135,6 +136,9 @@ fun PlayerScreen(
     /** Sets the favourite mark on the track playing (true) or takes it off (false). */
     onFavourite: (Boolean) -> Unit,
     onBack: () -> Unit,
+    /** Whether the track with this media id, or its record, is marked explicit in the collection that is open. Its
+     * lyrics then come from LRCLIB's uncensored sheet ([LrcLib.sheet]). The queued item's own flag counts too. */
+    explicitOf: (mediaId: String) -> Boolean = { false },
 ) {
     var controlsShown by remember { mutableStateOf(true) }
     val context = LocalContext.current
@@ -196,10 +200,15 @@ fun PlayerScreen(
     // How far the sheet is off the record, where the cloud worked it out for this sheet: the lines are shown that much
     // later (or earlier), and the measured lines are moved with them so they still match ([MeasuredLyrics.shifted]).
     var offset by remember { mutableStateOf(0.0) }
-    // A track's sheet: the one its owner chose on a desktop, where they chose one, else LRCLIB's.
-    suspend fun readSheet(mediaId: String, artist: String, title: String, album: String, seconds: Double): LyricSheet =
+    // A track's sheet: the one its owner chose on a desktop, where they chose one, else LRCLIB's. [explicit] prefers
+    // LRCLIB's uncensored sheet.
+    suspend fun readSheet(mediaId: String, artist: String, title: String, album: String, seconds: Double, explicit: Boolean): LyricSheet =
         com.rpm.player.core.playback.TrackRef.parse(mediaId)?.let { measuredLyrics.chosenSheet(it) }
-            ?: lrcLib.sheet(artist, title, album, seconds)
+            ?: lrcLib.sheet(artist, title, album, seconds, explicit)
+    // Whether a queued item is explicit: its own flag ([EXTRA_EXPLICIT]), or the open collection's word for the song
+    // and its record.
+    fun explicit(mediaId: String, item: androidx.media3.common.MediaItem?): Boolean =
+        item?.takeIf { it.mediaId == mediaId }?.mediaMetadata?.extras?.getBoolean(EXTRA_EXPLICIT) == true || explicitOf(mediaId)
     // The next track's media id and sheet, read ahead while this one plays.
     var ahead by remember { mutableStateOf<Pair<String, LyricSheet>?>(null) }
     // Where no measurement covers this sheet, the cloud is asked to time it off the record (the transcoder takes
@@ -239,8 +248,9 @@ fun PlayerScreen(
             synced = false
             return@LaunchedEffect
         }
+        val marked = explicit(playing.mediaId, controller?.currentMediaItem)
         sheet = ahead?.takeIf { it.first == playing.mediaId }?.second ?: withContext(Dispatchers.IO) {
-            readSheet(playing.mediaId, playing.artist, playing.title, playing.album, playing.durationMs / 1000.0)
+            readSheet(playing.mediaId, playing.artist, playing.title, playing.album, playing.durationMs / 1000.0, marked)
         }
         synced = sheet.isSynced
     }
@@ -260,8 +270,9 @@ fun PlayerScreen(
         // when the track plays.
         val seconds = (about.durationMs ?: 0L) / 1000.0
         if (seconds <= 0) return@LaunchedEffect
+        val marked = explicit(item.mediaId, item)
         val next = withContext(Dispatchers.IO) {
-            readSheet(item.mediaId, about.artist?.toString().orEmpty(), about.title?.toString().orEmpty(), about.albumTitle?.toString().orEmpty(), seconds)
+            readSheet(item.mediaId, about.artist?.toString().orEmpty(), about.title?.toString().orEmpty(), about.albumTitle?.toString().orEmpty(), seconds, marked)
         }
         ahead = item.mediaId to next
         if (!karaoke || !next.isSynced) return@LaunchedEffect

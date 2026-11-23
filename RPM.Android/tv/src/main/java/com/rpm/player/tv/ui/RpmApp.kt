@@ -12,6 +12,7 @@ import com.rpm.player.core.playback.playNext
 import com.rpm.player.core.playback.addToQueue
 import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.library.LibraryState
+import com.rpm.player.core.library.isExplicitRecord
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.core.tween
@@ -577,6 +578,13 @@ fun RpmApp(
                                             }
                                         },
                                         onBack = { playerShown = false },
+                                        explicitOf = { mediaId ->
+                                            (libraryState as? LibraryState.Ready)?.collection?.let { collection ->
+                                                TrackRef.parse(mediaId)
+                                                    ?.takeIf { it.shelf == collection.shelf }
+                                                    ?.let { collection.isExplicitRecord(it.rpmId) }
+                                            } == true
+                                        },
                                     )
                                 }
                             }

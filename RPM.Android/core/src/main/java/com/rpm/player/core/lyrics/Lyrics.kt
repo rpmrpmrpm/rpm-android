@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
@@ -88,29 +89,70 @@ data class LyricSheet(val lines: List<LyricLine>) {
  * Lyrics from LRCLIB, asked the same way as the iOS app's `LrcLibClient`: first `get` with the
  * track's name, artist, album and length, then `search`. The first candidate within [SLACK_S]
  * seconds of the length that has synced lyrics is used. Any failure means no lyrics.
+ *
+ * An explicit record is the exception. LRCLIB often holds a clean sheet and an explicit sheet for one song, and the
+ * exact lookup cannot tell them apart. For a record marked explicit, the exact answer and every search candidate
+ * within the slack are compared, and [ExplicitLyrics.pick] keeps the uncensored one.
  */
 class LrcLib(private val http: OkHttpClient) {
 
-    suspend fun sheet(artist: String?, title: String?, album: String?, durationSeconds: Double): LyricSheet {
+    /**
+     * The synced sheet for one recording, or [LyricSheet.EMPTY]. [explicit] says the record is marked explicit, by its
+     * own flag or its album's ([com.rpm.player.core.library.isExplicitRecord]).
+     */
+    suspend fun sheet(
+        artist: String?,
+        title: String?,
+        album: String?,
+        durationSeconds: Double,
+        explicit: Boolean = false,
+    ): LyricSheet {
         // Without a title there is nothing to look up.
         if (title.isNullOrBlank()) return LyricSheet.EMPTY
+        if (explicit) return uncensored(artist, title, album, durationSeconds)
         if (durationSeconds > 0) {
-            val exact = ask(
-                "get?track_name=${escapeSegment(title)}&artist_name=${escapeSegment(artist.orEmpty())}" +
-                    "&album_name=${escapeSegment(album.orEmpty())}&duration=${durationSeconds.roundToInt()}",
-            )
-            val sheet = (exact as? JsonObject)?.let(::read) ?: LyricSheet.EMPTY
+            val sheet = exact(artist, title, album, durationSeconds)
             if (sheet.isSynced) return sheet
         }
-        val found = ask("search?track_name=${escapeSegment(title)}&artist_name=${escapeSegment(artist.orEmpty())}")
-        for (candidate in (found as? JsonArray).orEmpty()) {
-            val record = candidate as? JsonObject ?: continue
-            val theirs = record["duration"]?.jsonPrimitive?.doubleOrNull
-            if (durationSeconds > 0 && theirs != null && abs(theirs - durationSeconds) > SLACK_S) continue
+        for (record in search(artist, title)) {
+            if (!fits(record, durationSeconds)) continue
             val sheet = read(record)
             if (sheet.isSynced) return sheet
         }
         return LyricSheet.EMPTY
+    }
+
+    /**
+     * The sheet for an explicit record. Both lookups are made, and the exact answer and every search candidate within
+     * the slack go to [ExplicitLyrics.pick]. With no candidate at all this is no sheet: the ordinary path, given the
+     * same two answers, would find nothing either.
+     */
+    private suspend fun uncensored(artist: String?, title: String, album: String?, durationSeconds: Double): LyricSheet {
+        val exact = if (durationSeconds > 0) exact(artist, title, album, durationSeconds) else LyricSheet.EMPTY
+        val found = search(artist, title).filter { fits(it, durationSeconds) }.map(::read).filter { it.isSynced }
+        return ExplicitLyrics.pick(exact, found)
+    }
+
+    /** The exact lookup, by name and length together. */
+    private suspend fun exact(artist: String?, title: String, album: String?, durationSeconds: Double): LyricSheet {
+        val answer = ask(
+            "get?track_name=${escapeSegment(title)}&artist_name=${escapeSegment(artist.orEmpty())}" +
+                "&album_name=${escapeSegment(album.orEmpty())}&duration=${durationSeconds.roundToInt()}",
+        )
+        return (answer as? JsonObject)?.let(::read) ?: LyricSheet.EMPTY
+    }
+
+    /** The search's records, in LRCLIB's order; empty on any failure. */
+    private suspend fun search(artist: String?, title: String): List<JsonObject> =
+        (ask("search?track_name=${escapeSegment(title)}&artist_name=${escapeSegment(artist.orEmpty())}") as? JsonArray)
+            .orEmpty()
+            .mapNotNull { it as? JsonObject }
+
+    /** Whether a search record's length is within [SLACK_S] of the recording's. A record without a length, or a
+     * recording with no known length, fits. */
+    private fun fits(record: JsonObject, durationSeconds: Double): Boolean {
+        val theirs = (record["duration"] as? JsonPrimitive)?.doubleOrNull
+        return !(durationSeconds > 0 && theirs != null && abs(theirs - durationSeconds) > SLACK_S)
     }
 
     private fun read(record: JsonObject): LyricSheet =

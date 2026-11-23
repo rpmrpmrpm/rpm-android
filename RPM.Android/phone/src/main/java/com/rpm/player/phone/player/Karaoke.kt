@@ -105,12 +105,20 @@ class KaraokeTiming(private val measured: MeasuredLyrics) {
      * Called only while the player is shown with karaoke on, as the lyrics lookup is: ordinary listening sends no record
      * names anywhere.
      */
-    suspend fun warm(mediaId: String, artist: String?, title: String?, album: String?, seconds: Double, lrcLib: com.rpm.player.core.lyrics.LrcLib) {
+    suspend fun warm(
+        mediaId: String,
+        artist: String?,
+        title: String?,
+        album: String?,
+        seconds: Double,
+        lrcLib: com.rpm.player.core.lyrics.LrcLib,
+        explicit: Boolean = false,
+    ) {
         val track = TrackRef.parse(mediaId) ?: return
         if (track.shelf != com.rpm.player.core.cloud.Shelf.Own || title.isNullOrBlank()) return
         if (!warmed.add(mediaId)) return
         withContext(Dispatchers.IO) {
-            val sheet = measured.chosenSheet(track) ?: lrcLib.sheet(artist, title, album, seconds)
+            val sheet = measured.chosenSheet(track) ?: lrcLib.sheet(artist, title, album, seconds, explicit)
             if (!sheet.isSynced) return@withContext
             if (MeasuredLyrics.covers(measured.of(track), sheet)) return@withContext
             measured.ask(track, sheet)

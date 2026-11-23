@@ -13,6 +13,8 @@ import com.rpm.player.core.library.ArtistCredit
 import com.rpm.player.core.library.ArtistWallItem
 import com.rpm.player.core.library.Collection
 import com.rpm.player.core.library.LibraryState
+import com.rpm.player.core.library.isExplicit
+import com.rpm.player.core.library.isExplicitRecord
 import com.rpm.player.core.library.StarterTracks
 import com.rpm.player.core.playback.NowPlaying
 import com.rpm.player.core.playback.TrackRef
@@ -55,6 +57,7 @@ class PlayerWiring(private val services: Services) {
             track?.title ?: now.title,
             track?.album ?: now.album,
             seconds,
+            explicit = ref?.let { collection?.isExplicitRecord(it.rpmId) } == true,
         )
     }
 
@@ -72,7 +75,8 @@ class PlayerWiring(private val services: Services) {
     suspend fun warmNext(next: QueueEntry?) {
         next ?: return
         val track = collection?.tracksById?.get(next.track.rpmId) ?: next.track
-        timing.warm(next.mediaId, track.artist, track.title, track.album, track.tags?.durationSeconds ?: 0.0, services.lrcLib)
+        val explicit = track.isExplicit || collection?.isExplicitRecord(next.track.rpmId) == true
+        timing.warm(next.mediaId, track.artist, track.title, track.album, track.tags?.durationSeconds ?: 0.0, services.lrcLib, explicit)
     }
 
     /** Whether the song [rpmId] carries the heart, as pressed here or as the library has it. */

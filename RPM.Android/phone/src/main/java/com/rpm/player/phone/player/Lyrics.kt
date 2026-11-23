@@ -106,9 +106,10 @@ class LyricsLookup(private val lrcLib: LrcLib, private val measured: MeasuredLyr
 
     /**
      * Reads the words for [mediaId], once. [seconds] is the catalogue's length, not the player's: LRCLIB matches on
-     * length, and the player reports nothing until the track has started.
+     * length, and the player reports nothing until the track has started. [explicit] says the song or its record is
+     * marked explicit, so LRCLIB's uncensored sheet is preferred ([LrcLib.sheet]).
      */
-    suspend fun read(mediaId: String?, artist: String?, title: String?, album: String?, seconds: Double) {
+    suspend fun read(mediaId: String?, artist: String?, title: String?, album: String?, seconds: Double, explicit: Boolean = false) {
         val track = mediaId?.let(TrackRef::parse)
         if (track == null || title.isNullOrBlank()) {
             sheet = LyricSheet.EMPTY
@@ -120,7 +121,7 @@ class LyricsLookup(private val lrcLib: LrcLib, private val measured: MeasuredLyr
             looking = false
             return
         }
-        val key = "$mediaId|${artist.orEmpty()}|$title|${album.orEmpty()}|${seconds.toInt()}"
+        val key = "$mediaId|${artist.orEmpty()}|$title|${album.orEmpty()}|${seconds.toInt()}|$explicit"
         if (key == asked) return
         // Set before the wait, so a second call while the first waits does not look up the same record twice.
         asked = key
@@ -135,7 +136,7 @@ class LyricsLookup(private val lrcLib: LrcLib, private val measured: MeasuredLyr
         // read all fall back to LRCLIB.
         var found = withContext(Dispatchers.IO) { measured.chosenSheet(track) } ?: LyricSheet.EMPTY
         if (asked != key) return
-        if (!found.isSynced) found = withContext(Dispatchers.IO) { lrcLib.sheet(artist, title, album, seconds) }
+        if (!found.isSynced) found = withContext(Dispatchers.IO) { lrcLib.sheet(artist, title, album, seconds, explicit) }
         if (asked != key) return
         var moved = 0.0
         var read: com.rpm.player.core.lyrics.MeasuredAnswer? = null

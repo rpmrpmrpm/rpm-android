@@ -21,6 +21,12 @@ val CloudTrack.isExplicit: Boolean get() = tags?.advisory == ADVISORY_EXPLICIT
 /** Whether the E goes beside the record's title: when any of its songs is explicit, as streaming services mark a record. */
 val CloudAlbum.isExplicit: Boolean get() = tracks.any { it.isExplicit }
 
+/** Whether the song [rpmId] of this collection is explicit, or the record it is on is: either one shows the E. The
+ * lyrics lookup uses it to prefer the uncensored sheet ([com.rpm.player.core.lyrics.ExplicitLyrics]). False for a song
+ * the collection does not hold. */
+fun Collection.isExplicitRecord(rpmId: String): Boolean =
+    tracksById[rpmId]?.isExplicit == true || albumOf[rpmId]?.isExplicit == true
+
 /**
  * Turns the catalogue's tracks into albums, with the same rules as the iOS app's `AlbumWall`,
  * `AlbumGrouping`, `AlbumTracklist` and `AlbumSort`: grouped by folder where there is one and by tags
