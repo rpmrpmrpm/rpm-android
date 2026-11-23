@@ -9,8 +9,18 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseIn
+import androidx.compose.animation.core.EaseOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.graphics.graphicsLayer
+import com.rpm.player.core.library.PlaylistPhotos
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -170,7 +180,7 @@ fun PlaylistsPage(
     val pinned = remember(settings.pinnedLists, collection, resources) {
         settings.pinnedLists.mapNotNull { id -> collection.list(id)?.let { PlaylistRow.Playlist(it, listName(it.name, resources), emptyList()) } }
     }
-    val heads: (@Composable () -> Unit)? = if (browse.at.isEmpty() && (history.isNotEmpty() || pinned.isNotEmpty())) {
+    val heads: (@Composable () -> Unit)? = if (history.isNotEmpty() || pinned.isNotEmpty()) {
         { Heads(history, pinned, collection, images, onOpenHistory, ::press, menuOf) }
     } else {
         null
@@ -204,16 +214,22 @@ fun PlaylistsPage(
                     },
                     modifier = Modifier.fillMaxSize(),
                     top = top,
-                ) { key(browse.at, settings.playlistLayout) {
+                ) { FolderFade(browse.at) { shownAt -> key(settings.playlistLayout) {
+                    // The folder this child shows: while a folder changes, the one that leaves is still drawn
+                    // from its own rows as it fades out.
+                    val shown = if (shownAt == browse.at) browse else remember(shownAt, collection, resources) {
+                        PlaylistBrowse.of(shownAt, collection.lists, { listName(it.name, resources) })
+                    }
+                    val shelf = heads.takeIf { shown.at.isEmpty() }
                     when (settings.playlistLayout) {
                         PlaylistLayout.List -> Column(Modifier.fillMaxSize()) {
-                            Rows(browse, pictureOf, images, bottomRoom, top, ::press, menuOf, heads) {
-                                Footer(browse, empty = collection.lists.isEmpty(), own = own)
+                            Rows(shown, pictureOf, images, bottomRoom, top, ::press, menuOf, shelf) {
+                                Footer(shown, empty = collection.lists.isEmpty(), own = own)
                             }
                         }
                         PlaylistLayout.Grid -> Box(Modifier.fillMaxSize()) {
                             PlaylistWall(
-                                browse.rows,
+                                shown.rows,
                                 titleOf = { title(it) },
                                 pictureOf = pictureOf,
                                 framedOf = { framedOf(it) },
@@ -223,7 +239,7 @@ fun PlaylistsPage(
                                 topRoom = top,
                                 onPress = ::press,
                                 menuOf = menuOf,
-                                header = heads,
+                                header = shelf,
                                 onPinch = { factor ->
                                     if (factor == null) {
                                         pinching?.let(settings::changePlaylistStride)
@@ -232,10 +248,10 @@ fun PlaylistsPage(
                                         pinching = boundedStride(settings.playlistStride * factor)
                                     }
                                 },
-                            ) { Footer(browse, empty = collection.lists.isEmpty(), own = own) }
+                            ) { Footer(shown, empty = collection.lists.isEmpty(), own = own) }
                         }
                     }
-                } }
+                } } }
             }
         }
         if (choosingLayout) {
@@ -266,6 +282,29 @@ fun PlaylistsPage(
     }
 }
 
+/**
+ * How a folder leaves and comes in (`folderFade` on the iPhone): the folder shown fades out first, and the new one
+ * fades in after it. One after the other and not together, so the two lists are never seen through each other.
+ * Each folder is a child of its own, with its own scroll, so a new folder starts at the top: without that, going
+ * from the middle of a long folder into a short one would leave the scroll past the end of the short one.
+ */
+@Composable
+private fun FolderFade(at: List<String>, content: @Composable (List<String>) -> Unit) {
+    AnimatedContent(
+        targetState = at,
+        modifier = Modifier.fillMaxSize(),
+        transitionSpec = {
+            fadeIn(tween(FADE_IN_MS, delayMillis = FADE_OUT_MS, easing = EaseOut)) togetherWith
+                fadeOut(tween(FADE_OUT_MS, easing = EaseIn)) using null
+        },
+        label = "folder",
+    ) { content(it) }
+}
+
+/** How long the folder shown takes to fade out, and the new one to fade in after it (0.14 s and 0.22 s on iPhone). */
+private const val FADE_OUT_MS = 140
+private const val FADE_IN_MS = 220
+
 /** The rows layout: one row per folder or list, the footer after them. */
 @Composable
 private fun androidx.compose.foundation.layout.ColumnScope.Rows(
@@ -295,11 +334,11 @@ private fun androidx.compose.foundation.layout.ColumnScope.Rows(
 }
 
 /**
- * The picture a row shows. A list uses its own picture, or else the cover of the record it opens on. A folder has
- * no picture.
+ * The picture a row shows. A list uses its own picture, or else the cover of the record it opens on. One of the app's
+ * own folders shows its photograph, behind its frame ([folderFrame]); a folder somebody made has no picture.
  */
 private fun com.rpm.player.core.library.Collection.coverModel(row: PlaylistRow): Any? = when (row) {
-    is PlaylistRow.Folder -> null
+    is PlaylistRow.Folder -> PlaylistPhotos.folder(row.face)
     is PlaylistRow.Playlist -> cover(row.list)
 }
 
@@ -403,7 +442,7 @@ private fun Line(row: PlaylistRow, picture: Any?, framed: FramedList?, images: I
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PlaylistSleeve(picture, row.mark, edge = 44.dp, corner = 6.dp, mark = 16f, images, framed, markPicture = row.markPicture)
+        PlaylistSleeve(picture, row.mark, edge = 44.dp, corner = 6.dp, mark = 16f, images, framed, markPicture = row.markPicture, folderFrame = row.folderFrame)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             val detail = when (row) {
                 is PlaylistRow.Folder -> playlistsCount(row.folder.playlists)
@@ -449,6 +488,8 @@ private fun Footer(browse: PlaylistBrowse, empty: Boolean, own: Boolean) {
  * it moves only on the list's own page, because each moving square is a room drawn 30 times a second.
  * @param markPicture a drawable shown in place of [glyph] on a square with no picture, at the glyph's size. It is as
  * faint as the desktop draws it on its tiles (40%), and it is a grey picture, so it reads as faint as the glyphs.
+ * @param folderFrame the frame of one of the app's own folders ([FramedList.folder]), drawn over its photograph
+ * ([picture]). The two come in together, once the photograph is ready, so the frame never shows over an empty window.
  */
 @Composable
 fun PlaylistSleeve(
@@ -461,6 +502,7 @@ fun PlaylistSleeve(
     framed: FramedList? = null,
     drifts: Boolean = false,
     @DrawableRes markPicture: Int? = null,
+    folderFrame: FramedList? = null,
 ) {
     val shape = RoundedCornerShape(corner)
     Box(
@@ -470,6 +512,7 @@ fun PlaylistSleeve(
         when {
             framed != null && framed.look.roomed && drifts -> LiveRoom(framed.look.room, framed.name, running = true, Modifier.fillMaxSize())
             framed != null && framed.look.roomed -> ListRoom(framed.look, framed.name, Modifier.fillMaxSize())
+            framed == null && folderFrame != null && picture != null -> FolderCover(picture, folderFrame, edge, images)
             picture != null -> {
                 if (framed == null) BasicText(glyph, style = icon(mark).copy(color = Ink.white(0x3A)))
                 AsyncImage(
@@ -486,6 +529,37 @@ fun PlaylistSleeve(
             framed == null -> BasicText(glyph, style = icon(mark).copy(color = Ink.white(0x3A)))
         }
         if (framed != null) ListFrameOverlay(framed, Modifier.fillMaxSize())
+    }
+}
+
+/**
+ * One of the app's own folders: its photograph with its frame over it, as a generated list has (the folder branch of
+ * the iPhone's `PlaylistSleeve`). The photograph is washed and cached off the main thread by the image loader
+ * ([com.rpm.player.core.library.PlaylistPhotoFetcher]). Both fade in at once (0.2 s, ease out) when it is ready. A
+ * photograph the loader already holds is answered before the next frame, and is shown at once rather than faded.
+ */
+@Composable
+private fun FolderCover(picture: Any, frame: FramedList, edge: Dp, images: ImageLoader) {
+    val request = rememberPicture(picture, edge)
+    var ready by remember(request) { mutableStateOf(false) }
+    // Whether a frame has passed since the request was made: an answer before that came from the loader's memory.
+    var waited by remember(request) { mutableStateOf(false) }
+    LaunchedEffect(request) { withFrameNanos { }; waited = true }
+    val shown by animateFloatAsState(
+        if (ready) 1f else 0f,
+        if (waited) tween(200, easing = EaseOut) else snap(),
+        label = "folder cover",
+    )
+    Box(Modifier.fillMaxSize().graphicsLayer { alpha = shown }) {
+        AsyncImage(
+            model = request,
+            contentDescription = null,
+            imageLoader = images,
+            contentScale = ContentScale.Crop,
+            onSuccess = { ready = true },
+            modifier = Modifier.fillMaxSize(),
+        )
+        if (ready) ListFrameOverlay(frame, Modifier.fillMaxSize())
     }
 }
 

@@ -42,6 +42,26 @@ object PlaylistPhotos {
         return PlaylistPhoto(file, ListSeed.tint(seed))
     }
 
+    /**
+     * The photograph behind the frame of one of the app's own folders, and the colour it is washed in, or null for a
+     * folder somebody made (`PlaylistPhotos.folder` on the iPhone).
+     *
+     * - One mood's folder shows the photograph of that mood's list of the whole collection, in its colour, so the
+     *   folder looks like the lists in it.
+     * - The folder of the decades shows the photograph of the 1980s, a crate of records, in the colour of that list.
+     * - The folder of all the moods shows the dance floor photograph in the app's own blue
+     *   ([GeneratedListLook.appTint]), because it holds every mood.
+     *
+     * The image loader's key carries the wash colour ([PlaylistPhotoKeyer]), so the dance floor in the app's blue and
+     * the dance floor in its own colour are two pictures in its cache.
+     */
+    fun folder(face: FolderFace): PlaylistPhoto? = when (face) {
+        FolderFace.Plain -> null
+        FolderFace.Moods -> PlaylistPhotoFiles.BY_CUT[Cut("Danceable", null, 0)]?.let { PlaylistPhoto(it, GeneratedListLook.appTint) }
+        FolderFace.Decades -> of("Decade", null, 1980)
+        is FolderFace.Mood -> of(face.kind, null, 0)
+    }
+
     /** A generated list, keyed on the three fields the computer keys it on. */
     data class Cut(val kind: String, val genre: String?, val decade: Int)
 
@@ -105,7 +125,12 @@ class PlaylistPhotoFetcher(private val photo: PlaylistPhoto, private val options
     }
 }
 
+/** The image loader's key of a [PlaylistPhoto]: the file and the colour it is washed in, because one photograph is
+ * washed in two colours (the dance floor list's own, and the app's blue on the folder of the moods). */
 class PlaylistPhotoKeyer : Keyer<PlaylistPhoto> {
-    override fun key(data: PlaylistPhoto, options: Options): String =
-        "photo:" + data.file + ":" + data.tint.r + "," + data.tint.g + "," + data.tint.b
+    override fun key(data: PlaylistPhoto, options: Options): String = of(data)
+
+    companion object {
+        fun of(data: PlaylistPhoto): String = "photo:" + data.file + ":" + data.tint.r + "," + data.tint.g + "," + data.tint.b
+    }
 }

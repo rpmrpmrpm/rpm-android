@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.core.content.res.ResourcesCompat
 import com.rpm.player.core.R
+import com.rpm.player.core.library.FolderFace
 import com.rpm.player.core.library.GeneratedListLook
 import com.rpm.player.core.library.ListFrameMetrics
 import com.rpm.player.core.library.TrackList
@@ -56,6 +57,23 @@ data class FramedList(val name: String, val look: GeneratedListLook.Look) {
     companion object {
         /** The frame for [list], or null for a list somebody made, or a kind this build has no colours for. */
         fun of(list: TrackList?, name: String): FramedList? = list?.let(GeneratedListLook::of)?.let { FramedList(name, it) }
+
+        /**
+         * The frame of one of the app's own folders, lettered with the folder's name, or null for a folder somebody
+         * made (`FramedList.folder` on the iPhone). A photograph goes behind its window
+         * ([PlaylistPhotos.folder][com.rpm.player.core.library.PlaylistPhotos.folder]), so the folder looks like a
+         * list of its own.
+         *
+         * One mood's folder wears the colours of that mood's list of the whole collection, so the folder and what is
+         * in it look alike. The folder of the decades wears the 1980s'. The folder of all the moods wears the app's
+         * own colours ([GeneratedListLook.app]).
+         */
+        fun folder(face: FolderFace, name: String): FramedList? = when (face) {
+            FolderFace.Plain -> null
+            FolderFace.Moods -> GeneratedListLook.app
+            FolderFace.Decades -> GeneratedListLook.of("Decade", null, 1980)
+            is FolderFace.Mood -> GeneratedListLook.of(face.kind, null, 0)
+        }?.let { FramedList(name, it) }
     }
 }
 

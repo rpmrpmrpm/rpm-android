@@ -36,6 +36,20 @@ object GeneratedListLook {
         val room: RoomPalette get() = RoomPalette.from(trio.mid, trio.hot, trio.deep)
     }
 
+    /** The app's own look: its blue, its cyan light and its violet shade, the colours the room has with no record in
+     * it (`RoomPalette.fallback` on the iPhone). The folder of all the moods wears it, because it holds every mood and
+     * so has no colour of one (`GeneratedListLook.app` on the iPhone). */
+    val app: Look by lazy {
+        val trio = Trio(hot = Rgb.of(0x05, 0xC7, 0xFF), mid = Rgb.of(0x03, 0x71, 0xD0), deep = Rgb.of(0x9E, 0x29, 0xB8))
+        val border = toward(trio.mid, 0.25)
+        var text = trio.hot
+        for (candidate in listOf(trio.mid, trio.deep)) if (contrast(candidate, border) > contrast(text, border)) text = candidate
+        Look(trio, border, text, roomed = false, apart = 0)
+    }
+
+    /** The colour a photograph behind the app's own look is washed in: its blue (`GeneratedListLook.app.tint`). */
+    val appTint: Rgb get() = app.trio.mid
+
     /** The look of a list of [kind] cut to [genre] or [decade], or null for a kind this build has no hue for: an
      * older app reading a newer computer's cut. That list still shows, without a frame. */
     fun of(kind: String, genre: String?, decade: Int): Look? {
@@ -79,6 +93,14 @@ object GeneratedListLook {
         val at = RpmPalette.RING.indexOf(colour)
         return FOOT.getOrNull(at) ?: Rgb(colour.r * 0.40f, colour.g * 0.40f, colour.b * 0.40f)
     }
+
+    /** [colour] with each channel scaled by [light] and rounded to a whole step of 255, as the iPhone's
+     * `GeneratedListLook.toward` does, so both apps reach the same border. */
+    internal fun toward(colour: Rgb, light: Double): Rgb = Rgb.of(
+        Math.round(colour.r * 255.0 * light).toInt().coerceIn(0, 255),
+        Math.round(colour.g * 255.0 * light).toInt().coerceIn(0, 255),
+        Math.round(colour.b * 255.0 * light).toInt().coerceIn(0, 255),
+    )
 
     /** Each ring colour's ramp foot, in ring order (RpmPalette.xaml's gradients). */
     private val FOOT = listOf(

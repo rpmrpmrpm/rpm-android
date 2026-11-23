@@ -156,7 +156,7 @@ private fun PlaylistTile(row: PlaylistRow, title: String, picture: Any?, framed:
             .height(caption.card.dp)
             .holdPress(remember { MutableInteractionSource() }, onPress, menu),
     ) {
-        PlaylistSleeve(picture, row.mark, art, corner = 10.dp, mark = glyphSize, images, framed, markPicture = row.markPicture)
+        PlaylistSleeve(picture, row.mark, art, corner = 10.dp, mark = glyphSize, images, framed, markPicture = row.markPicture, folderFrame = row.folderFrame)
         Spacer(Modifier.height(AlbumCaption.ART_GAP.dp))
         val nameRoom = (caption.albumLine + AlbumCaption.LINE_GAP + caption.artistLine).dp
         Box(Modifier.width(art).height(nameRoom), contentAlignment = Alignment.TopCenter) {
@@ -192,6 +192,11 @@ internal val PlaylistRow.mark: String
 @get:DrawableRes
 internal val PlaylistRow.markPicture: Int?
     get() = if (this is PlaylistRow.Folder && face == FolderFace.Moods) PhoneR.drawable.moods_folder else null
+
+/** The frame of one of the app's own folders, lettered with its name, or null for every other row
+ * ([FramedList.folder], `PlaylistRow.folderFrame` on iPhone). Its photograph is the row's picture. */
+internal val PlaylistRow.folderFrame: FramedList?
+    get() = (this as? PlaylistRow.Folder)?.let { FramedList.folder(it.face, it.folder.name) }
 
 /** The desktop's mark for one mood (`SmartPlaylistFace.Glyph`), by the kind the computer sent, or null for a kind
  * the desktop has no mark for. */
