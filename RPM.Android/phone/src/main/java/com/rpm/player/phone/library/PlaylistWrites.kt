@@ -12,6 +12,7 @@ import com.rpm.player.core.R
 import com.rpm.player.core.Services
 import com.rpm.player.core.cloud.CloudTrack
 import com.rpm.player.core.cloud.Shelf
+import com.rpm.player.core.downloads.DownloadBook
 import com.rpm.player.core.library.Collection
 import com.rpm.player.core.library.SongsAdded
 import com.rpm.player.core.library.TrackList
@@ -26,8 +27,10 @@ import kotlinx.coroutines.launch
  *
  * **Each write runs in the app's scope, not the page's**, so leaving the page while the store is answering does not
  * cut the write off half way. The page only waits for the answer.
+ *
+ * @param onDeleted called after a list was deleted from the cloud: its download goes with it.
  */
-class PlaylistWrites(private val services: Services, private val resources: Resources) {
+class PlaylistWrites(private val services: Services, private val resources: Resources, private val onDeleted: (TrackList) -> Unit = {}) {
     /** Makes a playlist; a sentence when it failed, null when it is done. */
     suspend fun make(name: String, folder: List<String>, tracks: List<CloudTrack>): String? = services.scope.async {
         services.playlistWriter.make(name, folder, tracks.map { it.rpmId })?.let { refusalText(resources, it, R.string.Rpm_Playlists_CreateFailed) }
@@ -81,7 +84,11 @@ class PlaylistWrites(private val services: Services, private val resources: Reso
 
     /** Removes [list] from the cloud; a sentence when it failed, null when it is done. The songs stay in the collection. */
     suspend fun delete(collection: Collection, list: TrackList): String? = services.scope.async {
-        services.playlistWriter.delete(list, collection.shelf)?.let { refusalText(resources, it, R.string.Rpm_Playlists_DeleteFailed) }
+        val failed = services.playlistWriter.delete(list, collection.shelf)
+        // A deleted list's download goes with it. Its songs stay on the phone where an album or another playlist holds
+        // them.
+        if (failed == null) onDeleted(list)
+        failed?.let { refusalText(resources, it, R.string.Rpm_Playlists_DeleteFailed) }
     }.await()
 
     /** A playlist the person made, on their own shelf (the iPhone's `PlaylistSet.isWritable`). */
@@ -90,8 +97,12 @@ class PlaylistWrites(private val services: Services, private val resources: Reso
 
 @Composable
 fun rememberPlaylistWrites(services: Services): PlaylistWrites {
-    val resources = LocalContext.current.resources
-    return remember(services, resources) { PlaylistWrites(services, resources) }
+    val context = LocalContext.current
+    val resources = context.resources
+    val downloads = (context.applicationContext as com.rpm.player.phone.PhoneApplication).downloads
+    return remember(services, resources, downloads) {
+        PlaylistWrites(services, resources) { list -> downloads.remove(setOf(DownloadBook.playlistKey(list.id))) }
+    }
 }
 
 /**

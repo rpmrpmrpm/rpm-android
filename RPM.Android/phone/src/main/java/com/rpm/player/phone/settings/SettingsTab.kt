@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
  * session, the plan and the storage from the quota, the settings from [PhoneSettings], and the account's actions from
  * [Account].
  *
- * @param downloaded how many albums are on the phone and what they take; the downloads page passes it.
+ * @param downloaded how many albums and playlists are on the phone and what they take; the downloads page passes it.
  * @param onDownloads opens the downloads page; null until that page exists.
  * @param onFeedback opens Send feedback; null when this build does not offer it.
  */
@@ -36,7 +36,7 @@ fun SettingsTab(
     settings: PhoneSettings,
     controller: Player?,
     bottomRoom: Dp,
-    downloaded: Pair<Int, Long> = 0 to 0L,
+    downloaded: com.rpm.player.phone.downloads.Downloaded = com.rpm.player.phone.downloads.Downloaded.None,
     onDownloads: (() -> Unit)? = null,
     onFeedback: (() -> Unit)?,
 ) {

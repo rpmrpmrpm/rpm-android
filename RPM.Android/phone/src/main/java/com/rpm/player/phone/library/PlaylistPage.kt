@@ -96,6 +96,8 @@ import com.rpm.player.phone.design.rememberBackdrop
 import com.rpm.player.phone.design.scrolled
 import com.rpm.player.phone.design.system
 import com.rpm.player.phone.ui.LiveRoom
+import com.rpm.player.phone.downloads.DownloadButton
+import com.rpm.player.phone.downloads.DownloadKey
 import com.rpm.player.phone.ui.rememberRoomColours
 import com.rpm.player.core.room.RoomPalette
 import kotlin.math.roundToInt
@@ -138,6 +140,8 @@ import com.rpm.player.phone.design.ScrollsToTop
  * @param menu what the menu at the top right offers. None, the default, is no menu: the marked songs have none.
  * @param onMove writes the songs in a new order, after a row was carried. It answers whether the store took it; the
  * rows go back where they were when it did not.
+ * @param download the download key beside Play, or null where there is none to offer: the favourite songs, the songs
+ * played lately, and another account's playlist. See [DownloadKey].
  */
 @Composable
 fun PlaylistPage(
@@ -159,6 +163,7 @@ fun PlaylistPage(
     adding: ListAdding? = null,
     canReorder: Boolean = false,
     onMove: suspend (List<CloudTrack>) -> Boolean = { false },
+    download: DownloadKey? = null,
 ) {
     var picking by remember { mutableStateOf(false) }
     var asked by rememberSaveable { mutableStateOf(false) }
@@ -207,8 +212,9 @@ fun PlaylistPage(
                     val empty = order.isEmpty()
                     val sleeve = picture ?: order.firstOrNull()?.let(coverOf)
                     ListHead(name, sleeve, holding(order.size, seconds(order), missing), about(order, blurb), if (blurb == null) 2 else 3, images, edge, top, framed, drifts = true, keysFirst = square) {
-                        // Shuffle, then Play in the middle in a glass circle, as on the album page. Play's other side is
-                        // kept empty, so Play stays in the middle of the page. Adding and rearranging are in the menu.
+                        // Shuffle, then Play in the middle in a glass circle, then the download key, as on the album page.
+                        // A list with no download key keeps its place empty, so Play stays in the middle of the page.
+                        // Adding and rearranging are in the menu.
                         SideKey(Glyph.shuffle, stringResource(R.string.AlbumMenu_Shuffle), onShuffle, enabled = !empty)
                         val play = stringResource(R.string.Rpm_Playlist_PlayList)
                         GlassButton(
@@ -224,7 +230,7 @@ fun PlaylistPage(
                             // The triangle's weight is left of its middle, so it is moved right a little to look centred.
                             BasicText(Glyph.play, Modifier.offset(x = 2.dp), style = icon(18f).copy(color = style.color))
                         }
-                        Spacer(Modifier.size(SIDE_KEY_WIDTH, KEY_HEIGHT))
+                        if (download != null) DownloadButton(download, bare = true) else Spacer(Modifier.size(SIDE_KEY_WIDTH, KEY_HEIGHT))
                     }
         }
         // The songs, or the line for an empty list, and room for the tab bar: the same rows on a tall page and on a

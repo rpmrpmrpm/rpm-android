@@ -166,8 +166,8 @@ enum class SettingsSection(val stored: String, @StringRes val label: Int, val gl
  * @param section the section that is shown. It is saved, so the page opens on the section used last.
  * @param reachSavesData whether Data Saver holds streaming down. The rate menus then show a note, because a menu that
  * says 320 while the stream is 128, with no reason on the screen, looks like a setting that does nothing.
- * @param downloaded how many albums are downloaded to this phone, and what they take.
- * @param onDownloads opens the list of downloaded albums. Null while that page does not exist; the key is then dim.
+ * @param downloaded how many albums and playlists are downloaded to this phone, and what they take.
+ * @param onDownloads opens the list of downloaded albums and playlists. Null while that page does not exist; the key is then dim.
  * @param onDeleteAccount deletes the account and signs out. Returns null when done, and a sentence when it failed.
  * @param karaoke the Karaoke lyrics switch as stored. It shows off, and cannot be changed, for an account that is not a
  * supporter's.
@@ -191,7 +191,7 @@ fun SettingsPage(
     onLevelsClassical: (Boolean) -> Unit,
     reachSavesData: Boolean,
     cached: Long,
-    downloaded: Pair<Int, Long>,
+    downloaded: com.rpm.player.phone.downloads.Downloaded,
     onDownloads: (() -> Unit)?,
     ground: Ground,
     isGold: Boolean,
@@ -428,17 +428,12 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
 
     // ── on this phone ──
 
-    /** The albums kept on the phone for listening offline, and the way to the list of them. */
+    /** The albums and playlists kept on the phone for listening offline, and the way to the list of them. */
     @Composable
-    fun Downloads(downloaded: Pair<Int, Long>, onDownloads: (() -> Unit)?, onDownload: Int, rates: Rates) {
-        val (albums, size) = downloaded
+    fun Downloads(downloaded: com.rpm.player.phone.downloads.Downloaded, onDownloads: (() -> Unit)?, onDownload: Int, rates: Rates) {
         Card(Glyph.download, stringResource(R.string.Rpm_Downloads_Title)) {
             BasicText(
-                when (albums) {
-                    0 -> stringResource(R.string.Rpm_Downloads_None)
-                    1 -> stringResource(R.string.Rpm_Downloads_SummaryOne, bytes(size))
-                    else -> stringResource(R.string.Rpm_Downloads_Summary, albums, bytes(size))
-                },
+                com.rpm.player.phone.downloads.downloadsSummary(downloaded, ::bytes),
                 style = display(17f).copy(color = Color.White),
             )
             Key(stringResource(R.string.Rpm_Downloads_Manage), enabled = onDownloads != null, onClick = { onDownloads?.invoke() })

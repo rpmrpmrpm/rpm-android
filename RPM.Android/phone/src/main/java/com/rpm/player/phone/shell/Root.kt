@@ -167,8 +167,10 @@ import com.rpm.player.phone.signin.SignInScreen
 import com.rpm.player.phone.ui.RecordSpinner
 import com.rpm.player.phone.ui.VinylGround
 import com.rpm.player.phone.downloads.DownloadsPage
+import com.rpm.player.phone.downloads.FollowDownloadedLists
 import com.rpm.player.phone.downloads.LocalPlayable
 import com.rpm.player.phone.downloads.OfflineBar
+import com.rpm.player.phone.downloads.rememberDownloadedLists
 import com.rpm.player.phone.downloads.rememberDownloadsHere
 import com.rpm.player.phone.stage.StageOrientation
 import com.rpm.player.phone.stage.StageOrientationFollows
@@ -343,6 +345,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     val playlistWrites = rememberPlaylistWrites(services)
     RereadListsOnReturn(services)
     val downloads = rememberDownloadsHere()
+    FollowDownloadedLists(downloads, collection)
     var showingDownloads by rememberSaveable { mutableStateOf(false) }
 
     // ── profiles ──
@@ -586,6 +589,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             adding = playlistWrites.adding(collection, list),
             canReorder = playlistWrites.canReorder(collection, list),
             onMove = { order -> playlistWrites.move(collection, list, order) },
+            download = downloads.key(list, collection.shelf, shownName),
         )
     }
 
@@ -1001,6 +1005,8 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                 onRemove = downloads.engine::remove,
                 onClose = { showingDownloads = false },
                 explicitOf = { album -> (collection.album(album.key) ?: album).isExplicit },
+                lists = rememberDownloadedLists(collection),
+                total = downloads.total,
             )
         }
         HoldMenuLayer(holdMenus, backdrop)

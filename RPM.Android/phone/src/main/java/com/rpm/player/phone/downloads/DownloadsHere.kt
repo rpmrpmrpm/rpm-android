@@ -20,8 +20,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpm.player.core.cloud.CloudTrack
 import com.rpm.player.core.cloud.Shelf
 import com.rpm.player.core.downloads.AlbumDownloads
+import com.rpm.player.core.downloads.DownloadBook
 import com.rpm.player.core.library.CloudAlbum
 import com.rpm.player.core.library.StarterTracks
+import com.rpm.player.core.library.TrackList
 import com.rpm.player.core.net.Reach
 import com.rpm.player.phone.PhoneApplication
 
@@ -40,6 +42,7 @@ class DownloadsHere internal constructor(
     private val held: State<Set<String>>,
     private val shown: State<Map<String, AlbumDownloads.Standing>>,
     private val rowsNow: State<List<AlbumDownloads.Row>>,
+    private val bytesNow: State<Long>,
     private val askToNotify: State<() -> Unit>,
 ) {
     /** The settled reading ([PhoneApplication.line]): what the offline bar shows. */
@@ -51,11 +54,18 @@ class DownloadsHere internal constructor(
     /** Whether one song plays now: anything online, and offline a song with a file on the phone. */
     val canPlay: (CloudTrack) -> Boolean = { track -> online || track.rpmId in held.value }
 
-    /** The albums asked for, newest first: the downloads page. */
+    /** The albums and playlists asked for, newest first: the downloads page. */
     val rows: List<AlbumDownloads.Row> get() = rowsNow.value
 
-    /** How many albums are downloaded and what they take: the profile tab's downloads row. */
-    val downloaded: Pair<Int, Long> get() = rowsNow.value.let { rows -> rows.size to rows.sumOf { it.bytes } }
+    /** Everything the downloads take on the phone, a track that an album and a playlist share counted once. */
+    val total: Long get() = bytesNow.value
+
+    /** How many albums and playlists are downloaded and what they take: the profile tab's downloads row. */
+    val downloaded: Downloaded
+        get() = rowsNow.value.let { rows ->
+            val playlists = rows.count { DownloadBook.isPlaylistKey(it.album.key) }
+            Downloaded(rows.size - playlists, playlists, bytesNow.value)
+        }
 
     /**
      * The download key for a record's page, or null on a shelf another account shares: a download is signed as one of
@@ -71,6 +81,31 @@ class DownloadsHere internal constructor(
                 engine.download(album)
             },
             onRemove = { engine.remove(setOf(album.key)) },
+        )
+    }
+
+    /**
+     * The download key for a playlist's page, as a record's page has one (the iPhone's `RootView.downloadKey(for:)`).
+     *
+     * Only for a list on the person's own shelf: a download is signed as one of this account's tracks. None for a list
+     * with nothing to download (no songs, or only starter tracks), unless it is downloaded already and can still be
+     * removed. The queue, the favourite songs and the songs played lately are not lists here, so they never get one.
+     *
+     * @param name the list's name as its page shows it, which the downloads page shows.
+     */
+    fun key(list: TrackList, shelf: Shelf, name: String): DownloadKey? {
+        if (shelf != Shelf.Own) return null
+        val key = DownloadBook.playlistKey(list.id)
+        val standing = shown.value[key]
+        if (standing == null && AlbumDownloads.entry(list, name).tracks.isEmpty()) return null
+        return DownloadKey(
+            standing = standing,
+            onDownload = {
+                askToNotify.value()
+                engine.download(list, name)
+            },
+            onRemove = { engine.remove(setOf(key)) },
+            isPlaylist = true,
         )
     }
 }
@@ -91,6 +126,7 @@ fun rememberDownloadsHere(): DownloadsHere {
     val held = engine.held.collectAsStateWithLifecycle()
     val shown = engine.shown.collectAsStateWithLifecycle()
     val rows = engine.rows.collectAsStateWithLifecycle()
+    val bytes = engine.bytes.collectAsStateWithLifecycle()
 
     LaunchedEffect(engine) { engine.begin() }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { engine.pump() }
@@ -106,5 +142,5 @@ fun rememberDownloadsHere(): DownloadsHere {
         }
     }
 
-    return remember(engine) { DownloadsHere(engine, reach, onPhone, held, shown, rows, askToNotify) }
+    return remember(engine) { DownloadsHere(engine, reach, onPhone, held, shown, rows, bytes, askToNotify) }
 }

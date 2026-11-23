@@ -2,7 +2,11 @@ package com.rpm.player.core.downloads
 
 import com.rpm.player.core.diag.Diag
 import com.rpm.player.core.cloud.ApiException
+import com.rpm.player.core.cloud.Shelf
+import com.rpm.player.core.library.AlbumWall
 import com.rpm.player.core.library.CloudAlbum
+import com.rpm.player.core.library.StarterTracks
+import com.rpm.player.core.library.TrackList
 import com.rpm.player.core.net.await
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -24,6 +28,10 @@ import java.io.IOException
 /**
  * Downloads albums to the phone so they play without a network. The iPhone's `AlbumDownloads`
  * (RPMLibrary/AlbumDownloads.swift).
+ *
+ * **Playlists are downloaded by the same machinery.** A playlist is kept in the book as an album under
+ * [DownloadBook.playlistKey], so it has a [Standing] and a row in [rows] like any record. See the [download] that takes
+ * a [TrackList], and [follow].
  *
  * **What to fetch is worked out, never remembered.** The book says which tracks are wanted and which have a file;
  * [inFlight] says which are on their way. [pump] takes the difference whenever it is asked, so it is right to call
@@ -99,19 +107,26 @@ class AlbumDownloads(
     private val onPhoneFlow = MutableStateFlow<Set<String>>(emptySet())
     private val heldFlow = MutableStateFlow<Set<String>>(emptySet())
     private val rowsFlow = MutableStateFlow<List<Row>>(emptyList())
+    private val bytesFlow = MutableStateFlow(0L)
     private val busyFlow = MutableStateFlow(false)
 
     /** Every album with a standing, redrawn after each change. What the keys read. */
     val shown: StateFlow<Map<String, Standing>> = shownFlow.asStateFlow()
 
-    /** The keys of albums with at least one track on the phone: what is greyed on the wall while offline. */
+    /** The keys of albums with at least one track on the phone: what is greyed on the wall while offline. A track that
+     * is on the phone for a playlist counts for its own record. */
     val onPhone: StateFlow<Set<String>> = onPhoneFlow.asStateFlow()
 
     /** The tracks with a file on the phone: which songs of a record play offline. */
     val held: StateFlow<Set<String>> = heldFlow.asStateFlow()
 
-    /** The albums asked for, newest first, with what each takes on the phone. What the downloads page draws. */
+    /** The albums and playlists asked for, newest first, with what each takes on the phone. What the downloads page
+     * draws. A playlist's key is a [DownloadBook.playlistKey]. */
     val rows: StateFlow<List<Row>> = rowsFlow.asStateFlow()
+
+    /** Everything the downloads take on the phone. A track that an album and a playlist share is counted once, because
+     * it has one file. */
+    val bytes: StateFlow<Long> = bytesFlow.asStateFlow()
 
     /** Whether anything is on its way or waiting for the store: while this is true the phone keeps the process up. */
     val busy: StateFlow<Boolean> = busyFlow.asStateFlow()
@@ -161,7 +176,68 @@ class AlbumDownloads(
     // ── what the keys do ──
 
     /** Downloads an album, or tries again for one that is stuck. */
-    fun download(album: CloudAlbum) {
+    fun download(album: CloudAlbum) = want(album)
+
+    /**
+     * Downloads every track of a playlist, or tries again for one that is stuck. Its standing is read under
+     * [DownloadBook.playlistKey] of its id. A list with nothing to download (see [entry]) is not asked for.
+     *
+     * @param name the list's name as the screen shows it, which the downloads page shows.
+     */
+    fun download(list: TrackList, name: String) {
+        val entry = entry(list, name)
+        if (entry.tracks.isNotEmpty()) want(entry)
+    }
+
+    /**
+     * Keeps each downloaded playlist the same as its list: a song added to the list is downloaded, and a song taken out
+     * of it leaves the phone, unless an album or another playlist still holds it. Called whenever the lists change.
+     *
+     * Only lists on this account's own shelf are followed: a borrowed [shelf] shows another account's lists, and a list
+     * there is not this account's download. A downloaded playlist that is not in [lists] is left as it is, because the
+     * lists can be missing while they are read.
+     *
+     * **A list with songs this phone cannot resolve** ([TrackList.missing]) **only gains songs.** Its songs can be
+     * unresolved for a moment, for example while the listing is read again, and the files of a song that is only out
+     * of sight must not be deleted.
+     *
+     * @param nameOf a list's name as the screen shows it.
+     */
+    fun follow(shelf: Shelf, lists: List<TrackList>, nameOf: (TrackList) -> String) {
+        if (shelf != Shelf.Own || lists.isEmpty()) return
+        scope.launch {
+            val gone = withContext(io) {
+                val kept = book.all.filter { it.isPlaylist }.associateBy { it.key }
+                if (kept.isEmpty()) return@withContext null
+
+                val before = HashSet<String>()
+                var changed = false
+                for (list in lists) {
+                    val now = entry(list, nameOf(list))
+                    val was = kept[now.key] ?: continue
+
+                    var tracks = now.tracks
+                    if (list.missing > 0) {
+                        val ids = tracks.map { it.rpmId }.toSet()
+                        tracks = tracks + was.tracks.filter { it.rpmId !in ids }
+                    }
+                    if (tracks.map { it.rpmId } == was.tracks.map { it.rpmId } && now.album == was.album) continue
+
+                    was.tracks.mapTo(before) { it.rpmId }
+                    book.want(CloudAlbum(now.key, now.album, now.artist, tracks))
+                    changed = true
+                }
+                if (changed) before.filter { !book.isWanted(it) }.toSet() else null
+            } ?: return@launch
+
+            stop(gone)
+            redraw()
+            pump()
+        }
+    }
+
+    /** Asks for an album or a playlist, with a fresh set of goes for each of its tracks. */
+    private fun want(album: CloudAlbum) {
         scope.launch {
             withContext(io) { book.want(album) }
             for (track in album.tracks) goes.remove(track.rpmId)
@@ -171,18 +247,26 @@ class AlbumDownloads(
         }
     }
 
-    /** Takes albums off the phone, and stops whatever was still coming for them. */
+    /**
+     * Takes albums or playlists off the phone, and stops whatever was still coming for them. A track that another album
+     * or playlist still holds stays, and its transfer goes on (see [DownloadBook.drop]).
+     */
     fun remove(keys: Set<String>) {
         scope.launch {
-            val gone = withContext(io) { book.drop(keys) }
-            for (rpmId in gone) {
-                partial.remove(rpmId)
-                goes.remove(rpmId)
-                transfers.remove(rpmId)?.cancel()
-            }
-            making.forget(gone)
+            stop(withContext(io) { book.drop(keys) })
             redraw()
         }
+    }
+
+    /** Forgets what is known about tracks that nothing wants any more, and cancels their transfers. */
+    private fun stop(gone: Set<String>) {
+        if (gone.isEmpty()) return
+        for (rpmId in gone) {
+            partial.remove(rpmId)
+            goes.remove(rpmId)
+            transfers.remove(rpmId)?.cancel()
+        }
+        making.forget(gone)
     }
 
     /** Signing out, or another account signing in: every file goes, and every transfer stops. */
@@ -439,7 +523,12 @@ class AlbumDownloads(
         for (album in book.all) {
             val count = book.count(album.key) ?: continue
             val (have, of) = count
-            if (have > 0) some += album.key
+            if (album.isPlaylist) {
+                // A playlist is not on the wall. The records its tracks are from are.
+                for (track in album.tracks) if (book.held(track.rpmId) != null) some += AlbumWall.key(track)
+            } else if (have > 0) {
+                some += album.key
+            }
 
             val left = album.tracks.map { it.rpmId }.filter { book.held(it) == null }
             album.tracks.mapNotNullTo(files) { track -> track.rpmId.takeIf { it !in left } }
@@ -462,11 +551,24 @@ class AlbumDownloads(
         if (some != onPhoneFlow.value) onPhoneFlow.value = some
         if (files != heldFlow.value) heldFlow.value = files
         if (rows != rowsFlow.value) rowsFlow.value = rows
+        val total = book.totalBytes
+        if (total != bytesFlow.value) bytesFlow.value = total
         val working = inFlight.isNotEmpty() || !making.isEmpty
         if (working != busyFlow.value) busyFlow.value = working
     }
 
     companion object {
+        /**
+         * What a playlist is kept as in the book: its tracks in its own order, each one once, without the starter
+         * tracks ([StarterTracks]), which are in the app already. It has no artist; the downloads page names its kind
+         * in that place.
+         */
+        fun entry(list: TrackList, name: String): CloudAlbum {
+            val seen = HashSet<String>()
+            val tracks = list.tracks.filter { !StarterTracks.isStarter(it.rpmId) && seen.add(it.rpmId) }
+            return CloudAlbum(DownloadBook.playlistKey(list.id), name, "", tracks)
+        }
+
         /** How many tracks are transferred at once. Enough to keep a connection busy between one finishing and the
          * next being signed; few enough that every address is used well inside its signature's life. */
         const val AT_ONCE = 4

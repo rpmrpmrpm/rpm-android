@@ -44,8 +44,8 @@ import com.rpm.player.phone.design.Ink
 import com.rpm.player.phone.design.icon
 
 /**
- * What the download key on a record's page needs, as the iPhone's `DownloadKey` (RPMUI/DownloadKey.swift): where the
- * album stands on this phone, and the two things the person can do.
+ * What the download key on a record's page or a playlist's page needs, as the iPhone's `DownloadKey`
+ * (RPMUI/DownloadKey.swift): where the album or the list stands on this phone, and the two things the person can do.
  *
  * The page is handed null on a borrowed shelf, rather than a key that does nothing: a download is signed as the
  * account's own track, and another person's record is not one.
@@ -55,6 +55,9 @@ class DownloadKey(
     val standing: Standing?,
     val onDownload: () -> Unit,
     val onRemove: () -> Unit,
+    /** Whether the key is on a playlist's page. Only the questions before a stop or a removal differ: they name a
+     * playlist and not an album. */
+    val isPlaylist: Boolean = false,
 )
 
 /**
@@ -117,8 +120,14 @@ fun DownloadButton(key: DownloadKey, modifier: Modifier = Modifier, bare: Boolea
 
     if (asking) {
         val stopping = standing is Standing.Downloading
+        val question = when {
+            stopping && key.isPlaylist -> R.string.Rpm_Download_StopPlaylistQuestion
+            stopping -> R.string.Rpm_Download_StopQuestion
+            key.isPlaylist -> R.string.Phone_Download_RemovePlaylistQuestion
+            else -> R.string.Phone_Download_RemoveQuestion
+        }
         ConfirmSheet(
-            question = stringResource(if (stopping) R.string.Rpm_Download_StopQuestion else R.string.Phone_Download_RemoveQuestion),
+            question = stringResource(question),
             action = stringResource(if (stopping) R.string.Rpm_Download_Stop else R.string.Rpm_Download_Remove),
             onConfirm = {
                 asking = false

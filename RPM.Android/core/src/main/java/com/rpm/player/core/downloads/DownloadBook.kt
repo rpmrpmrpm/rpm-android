@@ -30,6 +30,10 @@ import java.io.File
  * read, the system does not clear as it clears caches, and Android's backup leaves out: they are copies of what is in
  * the cloud, and an album would pass the 25 MB that Auto Backup holds for an app and stop its backup altogether. The book reads its manifest from the disk the first time it is asked anything, so the first
  * question should come from a background thread ([AlbumDownloads.begin] does this).
+ *
+ * **A playlist is kept as an album is**, under a key of its own ([playlistKey]), with its tracks as they were when it
+ * was asked for. The two can share tracks. A track has one file, and that file stays while any album or playlist that
+ * holds the track is still asked for.
  */
 class DownloadBook(private val root: File, private val clock: () -> Long = System::currentTimeMillis) : LocalCopies {
     @Serializable
@@ -42,6 +46,9 @@ class DownloadBook(private val root: File, private val clock: () -> Long = Syste
         val asked: Long,
     ) {
         val asAlbum: CloudAlbum get() = CloudAlbum(key, album, artist, tracks)
+
+        /** Whether this is a playlist and not a record. See [playlistKey]. */
+        val isPlaylist: Boolean get() = DownloadBook.isPlaylistKey(key)
     }
 
     @Serializable
@@ -67,7 +74,8 @@ class DownloadBook(private val root: File, private val clock: () -> Long = Syste
     private var copies = HashMap<String, Copy>()
     private var account: String? = null
 
-    /** Which album each wanted track belongs to. Rebuilt whenever the albums change. */
+    /** For each wanted track, one of the albums or playlists that holds it. Only whether a track has an entry here
+     * matters. Rebuilt whenever the albums change. */
     private var owners = HashMap<String, String>()
 
     @Volatile private var loaded = false
@@ -122,11 +130,20 @@ class DownloadBook(private val root: File, private val clock: () -> Long = Syste
         albums[key]?.tracks?.sumOf { copies[it.rpmId]?.bytes ?: 0L } ?: 0L
     }
 
-    /** Every track that is wanted and has no file yet, in the order the albums were asked for and each album's own
-     * order. What the downloader works down. */
+    /** Everything the files take up on the phone. A track held by an album and a playlist has one file, and it is
+     * counted once. */
+    val totalBytes: Long get() = locked { copies.values.sumOf { it.bytes } }
+
+    /**
+     * Every track that is wanted and has no file yet, in the order the albums were asked for and each album's own
+     * order. What the downloader works down.
+     *
+     * **Each track is listed once**, where it first appears. A track can be in an album and a playlist, or twice in
+     * one playlist, and it has one file. Listed twice, it would be signed and transferred twice.
+     */
     val missing: List<String>
         get() = locked {
-            albums.values.sortedBy { it.asked }.flatMap { it.tracks }.map { it.rpmId }.filter { it !in copies }
+            albums.values.sortedBy { it.asked }.flatMap { it.tracks }.map { it.rpmId }.filter { it !in copies }.distinct()
         }
 
     /** Whether a track belongs to an album that is still wanted. */
@@ -154,6 +171,8 @@ class DownloadBook(private val root: File, private val clock: () -> Long = Syste
     /**
      * Takes albums off the phone. Their files are deleted now. Anything still downloading for them is thrown away
      * when it arrives, because it is not wanted any more.
+     *
+     * **A track that another album or playlist still holds keeps its file**, and it is not in the answer.
      *
      * @return the tracks that stopped being wanted, so whoever is downloading them can stop.
      */
@@ -249,6 +268,19 @@ class DownloadBook(private val root: File, private val clock: () -> Long = Syste
     private fun file(rpmId: String) = File(tracksDir, name(rpmId))
 
     companion object {
+        private const val PLAYLIST_PREFIX = "playlist:"
+
+        /**
+         * The key a playlist is kept under, from its id ([com.rpm.player.core.library.TrackList.id]).
+         *
+         * It cannot be the key of a record: a record's key ([com.rpm.player.core.library.AlbumWall.key]) starts with
+         * `folder:` or `tags:`.
+         */
+        fun playlistKey(id: String): String = PLAYLIST_PREFIX + id
+
+        /** Whether a key is one that [playlistKey] made. */
+        fun isPlaylistKey(key: String): Boolean = key.startsWith(PLAYLIST_PREFIX)
+
         /** One file per track, named by its id. Escaped, because the id comes from the store and nothing promises it
          * has no slash. */
         fun name(rpmId: String): String = buildString {

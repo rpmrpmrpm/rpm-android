@@ -1,6 +1,7 @@
 package com.rpm.player.core.downloads
 
 import com.rpm.player.core.cloud.CloudTrack
+import com.rpm.player.core.library.AlbumWall
 import com.rpm.player.core.library.CloudAlbum
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -101,6 +102,64 @@ class DownloadBookTest {
         book.want(album("a", listOf("a1")), at = 100)
         assertEquals(listOf("a1", "b1", "b2"), book.missing)
         assertEquals(listOf("b", "a"), book.all.map { it.key })
+    }
+
+    // ── albums and playlists that share tracks ──
+
+    /** **A track that an album and a playlist share keeps its file until both are removed**, and removing the first
+     * does not name it as gone, so its transfer is not stopped. */
+    @Test fun aSharedTrackStaysUntilEverythingThatHoldsItIsRemoved() {
+        val book = DownloadBook(root)
+        val list = DownloadBook.playlistKey("own/p1")
+        book.want(album("a", listOf("t1", "t2")))
+        book.want(album(list, listOf("t2", "t3")))
+        book.keep("t2", arrived(), 320)
+        val file = book.held("t2")!!.file
+
+        assertEquals(setOf("t3"), book.drop(setOf(list)))
+        assertTrue(book.held("t2") != null)
+        assertTrue(file.exists())
+        assertEquals(1 to 2, book.count("a"))
+
+        assertEquals(setOf("t1", "t2"), book.drop(setOf("a")))
+        assertNull(book.held("t2"))
+        assertFalse(file.exists())
+    }
+
+    /** The same, the other way round: removing the album leaves the playlist's copy. */
+    @Test fun removingTheAlbumLeavesThePlaylistItsTrack() {
+        val book = DownloadBook(root)
+        val list = DownloadBook.playlistKey("own/p1")
+        book.want(album("a", listOf("t1")))
+        book.want(album(list, listOf("t1")))
+        book.keep("t1", arrived(), 320)
+
+        assertTrue(book.drop(setOf("a")).isEmpty())
+        assertEquals(1 to 1, book.count(list))
+        assertTrue(book.isWanted("t1"))
+    }
+
+    /** A track held twice is fetched once: it is listed once in what is missing, and its file is counted once in the
+     * total. */
+    @Test fun aSharedTrackIsFetchedAndCountedOnce() {
+        val book = DownloadBook(root)
+        book.want(album("a", listOf("t1", "t2")), at = 100)
+        book.want(album(DownloadBook.playlistKey("own/p1"), listOf("t2", "t1", "t3", "t3")), at = 200)
+
+        assertEquals(listOf("t1", "t2", "t3"), book.missing)
+
+        book.keep("t1", arrived(1000), 320)
+        book.keep("t2", arrived(500), 320)
+        assertEquals(listOf("t3"), book.missing)
+        assertEquals(1500L, book.totalBytes)
+        assertEquals(1500L, book.bytes("a"))
+    }
+
+    @Test fun aPlaylistKeyIsNeverARecordKey() {
+        val list = DownloadBook.playlistKey("own/p1")
+        assertTrue(DownloadBook.isPlaylistKey(list))
+        assertFalse(DownloadBook.isPlaylistKey(AlbumWall.key(CloudTrack(rpmId = "t1", title = "t1", album = "a"))))
+        assertFalse(DownloadBook.isPlaylistKey(AlbumWall.key(CloudTrack(rpmId = "t2", relativePath = "playlist:x/y.flac"))))
     }
 
     @Test fun forgettingEverythingLeavesNothing() {

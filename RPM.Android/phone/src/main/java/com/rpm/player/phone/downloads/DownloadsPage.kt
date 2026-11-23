@@ -49,6 +49,7 @@ import com.rpm.player.core.downloads.AlbumDownloads.Row as DownloadRow
 import com.rpm.player.core.downloads.AlbumDownloads.Standing
 import com.rpm.player.core.library.CloudAlbum
 import com.rpm.player.core.library.Cover
+import com.rpm.player.core.downloads.DownloadBook
 import com.rpm.player.phone.design.GlassButton
 import com.rpm.player.phone.design.Glyph
 import com.rpm.player.phone.design.Ink
@@ -59,18 +60,25 @@ import com.rpm.player.phone.design.display
 import com.rpm.player.phone.design.icon
 import com.rpm.player.phone.design.iconOutline
 import com.rpm.player.phone.design.kicker
+import com.rpm.player.phone.library.FramedList
+import com.rpm.player.phone.library.PlaylistSleeve
 import com.rpm.player.phone.library.SleeveSquare
 import java.util.Locale
 
 /**
- * The albums downloaded to this phone, and the way to remove them: the iPhone's `DownloadsPage`
+ * The albums and playlists downloaded to this phone, and the way to remove them: the iPhone's `DownloadsPage`
  * (RPMUI/DownloadsPage.swift). It is opened from the downloads row of the profile tab and rises over the app as the
  * iPhone's sheet does.
  *
  * One album is removed with a swipe. Several are removed with Select, which puts a tick beside each row and a Remove key
  * under the list. Select all is there because clearing the phone before a trip is the usual reason to open this page.
+ * A downloaded playlist is a row like an album, so this page shows everything the downloads take.
  *
  * @param coverOf the cover of a downloaded album, from the collection on screen; null draws the empty sleeve.
+ * @param lists the downloaded playlists' pictures and frames, from the lists on screen.
+ * @param total the space every download takes, for the line at the top
+ * ([com.rpm.player.core.downloads.AlbumDownloads.bytes]). A track that an album and a playlist share is in both rows'
+ * sizes and counted once here. Null adds up the rows.
  */
 @Composable
 fun DownloadsPage(
@@ -81,6 +89,8 @@ fun DownloadsPage(
     onClose: () -> Unit,
     /** Whether a record's title wears the E. The collection's copy of the record says, where it still has one. */
     explicitOf: (CloudAlbum) -> Boolean = { it.isExplicit },
+    lists: DownloadedLists = DownloadedLists.None,
+    total: Long? = null,
 ) {
     BackHandler(onBack = onClose)
     var selecting by rememberSaveable { mutableStateOf(false) }
@@ -117,7 +127,7 @@ fun DownloadsPage(
                     LazyColumn(Modifier.fillMaxSize()) {
                         item(key = "summary", contentType = "summary") {
                             BasicText(
-                                summary(rows),
+                                summary(rows, total),
                                 Modifier.padding(horizontal = 16.dp).padding(top = 12.dp, bottom = 6.dp),
                                 style = display(12f).copy(color = Ink.white(0x88)),
                             )
@@ -128,7 +138,7 @@ fun DownloadsPage(
                                 leading = null,
                                 trailing = SwipeKey(Glyph.remove, stringResource(R.string.Rpm_Download_Remove), Ink.red) { onRemove(setOf(key)) },
                             ) {
-                                Line(row, coverOf(row.album), images, selecting, picked = key in picked, explicit = explicitOf(row.album)) {
+                                Line(row, coverOf, lists, images, selecting, picked = key in picked, explicitOf = explicitOf) {
                                     if (selecting) {
                                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                         picked = if (key in picked) picked - key else picked + key
@@ -153,12 +163,14 @@ fun DownloadsPage(
     }
 
     if (asking) {
-        val count = picked.size
+        val chosen = rows.filter { it.album.key in picked }
+        val playlists = chosen.count { DownloadBook.isPlaylistKey(it.album.key) }
         ConfirmSheet(
-            question = if (count == 1) {
-                stringResource(R.string.Phone_Download_RemoveQuestion)
-            } else {
-                stringResource(R.string.Phone_Downloads_RemoveQuestion, count.toString())
+            question = when {
+                chosen.size == 1 && playlists == 1 -> stringResource(R.string.Phone_Download_RemovePlaylistQuestion)
+                chosen.size == 1 -> stringResource(R.string.Phone_Download_RemoveQuestion)
+                playlists == 0 -> stringResource(R.string.Phone_Downloads_RemoveQuestion, chosen.size.toString())
+                else -> stringResource(R.string.Phone_Downloads_RemoveMixedQuestion, chosen.size.toString())
             },
             action = stringResource(R.string.Rpm_Download_Remove),
             onConfirm = {
@@ -204,9 +216,23 @@ private fun Bar(selecting: Boolean, canSelect: Boolean, onClose: () -> Unit, onS
     }
 }
 
-/** One album: its tick while selecting, its sleeve, its name and artist, and its size or how far it has got. */
+/**
+ * One album or playlist: its tick while selecting, its sleeve, its name and artist, and its size or how far it has got.
+ * A playlist has the list's own picture, or else its first record's cover, and in the artist's place its kind, as on
+ * home's quick selection: a playlist has no artist of its own.
+ */
 @Composable
-private fun Line(row: DownloadRow, cover: Cover?, images: ImageLoader, selecting: Boolean, picked: Boolean, explicit: Boolean, onTap: () -> Unit) {
+private fun Line(
+    row: DownloadRow,
+    coverOf: (CloudAlbum) -> Cover?,
+    lists: DownloadedLists,
+    images: ImageLoader,
+    selecting: Boolean,
+    picked: Boolean,
+    explicitOf: (CloudAlbum) -> Boolean,
+    onTap: () -> Unit,
+) {
+    val isPlaylist = DownloadBook.isPlaylistKey(row.album.key)
     Row(
         Modifier
             .fillMaxWidth()
@@ -227,10 +253,27 @@ private fun Line(row: DownloadRow, cover: Cover?, images: ImageLoader, selecting
                 BasicText(CIRCLE, style = iconOutline(20f).copy(color = Ink.white(0x55)))
             }
         }
-        SleeveSquare(cover, SLEEVE.dp, images, radius = 6.dp, glyphSize = 16f)
+        if (isPlaylist) {
+            PlaylistSleeve(
+                lists.picture(row.album),
+                Glyph.playlists,
+                edge = SLEEVE.dp,
+                corner = 6.dp,
+                mark = 16f,
+                images,
+                FramedList.of(lists.list(row.album), row.album.album),
+            )
+        } else {
+            SleeveSquare(coverOf(row.album), SLEEVE.dp, images, radius = 6.dp, glyphSize = 16f)
+        }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            MarkedTitle(row.album.album, explicit, display(15f).copy(color = Color.White))
-            BasicText(row.album.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(12f).copy(color = Ink.white(0x88)))
+            MarkedTitle(row.album.album, !isPlaylist && explicitOf(row.album), display(15f).copy(color = Color.White))
+            BasicText(
+                if (isPlaylist) stringResource(R.string.Home_QuickPlaylist) else row.album.artist,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = display(12f).copy(color = Ink.white(0x88)),
+            )
         }
         BasicText(state(row), style = display(12f).copy(color = Ink.white(0x77), fontFeatureSettings = "tnum"))
     }
@@ -277,13 +320,9 @@ private fun Empty() {
 }
 
 @Composable
-private fun summary(rows: List<DownloadRow>): String {
-    val total = rows.sumOf { it.bytes }
-    return if (rows.size == 1) {
-        stringResource(R.string.Rpm_Downloads_SummaryOne, DownloadSizes.format(total))
-    } else {
-        stringResource(R.string.Rpm_Downloads_Summary, rows.size.toString(), DownloadSizes.format(total))
-    }
+private fun summary(rows: List<DownloadRow>, total: Long?): String {
+    val playlists = rows.count { DownloadBook.isPlaylistKey(it.album.key) }
+    return downloadsSummary(Downloaded(rows.size - playlists, playlists, total ?: rows.sumOf { it.bytes }), DownloadSizes::format)
 }
 
 @Composable
