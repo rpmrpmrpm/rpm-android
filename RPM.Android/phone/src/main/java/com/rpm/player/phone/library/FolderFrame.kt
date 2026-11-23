@@ -33,8 +33,8 @@ import kotlinx.coroutines.withContext
  * `FolderFrame`, RPMSharedUI/FolderFrame.swift).
  *
  * It is a different drawing from a list's frame ([ListFrameOverlay]), so a folder does not look like one more list:
- * a black square with a window cut out of it, and a bar under the window where the folder's name is set in the middle
- * on one line ([FolderFrameMetrics]). The folder's photograph shows through the window
+ * a black square with a folder-shaped window cut out of it (a tab at the top right), and a bar under the window where
+ * the folder's name is set in the middle on one line ([FolderFrameMetrics]). The folder's photograph shows through the window
  * ([PlaylistPhotos.folder][com.rpm.player.core.library.PlaylistPhotos.folder]); the caller draws it under this layer.
  *
  * The drawing is inked in the folder's two colours as a list's frame is ([ramp]): its black in the border colour, and

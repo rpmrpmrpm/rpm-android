@@ -5,8 +5,9 @@ package com.rpm.player.core.library
  * one line. The iPhone's `FolderFrameMetrics` (RPMDesign/FolderFrameMetrics.swift) has the same numbers; change both
  * together.
  *
- * The drawing is 800 pixels square. Its window runs from 35 to 768 across and from 36 to 646 down, and the bar below
- * the window runs from 647 to the bottom edge. Every number here is a share of the square, so the same rule sets the
+ * The drawing is 800 pixels square. Its window is the shape of a folder: 35 to 768 across, 104 to 646 down, with a tab
+ * at the top right from 582 to 768 across that reaches up to 36. The bar below the window runs from 647 to the bottom
+ * edge. Every number here is a share of the square, so the same rule sets the
  * name at any size. y counts down, as in the drawing.
  */
 object FolderFrameMetrics {
