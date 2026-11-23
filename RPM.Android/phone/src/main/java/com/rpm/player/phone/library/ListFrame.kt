@@ -59,10 +59,9 @@ data class FramedList(val name: String, val look: GeneratedListLook.Look) {
         fun of(list: TrackList?, name: String): FramedList? = list?.let(GeneratedListLook::of)?.let { FramedList(name, it) }
 
         /**
-         * The frame of one of the app's own folders, lettered with the folder's name, or null for a folder somebody
-         * made (`FramedList.folder` on the iPhone). A photograph goes behind its window
-         * ([PlaylistPhotos.folder][com.rpm.player.core.library.PlaylistPhotos.folder]), so the folder looks like a
-         * list of its own.
+         * The name and inks of one of the app's own folders, for its frame ([FolderFrameOverlay]), or null for a
+         * folder somebody made (`FramedList.folder` on the iPhone). A photograph of its own goes behind the frame's
+         * window ([PlaylistPhotos.folder][com.rpm.player.core.library.PlaylistPhotos.folder]).
          *
          * One mood's folder wears the colours of that mood's list of the whole collection, so the folder and what is
          * in it look alike. The folder of the decades wears the 1980s'. The folder of all the moods wears the app's
@@ -166,8 +165,9 @@ internal fun paintRoom(palette: RoomPalette, seconds: Double, w: Int, h: Int): I
 /** The room pictures painted so far. A few dozen small pictures at most: a shelf of generated lists at two sizes. */
 private val ROOMS = LruCache<String, ImageBitmap>(48)
 
-/** The frame drawing and the face its name is set in, each read once for the app. */
-private object FrameDrawing {
+/** The frame drawing and the face its name is set in, each read once for the app. The folder frame
+ * ([FolderFrameOverlay]) sets its name in the same face. */
+internal object FrameDrawing {
     @Volatile var held: ImageBitmap? = null
         private set
 
@@ -184,7 +184,7 @@ private object FrameDrawing {
 }
 
 /** The ink box of [said] set at [size], from the glyphs' outlines rather than the line the font reserves. */
-private fun ink(paint: Paint, said: String, size: Float): ListFrameMetrics.Ink {
+internal fun ink(paint: Paint, said: String, size: Float): ListFrameMetrics.Ink {
     paint.textSize = size
     val path = Path()
     paint.getTextPath(said, 0, said.length, 0f, 0f, path)
@@ -197,7 +197,7 @@ private fun ink(paint: Paint, said: String, size: Float): ListFrameMetrics.Ink {
 /** Maps the drawing's grey to a mix of [border] (its black) and [text] (its white), alpha kept: a two-colour ramp,
  * which is linear, so one colour matrix. Android applies it to unpremultiplied colour, so a soft edge is read by its
  * own colour and not by how much of it is covered. */
-private fun ramp(border: Rgb, text: Rgb): ColorMatrix = ColorMatrix(
+internal fun ramp(border: Rgb, text: Rgb): ColorMatrix = ColorMatrix(
     floatArrayOf(
         text.r - border.r, 0f, 0f, 0f, border.r * 255f,
         0f, text.g - border.g, 0f, 0f, border.g * 255f,

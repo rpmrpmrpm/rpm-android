@@ -25,24 +25,41 @@ class PlaylistPhotosTest {
         assertNull(PlaylistPhotos.of("Calm", "No such genre", 0))
     }
 
-    /** Each of the app's own folders has a photograph behind its frame, and a folder somebody made has none. The
-     * folder of all the moods washes the dance floor in the app's blue, so it is not the dance floor list's own cover,
-     * and the image loader keeps the two apart (`theAppsFoldersHaveAPhotograph` on the iPhone). */
+    /** Each of the app's own folders has a photograph behind its frame, from the folders' own assets, and a folder
+     * somebody made has none. No folder wears a list's photograph: the folder holds those lists. Each is washed in its
+     * folder's colour, the folder of all the moods in the app's blue (`theAppsFoldersHaveAPhotograph` on the
+     * iPhone). */
     @Test fun theAppsFoldersHaveAPhotograph() {
-        val folder = File("src/main/assets/" + PlaylistPhotos.FOLDER)
+        val listFiles = PlaylistPhotoFiles.BY_CUT.values.toSet()
+        for ((key, file) in FolderPhotoFiles.files) assertTrue(key, file !in listFiles)
+
+        val folder = File("src/main/assets/" + PlaylistPhotos.FOLDER_PHOTOS)
         for (face in listOf(FolderFace.Moods, FolderFace.Decades, FolderFace.Mood("Calm"), FolderFace.Mood("Danceable"), FolderFace.Mood("Sleep"))) {
             val photo = PlaylistPhotos.folder(face)
-            assertTrue("$face", photo != null && File(folder, photo.file).isFile)
+            assertTrue("$face", photo != null && photo.assets == PlaylistPhotos.FOLDER_PHOTOS && File(folder, photo.file).isFile)
         }
         assertNull(PlaylistPhotos.folder(FolderFace.Plain))
-        assertEquals(GeneratedListLook.app.trio.mid, PlaylistPhotos.folder(FolderFace.Moods)?.tint)
-        assertEquals(PlaylistPhotos.of("Danceable", null, 0), PlaylistPhotos.folder(FolderFace.Mood("Danceable")))
-        assertEquals(PlaylistPhotos.of("Decade", null, 1980), PlaylistPhotos.folder(FolderFace.Decades))
-        assertEquals("danceable-all.jpg", PlaylistPhotos.folder(FolderFace.Moods)?.file)
+        assertEquals(PlaylistPhoto("folder-moods.jpg", GeneratedListLook.app.trio.mid, PlaylistPhotos.FOLDER_PHOTOS), PlaylistPhotos.folder(FolderFace.Moods))
+        assertEquals(PlaylistPhotos.of("Calm", null, 0)?.tint, PlaylistPhotos.folder(FolderFace.Mood("Calm"))?.tint)
+        assertEquals(PlaylistPhotos.of("Decade", null, 1980)?.tint, PlaylistPhotos.folder(FolderFace.Decades)?.tint)
+        assertEquals("folder-decades.jpg", PlaylistPhotos.folder(FolderFace.Decades)?.file)
+    }
+
+    /** The image loader's key names the assets folder, so a folder's photograph and a list's with the same file name
+     * and colour are two pictures. */
+    @Test fun theKeyTellsTheAssetsFoldersApart() {
+        val tint = RpmPalette.RING[5]
         assertNotEquals(
-            PlaylistPhotoKeyer.of(PlaylistPhotos.folder(FolderFace.Moods)!!),
-            PlaylistPhotoKeyer.of(PlaylistPhotos.folder(FolderFace.Mood("Danceable"))!!),
+            PlaylistPhotoKeyer.of(PlaylistPhoto("x.jpg", tint)),
+            PlaylistPhotoKeyer.of(PlaylistPhoto("x.jpg", tint, PlaylistPhotos.FOLDER_PHOTOS)),
         )
+    }
+
+    /** Every file the folders' table names is in the assets. */
+    @Test fun everyFolderFileIsShipped() {
+        val folder = File("src/main/assets/" + PlaylistPhotos.FOLDER_PHOTOS)
+        val missing = FolderPhotoFiles.files.values.filterNot { File(folder, it).isFile }
+        assertTrue("missing: $missing", missing.isEmpty())
     }
 
     /** The app's own look is the iPhone's: its blue, cyan and violet, a border of its blue at a quarter, and the most

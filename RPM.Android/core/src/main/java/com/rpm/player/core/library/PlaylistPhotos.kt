@@ -20,7 +20,8 @@ import com.rpm.player.core.room.Rgb
 import java.io.IOException
 
 /**
- * A generated list's photograph, shipped with the app, and the colour it is tinted with.
+ * A generated list's photograph, shipped with the app, and the colour it is tinted with. One of the app's own folders
+ * wears one too, from a folder of the assets of its own ([assets]).
  *
  * These are the desktop's own files (RPM.Desktop/Assets/PlaylistPhotos), chosen in
  * `scripts/playlist-photos.json` and copied into this app's assets by `scripts/gen_playlist_photos_tv.py`,
@@ -30,7 +31,7 @@ import java.io.IOException
  * The file is the bare photograph. The list's colour is added when it is drawn ([PlaylistPhotoFetcher]),
  * as the desktop's `GeneratedCoverService.Framed` does, so a changed palette needs no new export.
  */
-data class PlaylistPhoto(val file: String, val tint: Rgb) : ListArt
+data class PlaylistPhoto(val file: String, val tint: Rgb, val assets: String = PlaylistPhotos.FOLDER) : ListArt
 
 object PlaylistPhotos {
     /** The photograph the list [kind] cut to [genre] and [decade] wears, or null where it has none: most
@@ -46,27 +47,31 @@ object PlaylistPhotos {
      * The photograph behind the frame of one of the app's own folders, and the colour it is washed in, or null for a
      * folder somebody made (`PlaylistPhotos.folder` on the iPhone).
      *
-     * - One mood's folder shows the photograph of that mood's list of the whole collection, in its colour, so the
-     *   folder looks like the lists in it.
-     * - The folder of the decades shows the photograph of the 1980s, a crate of records, in the colour of that list.
-     * - The folder of all the moods shows the dance floor photograph in the app's own blue
-     *   ([GeneratedListLook.appTint]), because it holds every mood.
-     *
-     * The image loader's key carries the wash colour ([PlaylistPhotoKeyer]), so the dance floor in the app's blue and
-     * the dance floor in its own colour are two pictures in its cache.
+     * Each folder has a photograph of its own ([FolderPhotoFiles], from `scripts/folder-photos.json`, read from
+     * [FOLDER_PHOTOS]), never one of the lists' photographs, so a folder does not look like one more list. It is
+     * washed in the folder's colour: a mood's folder in the colour of that mood's list of the whole collection, the
+     * decades in the 1980s' colour, and the folder of all the moods in the app's own blue
+     * ([GeneratedListLook.appTint]), because it holds every mood.
      */
-    fun folder(face: FolderFace): PlaylistPhoto? = when (face) {
-        FolderFace.Plain -> null
-        FolderFace.Moods -> PlaylistPhotoFiles.BY_CUT[Cut("Danceable", null, 0)]?.let { PlaylistPhoto(it, GeneratedListLook.appTint) }
-        FolderFace.Decades -> of("Decade", null, 1980)
-        is FolderFace.Mood -> of(face.kind, null, 0)
+    fun folder(face: FolderFace): PlaylistPhoto? {
+        val (key, tint) = when (face) {
+            FolderFace.Plain -> return null
+            FolderFace.Moods -> "moods" to GeneratedListLook.appTint
+            FolderFace.Decades -> "decades" to ListSeed.of("Decade", null, 1980)?.let(ListSeed::tint)
+            is FolderFace.Mood -> "mood:" + face.kind to ListSeed.of(face.kind, null, 0)?.let(ListSeed::tint)
+        }
+        val file = FolderPhotoFiles.files[key] ?: return null
+        return PlaylistPhoto(file, tint ?: return null, FOLDER_PHOTOS)
     }
 
     /** A generated list, keyed on the three fields the computer keys it on. */
     data class Cut(val kind: String, val genre: String?, val decade: Int)
 
-    /** Where the files are in the app's assets. */
+    /** Where the lists' files are in the app's assets. */
     const val FOLDER = "playlist-photos"
+
+    /** Where the folders' files are in the app's assets ([folder]). */
+    const val FOLDER_PHOTOS = "folder-photos"
 }
 
 /**
@@ -76,21 +81,22 @@ object PlaylistPhotos {
  * `GeneratedCoverService.Framed` and the iOS app's `PlaylistPhotos.washed`, so a list shows one picture in
  * every app.
  *
- * Decoded at the size asked for, at most the shipped [PlaylistPhotoFiles.EDGE]: a home card is half
- * that. Runs on the image loader's dispatcher.
+ * Decoded at the size asked for, at most the shipped [PlaylistPhotoFiles.EDGE] ([FolderPhotoFiles.SHIPPED_EDGE] for a
+ * folder's): a home card is half that. Runs on the image loader's dispatcher.
  */
 class PlaylistPhotoFetcher(private val photo: PlaylistPhoto, private val options: Options) : Fetcher {
     override suspend fun fetch(): FetchResult {
         val asked = maxOf(pixels(options.size.width), pixels(options.size.height))
-        val edge = if (asked <= 0) PlaylistPhotoFiles.EDGE else minOf(asked, PlaylistPhotoFiles.EDGE)
-        val bytes = options.context.assets.open(PlaylistPhotos.FOLDER + "/" + photo.file).use { it.readBytes() }
+        val shipped = if (photo.assets == PlaylistPhotos.FOLDER_PHOTOS) FolderPhotoFiles.SHIPPED_EDGE else PlaylistPhotoFiles.EDGE
+        val edge = if (asked <= 0) shipped else minOf(asked, shipped)
+        val bytes = options.context.assets.open(photo.assets + "/" + photo.file).use { it.readBytes() }
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
         var sample = 1
         while (minOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= edge) sample *= 2
         val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
             ?: throw IOException("cannot decode ${photo.file}")
-        return ImageFetchResult(image = washed(decoded, edge).asImage(), isSampled = edge < PlaylistPhotoFiles.EDGE, dataSource = DataSource.DISK)
+        return ImageFetchResult(image = washed(decoded, edge).asImage(), isSampled = edge < shipped, dataSource = DataSource.DISK)
     }
 
     private fun washed(picture: Bitmap, edge: Int): Bitmap {
@@ -125,12 +131,14 @@ class PlaylistPhotoFetcher(private val photo: PlaylistPhoto, private val options
     }
 }
 
-/** The image loader's key of a [PlaylistPhoto]: the file and the colour it is washed in, because one photograph is
- * washed in two colours (the dance floor list's own, and the app's blue on the folder of the moods). */
+/** The image loader's key of a [PlaylistPhoto]: the assets folder, the file and the colour it is washed in, so a
+ * list's photograph and a folder's are never taken for each other, and one photograph washed in two colours is two
+ * pictures. */
 class PlaylistPhotoKeyer : Keyer<PlaylistPhoto> {
     override fun key(data: PlaylistPhoto, options: Options): String = of(data)
 
     companion object {
-        fun of(data: PlaylistPhoto): String = "photo:" + data.file + ":" + data.tint.r + "," + data.tint.g + "," + data.tint.b
+        fun of(data: PlaylistPhoto): String =
+            "photo:" + data.assets + "/" + data.file + ":" + data.tint.r + "," + data.tint.g + "," + data.tint.b
     }
 }

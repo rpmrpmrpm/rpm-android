@@ -492,8 +492,9 @@ private fun Footer(browse: PlaylistBrowse, empty: Boolean, own: Boolean) {
  * it moves only on the list's own page, because each moving square is a room drawn 30 times a second.
  * @param markPicture a drawable shown in place of [glyph] on a square with no picture, at the glyph's size. It is as
  * faint as the desktop draws it on its tiles (40%), and it is a grey picture, so it reads as faint as the glyphs.
- * @param folderFrame the frame of one of the app's own folders ([FramedList.folder]), drawn over its photograph
- * ([picture]). The two come in together, once the photograph is ready, so the frame never shows over an empty window.
+ * @param folderFrame the name and inks of one of the app's own folders ([FramedList.folder]) for the folder frame
+ * ([FolderFrameOverlay]), drawn over its photograph ([picture]). The two come in together, once the photograph is
+ * ready, so the frame never shows over an empty window.
  */
 @Composable
 fun PlaylistSleeve(
@@ -536,8 +537,9 @@ fun PlaylistSleeve(
 }
 
 /**
- * One of the app's own folders: its photograph with its frame over it, as a generated list has (the folder branch of
- * the iPhone's `PlaylistSleeve`). The photograph is washed and cached off the main thread by the image loader
+ * One of the app's own folders: its photograph with the folder frame over it, the name in the bar under the window
+ * ([FolderFrameOverlay], the folder branch of the iPhone's `PlaylistSleeve`). The photograph is washed and cached off
+ * the main thread by the image loader
  * ([com.rpm.player.core.library.PlaylistPhotoFetcher]). Both fade in at once (0.2 s, ease out) when it is ready. A
  * photograph the loader already holds is answered before the next frame, and is shown at once rather than faded.
  */
@@ -562,7 +564,7 @@ private fun FolderCover(picture: Any, frame: FramedList, edge: Dp, images: Image
             onSuccess = { ready = true },
             modifier = Modifier.fillMaxSize(),
         )
-        if (ready) ListFrameOverlay(frame, Modifier.fillMaxSize())
+        if (ready) FolderFrameOverlay(frame, Modifier.fillMaxSize())
     }
 }
 
