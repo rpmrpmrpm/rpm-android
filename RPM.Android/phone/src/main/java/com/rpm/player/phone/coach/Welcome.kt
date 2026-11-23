@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -74,6 +75,9 @@ import com.rpm.player.phone.design.system
 import com.rpm.player.phone.downloads.LocalPlayable
 import com.rpm.player.phone.library.LibraryLayout
 import com.rpm.player.phone.library.SleeveSquare
+import com.rpm.player.phone.settings.AppLanguages
+import com.rpm.player.phone.settings.BackdropVeilSliders
+import com.rpm.player.phone.settings.CoverCornerSlider
 import com.rpm.player.phone.ui.Ground
 import com.rpm.player.phone.ui.GroundTile
 import com.rpm.player.phone.ui.LiveRoom
@@ -89,7 +93,9 @@ import java.util.Locale
  *
  * - **Hello**: "Welcome to rpm!" on black, the drifting room coming up behind it, the greeting turning through the app's
  *   languages every five seconds, as the desktop's does.
- * - **Look**: the backdrops. The one tapped is behind the step at once.
+ * - **Language**: the app's language ([AppLanguages]). The one tapped is used at once, on this step.
+ * - **Look**: the backdrops, how much they are dimmed and blurred, and how round the covers are. Each change shows
+ *   behind the step at once.
  * - **Layout**: how the records open in the collection: the grid of covers, or the list with the songs.
  * - **Spin**: a song from the collection ([sample]), and the key that plays it and opens the player.
  *
@@ -108,8 +114,9 @@ fun Welcome(
     onPlay: (CloudTrack) -> Unit,
     onDone: () -> Unit,
 ) {
+    // Saved state, so a new language on Android 9 to 12, which makes the activity again, opens on the same step.
     var page by rememberSaveable { mutableIntStateOf(0) }
-    val steps = if (sample != null) 3 else 2
+    val steps = if (sample != null) 4 else 3
     BackHandler(enabled = page > 0) { page-- }
     Box(
         Modifier
@@ -129,24 +136,34 @@ fun Welcome(
         ) { shown ->
             when (shown) {
                 0 -> Hello(onContinue = { page = 1 })
-                1 -> Step(1, steps, stringResource(R.string.Wizard_LookTitle), stringResource(R.string.Wizard_Phone_LookHint), next = { page = 2 }) {
-                    Backdrops(settings)
-                    // The colour of the app's glass, under the backdrops, as on iPhone.
-                    AppColourChoice()
+                1 -> Step(1, steps, stringResource(R.string.Wizard_Phone_LanguageTitle), stringResource(R.string.Wizard_Phone_LanguageHint), next = { page = 2 }) {
+                    Languages()
                 }
-                2 -> Step(
-                    2,
+                2 -> Step(2, steps, stringResource(R.string.Wizard_LookTitle), stringResource(R.string.Wizard_Phone_LookAllHint), next = { page = 3 }) {
+                    Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                        Backdrops(settings)
+                        BackdropVeilSliders()
+                        // The colour of the app's glass, between the sliders and the cover corners, as on iPhone.
+                        AppColourChoice()
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            BasicText(stringResource(R.string.Settings_CoverCorners), style = kicker())
+                            CoverCornerSlider()
+                        }
+                    }
+                }
+                3 -> Step(
+                    3,
                     steps,
                     stringResource(R.string.Wizard_LayoutTitle),
                     stringResource(R.string.Wizard_Phone_LayoutBody),
-                    next = { if (sample != null) page = 3 else onDone() },
+                    next = { if (sample != null) page = 4 else onDone() },
                     nextLabel = if (sample != null) null else stringResource(R.string.Wizard_Finish),
                 ) {
                     Layouts(settings)
                 }
                 else -> sample?.let { song ->
                     Step(
-                        3,
+                        4,
                         steps,
                         stringResource(R.string.Wizard_Phone_PlayerTitle),
                         stringResource(R.string.Wizard_Phone_PlayerBody),
@@ -301,6 +318,29 @@ private fun Backdrops(settings: PhoneSettings) {
 
 private val TILE_WIDE = 104.dp
 private val TILE_TALL = 186.dp
+
+/**
+ * The app's languages, each named in itself, with the phone's own first (`WelcomeLanguages` on iPhone). The one tapped
+ * is used at once: the welcome shows itself again in it, on this step.
+ */
+@Composable
+private fun Languages() {
+    val context = LocalContext.current
+    // Asked again when the configuration changes, which a new language does.
+    val chosen = remember(LocalConfiguration.current) { AppLanguages.chosen(context) }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        for (code in listOf("") + AppLanguages.OFFERED) {
+            val said = if (code.isEmpty()) stringResource(R.string.Settings_AppLanguagePhone) else AppLanguages.name(code)
+            Choice(picked = code == chosen, onClick = { if (code != chosen) AppLanguages.choose(context, code) }, Modifier.fillMaxWidth()) {
+                BasicText(
+                    said,
+                    Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
+                    style = system(16f, FontWeight.SemiBold).copy(color = Color.White),
+                )
+            }
+        }
+    }
+}
 
 /** The two ways the records open: the grid of covers and the list with the songs. */
 @Composable

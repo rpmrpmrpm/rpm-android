@@ -150,6 +150,7 @@ import com.rpm.player.phone.ui.LocalNightMode
 import com.rpm.player.phone.ui.rememberLead
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.unit.Density
+import com.rpm.player.phone.ui.coverSquare
 
 /**
  * The height of the banner's plate, before it reaches up behind the title and the status bar (`HomeBannerMetrics` on
@@ -861,10 +862,11 @@ private fun BannerReflections(
 
 @Composable
 private fun BannerSleeve(cover: Any?, station: RadioStation?, list: Boolean, framed: FramedList?, logoStamp: String, images: ImageLoader) {
-    val shape = RoundedCornerShape(10.dp)
+    // The rounding every cover has, from its size (CoverCorner).
+    val shape = coverSquare(BANNER_SLEEVE)
     if (framed != null) {
         Box(Modifier.size(BANNER_SLEEVE).shadow(10.dp, shape, ambientColor = Color.Black.copy(alpha = 0.5f), spotColor = Color.Black.copy(alpha = 0.5f))) {
-            PlaylistSleeve(cover, Glyph.playlists, BANNER_SLEEVE, corner = 10.dp, mark = 34f, images, framed)
+            PlaylistSleeve(cover, Glyph.playlists, BANNER_SLEEVE, mark = 34f, images, framed)
         }
         return
     }
@@ -1040,10 +1042,11 @@ private fun QuickLine(pick: QuickPick, collection: Collection, images: ImageLoad
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val shape = RoundedCornerShape(5.dp)
+        // The rounding every cover has, from its size (CoverCorner).
+        val shape = coverSquare(QUICK_ART)
         // A generated list's line wears the list's frame, as its square does everywhere else.
         val framed = (pick as? QuickPick.OfList)?.let { FramedList.of(it.list, title) }
-        if (framed != null) PlaylistSleeve(picture, Glyph.playlists, QUICK_ART, corner = 5.dp, mark = 15f, images, framed)
+        if (framed != null) PlaylistSleeve(picture, Glyph.playlists, QUICK_ART, mark = 15f, images, framed)
         // A station's logo on its made ground, in the cover's square (`HomePicksRow.stationSquare` on iPhone).
         else if (pick is QuickPick.OfStation) Box(Modifier.size(QUICK_ART).clip(shape).background(Color.Black.copy(alpha = 0x22 / 255f))) {
             StationFace(pick.station, logoStamp, images, QUICK_ART, inset = QUICK_STATION_INSET, Modifier.fillMaxSize()) {
@@ -1117,7 +1120,7 @@ internal fun ListsRow(heading: String, lists: List<TrackList>, collection: Colle
                 ) {
                     val name = listName(list.name)
                     // A generated list wears its frame here too, as on the playlists view and its page (`FramedList`).
-                    PlaylistSleeve(collection.cover(list), Glyph.playlists, art, corner = 10.dp, mark = 26f, images, FramedList.of(list, name))
+                    PlaylistSleeve(collection.cover(list), Glyph.playlists, art, mark = 26f, images, FramedList.of(list, name))
                     BasicText(name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = system(12f, FontWeight.Medium).copy(color = Color.White))
                 }
             }

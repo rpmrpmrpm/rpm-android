@@ -134,6 +134,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 import com.rpm.player.phone.design.ScrollsToTop
+import com.rpm.player.phone.ui.CoverCorner
 
 /** The row at the top of a page with no header, where its back key floats (`RPMLayout.backRow` on iPhone). */
 internal val BACK_ROW = 44.dp
@@ -673,7 +674,8 @@ private fun CaseAndDisc(album: CloudAlbum, cover: Cover?, disc: DiscArt?, images
                     }
                 },
         ) {
-            SleeveSquare(cover, edge, images, radius = 4.dp, glyphSize = 52f, bordered = false)
+            // The rounding every cover has, from its size (CoverCorner).
+            SleeveSquare(cover, edge, images, radius = CoverCorner.radius(edge), glyphSize = 52f, bordered = false)
         }
     }
 }

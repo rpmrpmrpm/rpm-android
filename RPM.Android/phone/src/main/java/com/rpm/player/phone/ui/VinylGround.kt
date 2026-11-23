@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,9 +40,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import com.rpm.player.phone.design.Ink
+import com.rpm.player.phone.design.gaussian
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.coroutineContext
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
@@ -57,6 +64,12 @@ import kotlin.math.roundToInt
  * The picture is the one chosen in the profile ([LocalGround]); the default is RPaMp's ground. Every page draws its
  * own ground, so the choice is read here and not passed through every page, as the iPhone reads `AppStorage`.
  *
+ * **The person can dim and blur the picture** on the Appearance settings, so text reads more easily on it
+ * ([BackdropVeil]). Both are baked into the plate with the shade, so every page gets them and drawing one costs no
+ * more than before. A blur the GPU ran on every frame, behind every page, is what
+ * [com.rpm.player.phone.design.BlurredPicture] was written to avoid. A slider that moves bakes the plate again; the
+ * plate already shown stays until the new one is ready.
+ *
  * **Laid out in the window, not in the container that draws it.** The iPhone app works the same way. If each
  * screen cropped the picture to its own box, the background would move between screens of different heights.
  * The picture fills the window. It is centred across the window and hangs from the top, wherever the
@@ -71,18 +84,19 @@ fun VinylGround(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val choice = LocalGround.current
     val window = LocalWindowInfo.current.containerSize
-    val plate by produceState(Plates.held(choice, window), choice, window) { value = Plates.ground(context, choice, window) }
+    val veil = Veil(BackdropVeil.dim, BackdropVeil.radius(BackdropVeil.blur) * LocalDensity.current.density)
+    LaunchedEffect(choice, window, veil) { Plates.make(context, choice, window, veil) }
     var here by remember { mutableStateOf(Offset.Zero) }
 
     // One pass: the plate already holds the picture at the window's size with the shade on it. Until it is decoded,
-    // the app's colour and the shade.
+    // the app's colour and the shade. Read while drawing, so a new plate is only drawn, not composed.
     Box(
         modifier
             .fillMaxSize()
             .clipToBounds()
             .onGloballyPositioned { here = it.positionInRoot() }
             .drawBehind {
-                val picture = plate
+                val picture = Plates.shown(choice, window)
                 if (picture == null) {
                     drawRect(Ink.ground)
                     drawRect(SHADE)
@@ -104,7 +118,7 @@ private val SHADE = Color.Black.copy(alpha = 0x33 / 255f)
  * @property file the picture. Vinyl and Gold are two colourings of one picture.
  * @property nameKey its name in the picker.
  * @property shade how much black is laid over the picture, so white text reads on it. A light picture takes more than
- * the usual [SHADE], so that it ends about as dark as the others.
+ * the usual [SHADE], so that it ends about as dark as the others. Graphite, a flat grey chosen for that grey, takes none.
  */
 enum class Ground(val id: String, @DrawableRes val file: Int, @StringRes val nameKey: Int, val shade: Float = SHADE.alpha) {
     /** The default: RPaMp's ground, bands of cyan light in deep blue. */
@@ -121,6 +135,12 @@ enum class Ground(val id: String, @DrawableRes val file: Int, @StringRes val nam
 
     /** Folds of warm copper light on black, with a fine grain. */
     Aero("aero", R.drawable.background_aero, CoreR.string.Settings_BackgroundAero, shade = 0.45f),
+
+    /** Plain dark grey, with no picture. Only the phones have it. */
+    Graphite("graphite", R.drawable.background_graphite, CoreR.string.Settings_BackgroundGraphite, shade = 0f),
+
+    /** Rows of soft brown squares, lit from one side, like a bar of chocolate. Only the phones have it. */
+    Cocoa("cocoa", R.drawable.background_cocoa, CoreR.string.Settings_BackgroundCocoa),
 
     /** The same three records pressed in gold. The supporter's. */
     Gold("gold", R.drawable.background_vinyl_gold, CoreR.string.Settings_BackgroundGold);
@@ -148,24 +168,49 @@ enum class Ground(val id: String, @DrawableRes val file: Int, @StringRes val nam
 val LocalGround = staticCompositionLocalOf { Ground.Standard }
 
 /**
+ * How the person's veil is baked into a plate: the dimming slider (0 to 1) and the blur, as a standard deviation in
+ * pixels ([BackdropVeil]).
+ */
+private data class Veil(val dim: Float, val sigma: Float)
+
+/**
  * The background picture, decoded once and kept for the life of the process, ready to draw: scaled to cover the
- * window as the iPhone fills it (centred across, hanging from the top), cropped to the window, with the 20% shade
- * painted on. The same picture is behind every screen. Only one is kept, not all five: the person looks at one.
+ * window as the iPhone fills it (centred across, hanging from the top), cropped to the window, blurred as the person
+ * asked, with the shade painted on. The same picture is behind every screen. Only one is kept, not all of them: the
+ * person looks at one.
+ *
+ * One plate is made at a time. While a slider moves, each step asks for a new plate; the steps passed over while one
+ * was being made are dropped before they start, so the latest is the one made next. Every plate made is shown, even
+ * one whose step has since been passed, so the background keeps up with a finger that does not stop.
  */
 private object Plates {
-    @Volatile
-    private var kept: Triple<Ground, IntSize, ImageBitmap>? = null
+    private data class Kept(val choice: Ground, val window: IntSize, val veil: Veil, val plate: ImageBitmap)
 
-    fun held(choice: Ground, window: IntSize): ImageBitmap? =
-        kept?.takeIf { it.first == choice && it.second == window }?.third
+    /** The plate made last. State, so the grounds draw again when a new one is made. */
+    private var kept by mutableStateOf<Kept?>(null)
 
-    suspend fun ground(context: Context, choice: Ground, window: IntSize): ImageBitmap? {
-        held(choice, window)?.let { return it }
-        if (window.width <= 0 || window.height <= 0) return null
-        return withContext(Dispatchers.IO) { plate(context, choice.file, choice.shade, window) }?.also { kept = Triple(choice, window, it) }
+    private val making = Mutex()
+
+    /** The plate of [choice] at [window], with the veil of the last one made, or null while there is none. */
+    fun shown(choice: Ground, window: IntSize): ImageBitmap? =
+        kept?.takeIf { it.choice == choice && it.window == window }?.plate
+
+    private fun made(choice: Ground, window: IntSize, veil: Veil): Boolean =
+        kept.let { it != null && it.choice == choice && it.window == window && it.veil == veil }
+
+    /** Makes the plate of [choice] at [window] with [veil], unless it is the one already made. */
+    suspend fun make(context: Context, choice: Ground, window: IntSize, veil: Veil) {
+        if (window.width <= 0 || window.height <= 0 || made(choice, window, veil)) return
+        making.withLock {
+            coroutineContext.ensureActive()
+            if (made(choice, window, veil)) return@withLock
+            withContext(Dispatchers.IO) {
+                plate(context, choice.file, BackdropVeil.shade(choice.shade, veil.dim), veil.sigma, window)?.let { kept = Kept(choice, window, veil, it) }
+            }
+        }
     }
 
-    private fun plate(context: Context, @DrawableRes file: Int, shade: Float, window: IntSize): ImageBitmap? {
+    private fun plate(context: Context, @DrawableRes file: Int, shade: Float, sigma: Float, window: IntSize): ImageBitmap? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeResource(context.resources, file, bounds)
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
@@ -182,12 +227,38 @@ private object Plates {
         canvas.scale(scale, scale)
         canvas.drawBitmap(source, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG))
         canvas.setMatrix(null)
-        canvas.drawColor(Color.Black.copy(alpha = shade).toArgb())
         source.recycle()
+        blur(out, canvas, sigma)
+        canvas.drawColor(Color.Black.copy(alpha = shade).toArgb())
         out.prepareToDraw()
         return out.asImageBitmap()
     }
 }
+
+/**
+ * Blurs [plate] in place by [sigma] pixels, its edges clamped so they stay solid and do not fade into the ground (the
+ * iPhone's `blur(radius:opaque:)`). The blur is worked out on a copy small enough that it spans about [BLUR_SPAN] of
+ * the copy's pixels, with [gaussian], and drawn back over the plate with a bilinear filter: a blur keeps no detail the
+ * smaller copy loses, and the work is a fraction of the full size's.
+ */
+private fun blur(plate: Bitmap, canvas: android.graphics.Canvas, sigma: Float) {
+    if (sigma < 0.5f) return
+    val shrink = min(1f, BLUR_SPAN / sigma)
+    val w = (plate.width * shrink).roundToInt().coerceAtLeast(1)
+    val h = (plate.height * shrink).roundToInt().coerceAtLeast(1)
+    // A narrow blur is worked on the plate itself (createScaledBitmap hands back the same bitmap at the same size).
+    val small = if (w == plate.width && h == plate.height) plate else Bitmap.createScaledBitmap(plate, w, h, true)
+    val pixels = IntArray(w * h)
+    small.getPixels(pixels, 0, w, 0, 0, w, h)
+    gaussian(pixels, w, h, sigma * shrink)
+    small.setPixels(pixels, 0, w, 0, 0, w, h)
+    if (small === plate) return
+    canvas.drawBitmap(small, null, android.graphics.Rect(0, 0, plate.width, plate.height), Paint(Paint.FILTER_BITMAP_FLAG))
+    small.recycle()
+}
+
+/** The blur's standard deviation on the small copy [blur] works on, in the copy's pixels. */
+private const val BLUR_SPAN = 3f
 
 /**
  * One small backdrop for the row of tiles in the profile (`BackdropTile` on iPhone). It decodes its own small copy,

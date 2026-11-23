@@ -68,6 +68,8 @@ import com.rpm.player.phone.design.chromeGlass
 import com.rpm.player.phone.design.display
 import com.rpm.player.phone.design.icon
 import com.rpm.player.phone.library.SleeveSquare
+import com.rpm.player.phone.ui.CoverCorner
+import com.rpm.player.phone.ui.coverSquare
 
 /**
  * The height of the strip. The row of controls is 40 dp high and starts 9 dp from the top. The rest is the gap above
@@ -108,7 +110,7 @@ fun MiniPlayer(now: NowPlaying, player: Player, images: ImageLoader, backdrop: B
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (station != null) StationSleeve(station, images) else SleeveSquare(now.cover, ROW, images, radius = 8.dp, glyphSize = 16f)
+            if (station != null) StationSleeve(station, images) else SleeveSquare(now.cover, ROW, images, radius = CoverCorner.radius(ROW), glyphSize = 16f)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 // Each line scrolls through once if it does not fit, as the iPhone's `OnceTicker` does.
                 OnceTicker(title(now), display(14f).copy(color = Color.White))
@@ -158,7 +160,8 @@ private fun said(now: NowPlaying): String {
  */
 @Composable
 private fun StationSleeve(station: StationPlaying, images: ImageLoader) {
-    val shape = RoundedCornerShape(8.dp)
+    // The rounding every cover has, from its size (CoverCorner).
+    val shape = coverSquare(ROW)
     // The cover of the song the station plays, over its logo, as on the desktop.
     val cover = com.rpm.player.phone.design.rememberSongCover(station)
     Box(Modifier.size(ROW).clip(shape)) {

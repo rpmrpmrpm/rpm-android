@@ -38,6 +38,12 @@ class MainActivity : ComponentActivity() {
      * connects and each time the session publishes them again. */
     private val sittingFrom = mutableIntStateOf(0)
 
+    /** The app's language on Android 9 to 12, which have no per-app language of their own ([AppLanguages]). */
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(newBase)
+        com.rpm.player.phone.settings.AppLanguages.overrideFor(newBase)?.let(::applyOverrideConfiguration)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Edge to edge with light icons on clear bars: the app is dark throughout, as the iPhone app is, and
         // every screen pads itself for the bars (targetSdk 36 allows nothing else).

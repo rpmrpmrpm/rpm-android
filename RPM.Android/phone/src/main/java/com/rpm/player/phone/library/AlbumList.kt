@@ -249,7 +249,7 @@ private fun RecordLine(album: CloudAlbum, collection: Collection, images: ImageL
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PlaylistSleeve(collection.cover(album), Glyph.record, edge = 64.dp, corner = 6.dp, mark = 22f, images)
+        PlaylistSleeve(collection.cover(album), Glyph.record, edge = 64.dp, mark = 22f, images)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             MarkedTitle(album.album, album.isExplicit, displayBold(17f).copy(color = Color.White), maxLines = 2)
             BasicText(byLine(album), maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(13f).copy(color = Ink.white(0x99)))
@@ -317,7 +317,7 @@ private fun SongAlone(track: CloudTrack, on: CloudAlbum, collection: Collection,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            PlaylistSleeve(collection.cover(on), Glyph.record, edge = 44.dp, corner = 6.dp, mark = 16f, images)
+            PlaylistSleeve(collection.cover(on), Glyph.record, edge = 44.dp, mark = 16f, images)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 MarkedTitle(track.title.orEmpty(), track.isExplicit, display(16f).copy(color = Color.White))
                 BasicText(

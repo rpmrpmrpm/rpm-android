@@ -135,6 +135,7 @@ import com.rpm.player.phone.home.SongTap
 import com.rpm.player.core.playback.Tapped
 import com.rpm.player.phone.ui.VinylGround
 import com.rpm.player.phone.design.ScrollsToTop
+import com.rpm.player.phone.ui.rememberCoverShape
 
 /** The space between the cards on the genres wall (`GenresPage.gutter` on iPhone). */
 private const val CARD_GUTTER = 14.0
@@ -239,7 +240,8 @@ private fun Empty(lent: Boolean) {
  */
 @Composable
 private fun GenreCard(genre: String, albums: Int, images: ImageLoader, lettering: Dp, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(18.dp)
+    // As round as a cover of its shorter side (CoverShape).
+    val shape = rememberCoverShape()
     Box(
         modifier
             .aspectRatio(3f / 4f)

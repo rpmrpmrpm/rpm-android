@@ -408,7 +408,7 @@ internal fun ListHead(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(top))
-        PlaylistSleeve(picture, Glyph.record, edge, corner = 4.dp, mark = 52f, images, framed, drifts = drifts)
+        PlaylistSleeve(picture, Glyph.record, edge, mark = 52f, images, framed, drifts = drifts)
         BasicText(name, Modifier.padding(top = 10.dp), maxLines = 3, style = displayBold(24f).copy(color = Color.White, textAlign = TextAlign.Center))
         BasicText(
             holding,
@@ -485,7 +485,7 @@ internal fun ListSongRow(track: CloudTrack, cover: Cover?, images: ImageLoader, 
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.width(3.dp).height(28.dp).clip(RoundedCornerShape(percent = 50)).background(if (playing) Color.White else Color.Transparent))
-        PlaylistSleeve(cover, Glyph.record, edge = 40.dp, corner = 6.dp, mark = 16f, images)
+        PlaylistSleeve(cover, Glyph.record, edge = 40.dp, mark = 16f, images)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 BasicText(track.title.orEmpty(), Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(16f).copy(color = Color.White))

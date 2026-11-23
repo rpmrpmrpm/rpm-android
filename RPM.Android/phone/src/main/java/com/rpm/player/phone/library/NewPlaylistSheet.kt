@@ -346,7 +346,7 @@ private fun PickRow(hit: SongSearch.SongHit, chosen: Boolean, collection: Collec
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PlaylistSleeve(collection.cover(hit.album), Glyph.record, edge = 40.dp, corner = 6.dp, mark = 16f, images)
+        PlaylistSleeve(collection.cover(hit.album), Glyph.record, edge = 40.dp, mark = 16f, images)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             MarkedTitle(hit.track.title?.takeIf { it.isNotEmpty() } ?: hit.album.album, hit.track.isExplicit, display(14f).copy(color = Color.White))
             val artist = hit.track.artist?.takeIf { it.isNotEmpty() } ?: hit.album.artist

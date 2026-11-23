@@ -47,6 +47,7 @@ import com.rpm.player.phone.design.Glyph
 import com.rpm.player.phone.design.dissolvesAtTop
 import com.rpm.player.phone.design.scrolled
 import com.rpm.player.phone.design.Ink
+import com.rpm.player.phone.ui.CoverCorner
 import com.rpm.player.phone.design.icon
 import com.rpm.player.phone.design.system
 import com.rpm.player.phone.downloads.LocalPlayable
@@ -140,7 +141,8 @@ fun AlbumTile(album: CloudAlbum, cover: Cover?, caption: AlbumCaption, images: I
             // A long press offers the record's menu: play next, and Quick selection.
             .holdPress(remember { MutableInteractionSource() }, onOpen, holds?.let { { it.album(album) } }),
     ) {
-        SleeveSquare(cover, art, images, radius = 10.dp, glyphSize = min(max(caption.art * 0.2, 16.0), 52.0).toFloat())
+        // The rounding every cover has, from its size (CoverCorner).
+        SleeveSquare(cover, art, images, radius = CoverCorner.radius(art), glyphSize = min(max(caption.art * 0.2, 16.0), 52.0).toFloat())
         Spacer(Modifier.height(AlbumCaption.ART_GAP.dp))
         Box(Modifier.height(caption.albumLine.dp), contentAlignment = Alignment.CenterStart) {
             MarkedTitle(album.album, album.isExplicit, system(caption.album, FontWeight.Medium).copy(color = Color.White), edge = caption.badge.dp)

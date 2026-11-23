@@ -14,6 +14,7 @@
         android:name=".PhoneApplication"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/App_Name"
+        android:localeConfig="@xml/locales_config"
         android:networkSecurityConfig="@xml/network_security"
         android:supportsRtl="true"
         android:theme="@style/Theme.RpmPhone">
@@ -21,14 +22,14 @@
         <!-- No orientation here: the app asks for one at run time (stage/StageOrientation.kt), portrait
              while nothing is loaded and the person's own rotation while something is, so a turned phone
              shows the stage. Android 16 ignores the request on screens 600 dp and wider. The configuration
-             changes listed below are handled by Compose, so a rotation or a keyboard change does not
-             recreate the activity and lose what is on screen. -->
+             changes listed below are handled by Compose, so a rotation, a keyboard change or a new app
+             language (settings/AppLanguages.kt) does not recreate the activity and lose what is on screen. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize"
-            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density">
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|locale|layoutDirection">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

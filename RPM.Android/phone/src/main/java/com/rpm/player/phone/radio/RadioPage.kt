@@ -97,6 +97,7 @@ import com.rpm.player.phone.ui.RecordSpinner
 import com.rpm.player.phone.ui.VinylGround
 import java.util.Locale
 import com.rpm.player.phone.design.ScrollsToTop
+import com.rpm.player.phone.ui.coverSquare
 
 /** Which of the filter row's menus is open, and where its key is on the screen. */
 private class Picking(val which: Which, val from: Rect) {
@@ -483,7 +484,8 @@ private fun said(station: RadioStation): String {
  */
 @Composable
 private fun Logo(station: RadioStation, images: ImageLoader, logoStamp: String) {
-    val well = RoundedCornerShape(6.dp)
+    // The rounding every cover has, from its size (CoverCorner).
+    val well = coverSquare(LOGO_EDGE)
     Box(Modifier.size(LOGO_EDGE).clip(well).background(Color.Black.copy(alpha = 0x22 / 255f)).border(1.dp, Ink.cardBorder, well)) {
         StationFace(station, logoStamp, images, LOGO_EDGE, inset = 3.dp, modifier = Modifier.fillMaxSize()) {
             BasicText(Glyph.radio, style = icon(15f).copy(color = Ink.white(0x3A)))

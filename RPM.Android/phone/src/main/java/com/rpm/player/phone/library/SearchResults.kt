@@ -65,6 +65,8 @@ import com.rpm.player.phone.design.kicker
 import com.rpm.player.phone.design.rememberPicture
 import com.rpm.player.phone.design.scrolled
 import com.rpm.player.phone.design.ScrollsToTop
+import com.rpm.player.phone.ui.CoverCorner
+import com.rpm.player.phone.ui.coverSquare
 
 /**
  * What one search answered, and the words it is the answer to: the artists, records, songs, playlists and genres the
@@ -266,7 +268,7 @@ private fun Line(
     end: @Composable () -> Unit = {},
 ) {
     Entry(title, line, mark, onClick, song, end, explicit) {
-        SleeveSquare(collection.cover(album), 40.dp, images, radius = 6.dp, glyphSize = 15f)
+        SleeveSquare(collection.cover(album), 40.dp, images, radius = CoverCorner.radius(40.dp), glyphSize = 15f)
     }
 }
 
@@ -301,7 +303,7 @@ private fun ArtistLine(artist: ArtistWallItem, collection: Collection, images: I
 private fun PlaylistLine(playlist: TrackList, name: String, collection: Collection, images: ImageLoader, onClick: () -> Unit) {
     val songs = playlist.tracks.size
     Entry(name, stringResource(R.string.Home_Songs, songs), mark = false, onClick = onClick) {
-        PlaylistSleeve(collection.cover(playlist), Glyph.playlists, edge = 40.dp, corner = 6.dp, mark = 15f, images, FramedList.of(playlist, name))
+        PlaylistSleeve(collection.cover(playlist), Glyph.playlists, edge = 40.dp, mark = 15f, images, FramedList.of(playlist, name))
     }
 }
 
@@ -309,7 +311,7 @@ private fun PlaylistLine(playlist: TrackList, name: String, collection: Collecti
 @Composable
 private fun GenreLine(genre: GenreWallItem, images: ImageLoader, onClick: () -> Unit) {
     Entry(genre.name, albumCount(genre.albums.size), mark = false, onClick = onClick) {
-        GenrePicture(genre.name, images, Modifier.size(40.dp).clip(RoundedCornerShape(6.dp)))
+        GenrePicture(genre.name, images, Modifier.size(40.dp).clip(coverSquare(40.dp)))
     }
 }
 

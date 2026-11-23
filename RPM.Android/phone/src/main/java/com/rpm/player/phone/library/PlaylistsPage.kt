@@ -65,7 +65,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
+import com.rpm.player.phone.ui.CoverCorner
 import com.rpm.player.phone.ui.LiveRoom
+import com.rpm.player.phone.ui.coverSquare
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.rpm.player.core.R
@@ -391,12 +393,12 @@ private fun Heads(
                 end = Glyph.history,
                 onClick = onHistory,
                 menu = null,
-            ) { PlaylistSleeve(cover, Glyph.history, edge = 44.dp, corner = 6.dp, mark = 16f, images) }
+            ) { PlaylistSleeve(cover, Glyph.history, edge = 44.dp, mark = 16f, images) }
         }
         for (row in pinned) {
             val framed = framedOf(row)
             HeadLine(row.name, holding(row.list.tracks.size, seconds(row.list.tracks), row.list.missing), end = Glyph.pin, onClick = { onPress(row) }, menu = menuOf(row)) {
-                PlaylistSleeve(collection.cover(row.list), row.mark, edge = 44.dp, corner = 6.dp, mark = 16f, images, framed, markPicture = row.markPicture)
+                PlaylistSleeve(collection.cover(row.list), row.mark, edge = 44.dp, mark = 16f, images, framed, markPicture = row.markPicture)
             }
         }
         Box(Modifier.padding(horizontal = 20.dp, vertical = 8.dp).fillMaxWidth().height(1.dp).background(Ink.white(0x1A)))
@@ -442,7 +444,7 @@ private fun Line(row: PlaylistRow, picture: Any?, framed: FramedList?, images: I
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PlaylistSleeve(picture, row.mark, edge = 44.dp, corner = 6.dp, mark = 16f, images, framed, markPicture = row.markPicture, folderFrame = row.folderFrame)
+        PlaylistSleeve(picture, row.mark, edge = 44.dp, mark = 16f, images, framed, markPicture = row.markPicture, folderFrame = row.folderFrame)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             val detail = when (row) {
                 is PlaylistRow.Folder -> playlistsCount(row.folder.playlists)
@@ -482,6 +484,8 @@ private fun Footer(browse: PlaylistBrowse, empty: Boolean, own: Boolean) {
  * A generated list's square wears its frame ([framed]), lettered with its name, over its photograph, or over its
  * room for the five lists that have no photograph. A framed square shows no icon: the frame is the mark.
  *
+ * Its corners are the rounding every cover has, from its size ([CoverCorner]), and the frame is clipped with them.
+ *
  * @param picture a list's picture ([com.rpm.player.core.library.ListArt]) or a record's cover. Null leaves only the
  * icon.
  * @param drifts whether the room behind a roomed list's window moves (`roomDrifts` on iPhone). Every caller says so:
@@ -496,7 +500,6 @@ fun PlaylistSleeve(
     picture: Any?,
     glyph: String,
     edge: Dp,
-    corner: Dp,
     mark: Float,
     images: ImageLoader,
     framed: FramedList? = null,
@@ -504,7 +507,7 @@ fun PlaylistSleeve(
     @DrawableRes markPicture: Int? = null,
     folderFrame: FramedList? = null,
 ) {
-    val shape = RoundedCornerShape(corner)
+    val shape = coverSquare(edge)
     Box(
         Modifier.size(edge).clip(shape).background(Color.Black.copy(alpha = 0x22 / 255f)).border(1.dp, Ink.cardBorder, shape),
         contentAlignment = Alignment.Center,

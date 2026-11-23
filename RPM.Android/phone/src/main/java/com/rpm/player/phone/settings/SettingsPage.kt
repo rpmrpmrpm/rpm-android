@@ -259,6 +259,7 @@ fun SettingsPage(
                     when (section) {
                         SettingsSection.General -> {
                             cards.Opening(openingSound, onOpeningSound)
+                            cards.AppLanguage()
                             cards.Descriptions(articleLanguage, onArticleLanguage)
                             cards.Hints(onReplayHints)
                             cards.About(version, onCredits = { credits = true }, crashReports, onCrashReports)
@@ -267,6 +268,7 @@ fun SettingsPage(
                         SettingsSection.Appearance -> {
                             cards.Backdrops(ground, isGold, onGround, nightMode, onNightMode, discStandIn, onDiscStandIn)
                             cards.Colour()
+                            CoverCornerCard()
                             cards.Player(playerBars, onPlayerBars)
                         }
                         SettingsSection.Playback -> {
@@ -474,7 +476,7 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
 
     // ── the app background ──
 
-    /** The five built-in backdrops, as a row of the real pictures. The supporter's is shown to everybody and is not
+    /** The built-in backdrops, as a row of the real pictures. The supporter's is shown to everybody and is not
      * greyed out, so people can see it; a tap on it without support opens the page that explains it. */
     @Composable
     fun Backdrops(
@@ -502,6 +504,8 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
                     }
                 }
             }
+            // Right under the backdrops, so the picture and how it is quietened are read together.
+            BackdropVeilSliders()
             // Under the backdrops: it changes the other kind of background, the photograph a page stands on.
             Row(
                 Modifier
@@ -560,6 +564,23 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
         val chosen = codes.indexOf(code).coerceAtLeast(0)
         Card(Glyph.globe, stringResource(R.string.Settings_ArticleLanguage)) {
             ClosedMenu(names[chosen], dimmed = false) { anchor -> onAsk(MenuAsk(anchor, names, chosen) { onPick(codes[it]) }) }
+        }
+    }
+
+    /**
+     * The app's language: the phone's own first, then the five the app speaks, each named in itself ([AppLanguages]).
+     * A new choice shows at once, on this page.
+     */
+    @Composable
+    fun AppLanguage() {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        // Asked again when the configuration changes: the choice can also be made in the phone's own settings.
+        val chosen = remember(androidx.compose.ui.platform.LocalConfiguration.current) { AppLanguages.chosen(context) }
+        val codes = listOf("") + AppLanguages.OFFERED
+        val names = codes.map { if (it.isEmpty()) stringResource(R.string.Settings_AppLanguagePhone) else AppLanguages.name(it) }
+        val at = codes.indexOf(chosen).coerceAtLeast(0)
+        Card(Glyph.globe, stringResource(R.string.Settings_AppLanguage)) {
+            ClosedMenu(names[at], dimmed = false) { anchor -> onAsk(MenuAsk(anchor, names, at) { AppLanguages.choose(context, codes[it]) }) }
         }
     }
 
@@ -956,7 +977,7 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
  * sections are.
  */
 @Composable
-private fun Card(glyph: String, kicker: String, content: @Composable ColumnScope.() -> Unit) {
+internal fun Card(glyph: String, kicker: String, content: @Composable ColumnScope.() -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()

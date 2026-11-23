@@ -100,6 +100,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import java.util.Locale
+import com.rpm.player.phone.ui.coverSquare
 
 /** How many local stations the row under Quick selection shows. */
 private const val LOCAL_ROW = 20
@@ -312,7 +313,8 @@ private fun QuickStation(pick: StationPick, images: ImageLoader, logoStamp: Stri
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(QUICK_ART).clip(RoundedCornerShape(5.dp)).background(Color.Black.copy(alpha = 0x22 / 255f))) {
+        // The rounding every cover has, from its size (CoverCorner).
+        Box(Modifier.size(QUICK_ART).clip(coverSquare(QUICK_ART)).background(Color.Black.copy(alpha = 0x22 / 255f))) {
             StationFace(station, logoStamp, images, QUICK_ART, inset = QUICK_STATION_INSET, Modifier.fillMaxSize()) {
                 BasicText(Glyph.radio, style = icon(15f).copy(color = Ink.white(0x3A)))
             }
@@ -337,7 +339,7 @@ private fun StationShelf(heading: String, stations: List<RadioStation>, images: 
                     Modifier.width(art).holdPress(remember { MutableInteractionSource() }, { onTune(station) }, holds?.let { { it.of(station) } }),
                     verticalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
-                    val well = RoundedCornerShape(10.dp)
+                    val well = coverSquare(art)
                     Box(Modifier.size(art).clip(well).background(Color.Black.copy(alpha = 0x22 / 255f)).border(1.dp, Ink.cardBorder, well)) {
                         StationFace(station, logoStamp, images, art, inset = 16.dp, Modifier.fillMaxSize()) {
                             BasicText(Glyph.radio, style = icon(30f).copy(color = Ink.white(0x3A)))

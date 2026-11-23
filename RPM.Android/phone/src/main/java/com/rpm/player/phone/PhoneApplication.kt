@@ -70,6 +70,7 @@ class PhoneApplication : RpmApplication() {
         super.onCreate()
         // Somebody already signed in when this build first runs had the app before the welcome and the hints existed.
         settings.settleFirstRun(signedIn = services.auth.session.value != null)
+        com.rpm.player.phone.ui.Look.open(this)
         account = Account(this, services, settings, onDeleted = { signIn.notice = Said(com.rpm.player.core.R.string.Account_DeletedBody) })
         account.begin()
         // The player follows the same reading as the offline bar: offline, only what is on the phone plays. Set here,

@@ -101,6 +101,7 @@ import com.rpm.player.phone.ui.rememberAccent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.rpm.player.phone.design.ScrollsToTop
+import com.rpm.player.phone.ui.rememberCoverShape
 
 /** The orders the artists' menu offers, in the iPhone's order. */
 private val ARTIST_ORDERS = listOf(
@@ -321,7 +322,8 @@ private fun Boxes(
  */
 @Composable
 internal fun ArtistBox(artist: ArtistWallItem, width: Dp, collection: Collection, images: ImageLoader, artwork: Artwork, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(10.dp)
+    // As round as a cover of its shorter side (CoverShape).
+    val shape = rememberCoverShape()
     val density = LocalDensity.current
     val photo = artistBackdrop(artist, collection, artwork)
     val sleeve = remember(artist, collection) { artist.own.firstNotNullOfOrNull { collection.album(it) }?.let { collection.cover(it) } }

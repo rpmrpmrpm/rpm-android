@@ -105,6 +105,7 @@ import com.rpm.player.phone.ui.VinylGround
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.rpm.player.phone.ui.CoverCorner
 
 /**
  * The stage: the landscape now-playing screen, shown over the whole app while the phone is turned and something is
@@ -490,7 +491,7 @@ private fun StageColumn(now: NowPlaying, player: Player, images: ImageLoader, pl
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         // Only identifies the album: the turning record on the right is this screen's picture.
-        Box(Modifier.padding(bottom = 12.dp)) { SleeveSquare(now.cover, COVER_EDGE, images, radius = 8.dp, glyphSize = 22f) }
+        Box(Modifier.padding(bottom = 12.dp)) { SleeveSquare(now.cover, COVER_EDGE, images, radius = CoverCorner.radius(COVER_EDGE), glyphSize = 22f) }
         // The one screen whose text is sized to be read from a distance.
         BasicText(title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = displayBold(34f).copy(color = Color.White))
         BasicText(said, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(18f).copy(color = Ink.white(0xB3)))

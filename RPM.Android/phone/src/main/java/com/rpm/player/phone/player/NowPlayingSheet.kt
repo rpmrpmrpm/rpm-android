@@ -121,6 +121,8 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.roundToInt
+import com.rpm.player.phone.ui.CoverCorner
+import com.rpm.player.phone.ui.coverSquare
 
 /** The stiffness of a spring with no bounce and a response of 0.35 s: SwiftUI's `spring(duration: 0.35)`. */
 private const val SHEET_STIFFNESS = 322f
@@ -479,7 +481,8 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
         when {
             station != null -> StationCard(station, images, edge)
             now.cover == null -> RecordDisc(edge, spinning = false, disc = remember(standIn) { ScannedDisc.standIn(context, standIn) })
-            else -> SleeveSquare(now.cover, edge, images, radius = 14.dp, glyphSize = 52f)
+            // The rounding every cover has, from its size (CoverCorner).
+            else -> SleeveSquare(now.cover, edge, images, radius = CoverCorner.radius(edge), glyphSize = 52f)
         }
     }
 }
@@ -491,7 +494,7 @@ private fun Sleeve(now: NowPlaying, player: Player, images: ImageLoader, stage: 
  */
 @Composable
 private fun StationCard(station: com.rpm.player.core.playback.StationPlaying, images: ImageLoader, edge: Dp) {
-    val shape = RoundedCornerShape(14.dp)
+    val shape = coverSquare(edge)
     // The cover of the song the station plays, over its logo, as on the desktop.
     val cover = com.rpm.player.phone.design.rememberSongCover(station)
     Box(Modifier.size(edge).clip(shape)) {

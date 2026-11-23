@@ -109,6 +109,8 @@ object Glyph {
     /** A palette, for the card that chooses the colour of the app's glass. */
     const val palette = "\uF53F"
 
+    /** A square, for the card that chooses how round the covers are. */
+    const val corners = "\uF0C8"
     const val speaker = "\uF028"
 
     // A balance scale, for volume levelling. The desktop's Sound settings use the same glyph.

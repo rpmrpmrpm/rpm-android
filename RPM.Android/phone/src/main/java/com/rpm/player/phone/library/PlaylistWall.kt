@@ -156,7 +156,7 @@ private fun PlaylistTile(row: PlaylistRow, title: String, picture: Any?, framed:
             .height(caption.card.dp)
             .holdPress(remember { MutableInteractionSource() }, onPress, menu),
     ) {
-        PlaylistSleeve(picture, row.mark, art, corner = 10.dp, mark = glyphSize, images, framed, markPicture = row.markPicture, folderFrame = row.folderFrame)
+        PlaylistSleeve(picture, row.mark, art, mark = glyphSize, images, framed, markPicture = row.markPicture, folderFrame = row.folderFrame)
         Spacer(Modifier.height(AlbumCaption.ART_GAP.dp))
         val nameRoom = (caption.albumLine + AlbumCaption.LINE_GAP + caption.artistLine).dp
         Box(Modifier.width(art).height(nameRoom), contentAlignment = Alignment.TopCenter) {
