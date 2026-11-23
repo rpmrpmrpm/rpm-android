@@ -109,6 +109,7 @@ class AlbumDownloads(
     private val rowsFlow = MutableStateFlow<List<Row>>(emptyList())
     private val bytesFlow = MutableStateFlow(0L)
     private val busyFlow = MutableStateFlow(false)
+    private val comingFlow = MutableStateFlow<Map<String, TrackDownload>>(emptyMap())
 
     /** Every album with a standing, redrawn after each change. What the keys read. */
     val shown: StateFlow<Map<String, Standing>> = shownFlow.asStateFlow()
@@ -130,6 +131,10 @@ class AlbumDownloads(
 
     /** Whether anything is on its way or waiting for the store: while this is true the phone keeps the process up. */
     val busy: StateFlow<Boolean> = busyFlow.asStateFlow()
+
+    /** Where each wanted track without a file stands, redrawn with [shown]. What the rows of a page that is downloading
+     * read, through [track]. A track with a file is not here: it is in [held]. */
+    val coming: StateFlow<Map<String, TrackDownload>> = comingFlow.asStateFlow()
 
     /** Tracks being transferred, or being signed for a transfer. */
     private val inFlight = HashSet<String>()
@@ -172,6 +177,10 @@ class AlbumDownloads(
 
     /** Where an album stands, or null for one nobody asked for. */
     fun standing(key: String): Standing? = shownFlow.value[key]
+
+    /** Where one track stands on the phone, whichever album or playlist asked for it: what a row's mark is made from
+     * ([TrackDownloadMark]). */
+    fun track(rpmId: String): TrackDownload = trackOf(rpmId, comingFlow.value, heldFlow.value)
 
     // ── what the keys do ──
 
@@ -519,6 +528,7 @@ class AlbumDownloads(
         val some = HashSet<String>()
         val files = HashSet<String>()
         val rows = ArrayList<Row>()
+        val tracks = HashMap<String, TrackDownload>()
 
         for (album in book.all) {
             val count = book.count(album.key) ?: continue
@@ -532,6 +542,7 @@ class AlbumDownloads(
 
             val left = album.tracks.map { it.rpmId }.filter { book.held(it) == null }
             album.tracks.mapNotNullTo(files) { track -> track.rpmId.takeIf { it !in left } }
+            for (rpmId in left) if (rpmId !in tracks) tracks[rpmId] = trackState(rpmId)
 
             val standing = if (have == of) {
                 Standing.OnPhone
@@ -551,13 +562,30 @@ class AlbumDownloads(
         if (some != onPhoneFlow.value) onPhoneFlow.value = some
         if (files != heldFlow.value) heldFlow.value = files
         if (rows != rowsFlow.value) rowsFlow.value = rows
+        if (tracks != comingFlow.value) comingFlow.value = tracks
         val total = book.totalBytes
         if (total != bytesFlow.value) bytesFlow.value = total
         val working = inFlight.isNotEmpty() || !making.isEmpty
         if (working != busyFlow.value) busyFlow.value = working
     }
 
+    /** Where one wanted track without a file stands. A transfer under way comes first: a track that is arriving is not
+     * waiting for anything else. */
+    private fun trackState(rpmId: String): TrackDownload = when {
+        rpmId in inFlight -> TrackDownload.Arriving(partial[rpmId] ?: 0.0)
+        (goes[rpmId] ?: 0) >= MOST_GOES -> TrackDownload.Stuck
+        making.isWaiting(rpmId) -> TrackDownload.Preparing
+        else -> TrackDownload.Waiting
+    }
+
     companion object {
+        /**
+         * Where one track stands, from [coming] and [held] as a screen holds them. A screen that reads the two flows as
+         * state asks this, so a row follows its song without the screen reading the downloader itself.
+         */
+        fun trackOf(rpmId: String, coming: Map<String, TrackDownload>, held: Set<String>): TrackDownload =
+            coming[rpmId] ?: if (rpmId in held) TrackDownload.OnPhone else TrackDownload.Absent
+
         /**
          * What a playlist is kept as in the book: its tracks in its own order, each one once, without the starter
          * tracks ([StarterTracks]), which are in the app already. It has no artist; the downloads page names its kind

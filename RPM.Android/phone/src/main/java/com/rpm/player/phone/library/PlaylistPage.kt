@@ -103,6 +103,7 @@ import com.rpm.player.phone.design.system
 import com.rpm.player.phone.ui.LiveRoom
 import com.rpm.player.phone.downloads.DownloadButton
 import com.rpm.player.phone.downloads.DownloadKey
+import com.rpm.player.phone.downloads.RowDownloadMark
 import com.rpm.player.phone.ui.rememberRoomColours
 import com.rpm.player.core.room.RoomPalette
 import kotlin.math.roundToInt
@@ -268,11 +269,11 @@ fun PlaylistPage(
                             val track = row.item
                             if (rearranging) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(Modifier.weight(1f)) { ListSongRow(track, coverOf(track), images, playing = track.rpmId == playing) {} }
+                                    Box(Modifier.weight(1f)) { ListSongRow(track, coverOf(track), images, playing = track.rpmId == playing, download = download) {} }
                                     Grip(row.id, carry, rows, onDrop = { drop() })
                                 }
                             } else {
-                                SongSwipe(track) { ListSongRow(track, coverOf(track), images, playing = track.rpmId == playing) { onPlay(row.at) } }
+                                SongSwipe(track) { ListSongRow(track, coverOf(track), images, playing = track.rpmId == playing, download = download) { onPlay(row.at) } }
                             }
                         }
                     }
@@ -469,33 +470,41 @@ private fun about(tracks: List<CloudTrack>, mood: MoodLine?): String? {
 /**
  * One song: the playing mark in the margin, the cover of its record, the title (with an E after it for
  * explicit lyrics), the artist and record below it, and the length. The row is lit while a finger is on it.
+ *
+ * On a playlist's page, what its download key cannot say about this one song is a small mark in the trailing margin,
+ * where it moves nothing ([RowDownloadMark]). The queue passes no [download], and its rows have no mark.
  */
 @Composable
-internal fun ListSongRow(track: CloudTrack, cover: Cover?, images: ImageLoader, playing: Boolean, onClick: () -> Unit) {
+internal fun ListSongRow(track: CloudTrack, cover: Cover?, images: ImageLoader, playing: Boolean, download: DownloadKey? = null, onClick: () -> Unit) {
     val presses = remember { MutableInteractionSource() }
     val pressed by presses.collectIsPressedAsState()
-    Row(
+    Box(
         Modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = 56.dp)
             .background(if (pressed) Ink.white(0x24) else Color.Transparent)
-            .songPress(track, presses, onClick)
-            .padding(start = 8.dp, end = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .songPress(track, presses, onClick),
+        contentAlignment = Alignment.CenterEnd,
     ) {
-        Box(Modifier.width(3.dp).height(28.dp).clip(RoundedCornerShape(percent = 50)).background(if (playing) Color.White else Color.Transparent))
-        PlaylistSleeve(cover, Glyph.record, edge = 40.dp, mark = 16f, images)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                BasicText(track.title.orEmpty(), Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(16f).copy(color = Color.White))
-                if (track.isExplicit) ExplicitMark()
+        Row(
+            Modifier.fillMaxWidth().padding(start = 8.dp, end = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.width(3.dp).height(28.dp).clip(RoundedCornerShape(percent = 50)).background(if (playing) Color.White else Color.Transparent))
+            PlaylistSleeve(cover, Glyph.record, edge = 40.dp, mark = 16f, images)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BasicText(track.title.orEmpty(), Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(16f).copy(color = Color.White))
+                    if (track.isExplicit) ExplicitMark()
+                }
+                said(track).takeIf { it.isNotEmpty() }?.let {
+                    BasicText(it, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(13f).copy(color = Ink.white(0x77)))
+                }
             }
-            said(track).takeIf { it.isNotEmpty() }?.let {
-                BasicText(it, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(13f).copy(color = Ink.white(0x77)))
-            }
+            BasicText(length(track.tags?.durationSeconds ?: 0.0), style = display(13f).copy(color = Ink.white(0x66)))
         }
-        BasicText(length(track.tags?.durationSeconds ?: 0.0), style = display(13f).copy(color = Ink.white(0x66)))
+        RowDownloadMark(download, track.rpmId)
     }
 }
 

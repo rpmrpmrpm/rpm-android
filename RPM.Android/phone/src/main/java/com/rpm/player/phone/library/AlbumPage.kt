@@ -109,6 +109,7 @@ import com.rpm.player.phone.design.rememberBackdrop
 import com.rpm.player.phone.design.scrolled
 import com.rpm.player.phone.downloads.DownloadButton
 import com.rpm.player.phone.downloads.DownloadKey
+import com.rpm.player.phone.downloads.RowDownloadMark
 import com.rpm.player.phone.ui.ArtGround
 import com.rpm.player.phone.home.AlbumRow
 import com.rpm.player.phone.design.system
@@ -266,7 +267,7 @@ fun AlbumPage(
                     when (line) {
                         is AlbumLine.Disc -> DiscHeading(line.number)
                         is AlbumLine.Work -> WorkHeading(line)
-                        is AlbumLine.Song -> SongSwipe(line.track) { SongRow(line, playing = line.track.rpmId == playing, enabled = canPlay(line.track)) { onPlay(line.index) } }
+                        is AlbumLine.Song -> SongSwipe(line.track) { SongRow(line, playing = line.track.rpmId == playing, enabled = canPlay(line.track), download = download) { onPlay(line.index) } }
                     }
                 }
                 credits?.takeIf { it.first == album.key && !it.second.isEmpty }?.let { (_, read) ->
@@ -744,46 +745,54 @@ private fun DiscHeading(number: Int) {
  * the same height. On a classical record the small line is the composer under a piece and nothing under a
  * movement, whose work has said who wrote it; a piece is set in the weight of a work's heading, and a movement is
  * set in. The row is lit while a finger is on it.
+ *
+ * What the page's download key cannot say about this one song is a small mark in the trailing margin, where it moves
+ * nothing ([RowDownloadMark]).
  */
 @Composable
-private fun SongRow(line: AlbumLine.Song, playing: Boolean, enabled: Boolean, onClick: () -> Unit) {
+private fun SongRow(line: AlbumLine.Song, playing: Boolean, enabled: Boolean, download: DownloadKey?, onClick: () -> Unit) {
     val track = line.track
     val presses = remember { MutableInteractionSource() }
     val pressed by presses.collectIsPressedAsState()
-    Row(
+    Box(
         Modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = 56.dp)
             .alpha(if (enabled) 1f else 0.35f)
             .background(if (pressed) Ink.white(0x24) else Color.Transparent)
-            .then(if (enabled) Modifier.songPress(track, presses, onClick) else Modifier)
-            .padding(start = 8.dp, end = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .then(if (enabled) Modifier.songPress(track, presses, onClick) else Modifier),
+        contentAlignment = Alignment.CenterEnd,
     ) {
-        Box(Modifier.width(3.dp).height(28.dp).clip(RoundedCornerShape(percent = 50)).background(if (playing) Color.White else Color.Transparent))
-        BasicText(
-            track.tags?.trackNumber?.takeIf { it > 0 }?.toString().orEmpty(),
-            Modifier.padding(start = if (line.level == SongLevel.Movement) MOVEMENT_INDENT else 0.dp).width(22.dp),
-            style = display(14f).copy(color = Ink.white(0x66)),
-        )
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                BasicText(
-                    line.title,
-                    Modifier.weight(1f, fill = false),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = (if (line.level == SongLevel.Piece) displayBold(16f) else display(16f)).copy(color = Color.White),
-                )
-                if (track.isExplicit) ExplicitMark()
+        Row(
+            Modifier.fillMaxWidth().padding(start = 8.dp, end = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.width(3.dp).height(28.dp).clip(RoundedCornerShape(percent = 50)).background(if (playing) Color.White else Color.Transparent))
+            BasicText(
+                track.tags?.trackNumber?.takeIf { it > 0 }?.toString().orEmpty(),
+                Modifier.padding(start = if (line.level == SongLevel.Movement) MOVEMENT_INDENT else 0.dp).width(22.dp),
+                style = display(14f).copy(color = Ink.white(0x66)),
+            )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BasicText(
+                        line.title,
+                        Modifier.weight(1f, fill = false),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = (if (line.level == SongLevel.Piece) displayBold(16f) else display(16f)).copy(color = Color.White),
+                    )
+                    if (track.isExplicit) ExplicitMark()
+                }
+                val second = if (line.level == SongLevel.Plain) track.artist?.takeIf { it.isNotEmpty() } else line.subtitle
+                second?.let {
+                    BasicText(it, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(13f).copy(color = Ink.white(0x77)))
+                }
             }
-            val second = if (line.level == SongLevel.Plain) track.artist?.takeIf { it.isNotEmpty() } else line.subtitle
-            second?.let {
-                BasicText(it, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(13f).copy(color = Ink.white(0x77)))
-            }
+            BasicText(length(track.tags?.durationSeconds ?: 0.0), style = display(13f).copy(color = Ink.white(0x66)))
         }
-        BasicText(length(track.tags?.durationSeconds ?: 0.0), style = display(13f).copy(color = Ink.white(0x66)))
+        RowDownloadMark(download, track.rpmId)
     }
 }
 

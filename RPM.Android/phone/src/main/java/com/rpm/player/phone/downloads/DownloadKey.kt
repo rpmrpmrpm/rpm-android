@@ -33,11 +33,15 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.rpm.player.core.R
 import com.rpm.player.core.downloads.AlbumDownloads.Standing
+import com.rpm.player.core.downloads.TrackDownload
+import com.rpm.player.core.downloads.TrackDownloadMark
 import com.rpm.player.phone.design.GlassButton
 import com.rpm.player.phone.design.Glyph
 import com.rpm.player.phone.design.Ink
@@ -58,6 +62,9 @@ class DownloadKey(
     /** Whether the key is on a playlist's page. Only the questions before a stop or a removal differ: they name a
      * playlist and not an album. */
     val isPlaylist: Boolean = false,
+    /** Where one of the page's songs stands on the phone, by its id: what the mark at the end of its row is made from
+     * ([RowDownloadMark]). Read in the mark itself, so only the marks recompose while a song arrives, not the page. */
+    val track: (String) -> TrackDownload = { TrackDownload.Absent },
 )
 
 /**
@@ -176,6 +183,90 @@ private fun Ring(fraction: Float, preparing: Boolean) {
                 size = Size(mark, mark),
                 cornerRadius = CornerRadius(1.5.dp.toPx()),
             )
+        }
+    }
+}
+
+/** The side of a row's download mark: about the size of the length's figures beside it. */
+private val ROW_MARK = 11.dp
+
+/** The room a row's download mark is centred in: the row's trailing margin. */
+val ROW_MARK_ROOM = 20.dp
+
+/**
+ * The small mark at the end of a song's row on a record's page or a playlist's page (the iPhone's `RowDownloadMark`):
+ * what the page's download key cannot say about one song. [TrackDownloadMark.of] decides which mark a row shows.
+ *
+ * The row draws it over its own trailing margin, [ROW_MARK_ROOM] wide, so a mark that comes or goes never moves the
+ * title or the length. Nothing is drawn where there is no key (a borrowed shelf, the queue, the favourite songs) or no
+ * mark. The song's state is read here and not in the row, so a song that moves on recomposes this mark alone.
+ */
+@Composable
+fun RowDownloadMark(key: DownloadKey?, rpmId: String, modifier: Modifier = Modifier) {
+    key ?: return
+    val mark = TrackDownloadMark.of(key.standing) { key.track(rpmId) } ?: return
+    val label = stringResource(
+        when (mark) {
+            TrackDownloadMark.Waiting -> R.string.Cloud_StateQueued
+            TrackDownloadMark.Preparing -> R.string.Rpm_Downloads_Preparing
+            is TrackDownloadMark.Arriving -> R.string.CloudChip_StageRestoring
+            TrackDownloadMark.Done -> R.string.Rpm_Download_OnPhone
+            TrackDownloadMark.Stuck -> R.string.CloudChip_StageFailedRestore
+        },
+    )
+    Box(
+        modifier
+            .width(ROW_MARK_ROOM)
+            .semantics {
+                contentDescription = label
+                // How much of a song that is arriving has come, which TalkBack reads as a percentage.
+                if (mark is TrackDownloadMark.Arriving) {
+                    progressBarRangeInfo = ProgressBarRangeInfo(mark.fraction.toFloat().coerceIn(0f, 1f), 0f..1f)
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        when (mark) {
+            TrackDownloadMark.Waiting -> Canvas(Modifier.size(ROW_MARK)) {
+                val line = 1.2.dp.toPx()
+                drawCircle(Ink.white(0x55), radius = size.minDimension / 2 - line / 2, style = Stroke(line))
+            }
+            TrackDownloadMark.Preparing -> SmallRing(null)
+            is TrackDownloadMark.Arriving -> SmallRing(mark.fraction.toFloat())
+            TrackDownloadMark.Done -> BasicText(Glyph.downloaded, style = icon(11f).copy(color = Ink.white(0x77)))
+            TrackDownloadMark.Stuck -> BasicText(Glyph.stuck, style = icon(11f).copy(color = Ink.white(0xB3)))
+        }
+    }
+}
+
+/**
+ * A row's ring: it fills with [fraction] as a song arrives, or with null a quarter arc turns while the store prepares
+ * the song, as on the key. The turn is read in the draw, so it redraws the ring and recomposes nothing.
+ */
+@Composable
+private fun SmallRing(fraction: Float?) {
+    val shown by animateFloatAsState((fraction ?: 0f).coerceIn(0.03f, 1f), tween(300, easing = FastOutSlowInEasing), label = "row ring")
+    val turn = if (fraction == null) {
+        rememberInfiniteTransition(label = "row preparing").animateFloat(
+            0f,
+            360f,
+            infiniteRepeatable(tween(1000, easing = LinearEasing), RepeatMode.Restart),
+            label = "row preparing turn",
+        )
+    } else {
+        null
+    }
+    Canvas(Modifier.size(ROW_MARK)) {
+        val line = 1.5.dp.toPx()
+        val inset = line / 2
+        val arc = Size(size.width - line, size.height - line)
+        drawCircle(Ink.white(0x33), radius = size.minDimension / 2 - inset, style = Stroke(line))
+        if (turn != null) {
+            rotate(turn.value) {
+                drawArc(Ink.white(0xB3), -90f, 90f, false, Offset(inset, inset), arc, style = Stroke(line, cap = StrokeCap.Round))
+            }
+        } else {
+            drawArc(Ink.white(0xB3), -90f, 360f * shown, false, Offset(inset, inset), arc, style = Stroke(line, cap = StrokeCap.Round))
         }
     }
 }

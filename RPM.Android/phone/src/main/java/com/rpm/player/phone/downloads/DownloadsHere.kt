@@ -21,6 +21,7 @@ import com.rpm.player.core.cloud.CloudTrack
 import com.rpm.player.core.cloud.Shelf
 import com.rpm.player.core.downloads.AlbumDownloads
 import com.rpm.player.core.downloads.DownloadBook
+import com.rpm.player.core.downloads.TrackDownload
 import com.rpm.player.core.library.CloudAlbum
 import com.rpm.player.core.library.StarterTracks
 import com.rpm.player.core.library.TrackList
@@ -44,7 +45,12 @@ class DownloadsHere internal constructor(
     private val rowsNow: State<List<AlbumDownloads.Row>>,
     private val bytesNow: State<Long>,
     private val askToNotify: State<() -> Unit>,
+    private val coming: State<Map<String, TrackDownload>>,
 ) {
+    /** Where one song stands on the phone, for the mark at the end of its row ([RowDownloadMark]). It reads the states it
+     * needs when it is asked, so only the mark that asks recomposes when they change. */
+    private val track: (String) -> TrackDownload = { rpmId -> AlbumDownloads.trackOf(rpmId, coming.value, held.value) }
+
     /** The settled reading ([PhoneApplication.line]): what the offline bar shows. */
     val online: Boolean get() = reach.value.isOnline
 
@@ -81,6 +87,7 @@ class DownloadsHere internal constructor(
                 engine.download(album)
             },
             onRemove = { engine.remove(setOf(album.key)) },
+            track = track,
         )
     }
 
@@ -106,6 +113,7 @@ class DownloadsHere internal constructor(
             },
             onRemove = { engine.remove(setOf(key)) },
             isPlaylist = true,
+            track = track,
         )
     }
 }
@@ -127,6 +135,7 @@ fun rememberDownloadsHere(): DownloadsHere {
     val shown = engine.shown.collectAsStateWithLifecycle()
     val rows = engine.rows.collectAsStateWithLifecycle()
     val bytes = engine.bytes.collectAsStateWithLifecycle()
+    val coming = engine.coming.collectAsStateWithLifecycle()
 
     LaunchedEffect(engine) { engine.begin() }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { engine.pump() }
@@ -142,5 +151,5 @@ fun rememberDownloadsHere(): DownloadsHere {
         }
     }
 
-    return remember(engine) { DownloadsHere(engine, reach, onPhone, held, shown, rows, bytes, askToNotify) }
+    return remember(engine) { DownloadsHere(engine, reach, onPhone, held, shown, rows, bytes, askToNotify, coming) }
 }

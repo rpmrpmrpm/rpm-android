@@ -193,6 +193,39 @@ class AlbumDownloadsTest {
         assertNull(book.held("t1"))
     }
 
+    /** Each track says where it stands, for the marks on the rows: preparing while the store makes it, absent once
+     * nobody wants it. */
+    @Test fun eachTrackOfAnAlbumThatIsPreparingSaysSo() = runTest {
+        val downloads = downloads(Store())
+        downloads.download(album("a", listOf("t1", "t2")))
+        runCurrent()
+
+        assertEquals(TrackDownload.Preparing, downloads.track("t1"))
+        assertEquals(TrackDownload.Preparing, downloads.track("t2"))
+        assertEquals(TrackDownload.Absent, downloads.track("t9"))
+
+        downloads.remove(setOf("a"))
+        runCurrent()
+        assertEquals(TrackDownload.Absent, downloads.track("t1"))
+        assertTrue(downloads.coming.value.isEmpty())
+    }
+
+    @Test fun aTrackThatLandedIsOnThePhoneAndOneRefusedIsStuck() = runTest {
+        val good = downloads(Store().apply { stored = true })
+        good.download(album("a", listOf("t1")))
+        runCurrent()
+        assertEquals(TrackDownload.OnPhone, good.track("t1"))
+        assertTrue(good.coming.value.isEmpty())
+
+        val refused = downloads(Store().apply {
+            stored = true
+            status = 404
+        })
+        refused.download(album("b", listOf("t2")))
+        runCurrent()
+        assertEquals(TrackDownload.Stuck, refused.track("t2"))
+    }
+
     // ── playlists ──
 
     private fun playlist(id: String, ids: List<String>, missing: Int = 0) = TrackList(
