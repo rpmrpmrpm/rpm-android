@@ -257,8 +257,11 @@ internal fun LyricView(sheet: LyricSheet, now: NowPlaying, karaoke: Boolean, mea
             }
         }
 
+        // **The lyrics follow the song and cannot be dragged**, as on iPhone (`scrollDisabled`). Only the seek bar
+        // moves the song. The list still scrolls itself to the sung line: `scrollBy` is not a touch.
         LazyColumn(
             state = list,
+            userScrollEnabled = false,
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = half),
             verticalArrangement = Arrangement.spacedBy((size * LEADING).dp),
             modifier = Modifier.fillMaxSize(),
