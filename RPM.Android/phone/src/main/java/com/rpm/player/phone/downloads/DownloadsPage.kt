@@ -258,7 +258,6 @@ private fun Line(
                 lists.picture(row.album),
                 Glyph.playlists,
                 edge = SLEEVE.dp,
-                corner = 6.dp,
                 mark = 16f,
                 images,
                 FramedList.of(lists.list(row.album), row.album.album),
