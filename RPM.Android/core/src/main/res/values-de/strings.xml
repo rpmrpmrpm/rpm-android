@@ -6093,6 +6093,12 @@
     <!-- Android phone: title of the dialog that removes one downloaded album from the phone. Rpm_Download_RemoveQuestion says iPhone. -->
     <string name="Phone_Download_RemoveQuestion">Dieses Album vom Handy entfernen? Es bleibt in deiner Cloud-Bibliothek.</string>
 
+    <!-- Android phone: title of the dialog that removes one downloaded playlist from the phone. Songs that a downloaded album also holds stay on the phone. Rpm_Download_RemovePlaylistQuestion says iPhone. -->
+    <string name="Phone_Download_RemovePlaylistQuestion">Diese Playlist vom Handy entfernen? Sie bleibt in deiner Cloud-Mediathek.</string>
+
+    <!-- Android phone: title of the dialog that removes several downloads from the phone when playlists are among them. {0} = how many. Rpm_Downloads_RemoveMixedQuestion says iPhone. -->
+    <string name="Phone_Downloads_RemoveMixedQuestion">%1$s Downloads vom Handy entfernen? Sie bleiben in deiner Cloud-Mediathek.</string>
+
     <!-- Heading of the downloads card on the iPhone profile tab, and of the downloads list. -->
     <string name="Rpm_Downloads_Title">Downloads</string>
 
