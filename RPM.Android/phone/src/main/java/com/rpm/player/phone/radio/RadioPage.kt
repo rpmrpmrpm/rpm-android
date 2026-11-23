@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,7 +23,11 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
@@ -42,6 +47,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -78,7 +84,7 @@ import com.rpm.player.phone.design.BackKey
 import com.rpm.player.phone.design.GlassField
 import com.rpm.player.phone.design.Glyph
 import com.rpm.player.phone.design.Ink
-import com.rpm.player.phone.design.PageTitle
+import com.rpm.player.phone.design.Backdrop
 import com.rpm.player.phone.design.OverChrome
 import com.rpm.player.phone.design.PullDownMenu
 import com.rpm.player.phone.design.PullItem
@@ -86,22 +92,33 @@ import com.rpm.player.phone.design.backdropSource
 import com.rpm.player.phone.design.display
 import com.rpm.player.phone.design.dissolvesAtTop
 import com.rpm.player.phone.design.icon
-import com.rpm.player.phone.design.kicker
 import com.rpm.player.phone.design.rememberBackdrop
+import com.rpm.player.phone.design.rememberHaptics
 import com.rpm.player.phone.design.rowPress
 import com.rpm.player.phone.design.scrolled
 import com.rpm.player.phone.design.system
-import com.rpm.player.phone.library.BACK_ROW
+import com.rpm.player.phone.design.PageHeading
+import com.rpm.player.phone.design.UnderHeader
+import com.rpm.player.phone.design.holdPress
+import com.rpm.player.phone.library.AlbumCaption
+import com.rpm.player.phone.library.EDGE
 import com.rpm.player.phone.library.FOOT
+import com.rpm.player.phone.library.KeyGroup
+import com.rpm.player.phone.library.PlaylistLayout
+import com.rpm.player.phone.library.WALL_COLUMNS
+import com.rpm.player.phone.library.WALL_GUTTER
+import com.rpm.player.phone.library.WallLayout
 import com.rpm.player.phone.ui.RecordSpinner
 import com.rpm.player.phone.ui.VinylGround
 import java.util.Locale
+import kotlin.math.max
+import kotlin.math.min
 import com.rpm.player.phone.design.ScrollsToTop
 import com.rpm.player.phone.ui.coverSquare
 
-/** Which of the filter row's menus is open, and where its key is on the screen. */
+/** Which of the page's menus is open, and where its key is on the screen. */
 private class Picking(val which: Which, val from: Rect) {
-    enum class Which { Genre, Country, Order }
+    enum class Which { Genre, Country, Order, Layout }
 }
 
 /** The orders that the sort key offers, with their names (`RadioPage.named` on iPhone). */
@@ -116,8 +133,9 @@ private val ORDERS = listOf(
 /**
  * The tuner, opened from the radio tab's home ([RadioHome]). It matches the iPhone's `RadioPage` (RPMUI/RadioPage.swift). From the top: the dial, then the
  * stations it can reach. The dial and the list are one list of stations. So dragging the needle and tapping a
- * row tune the same station. Below the dial is the search field, and a row of filters: the genre, the country,
- * the order, and the saved stations only. Each filter opens a menu that drops from its key, as SwiftUI's `Menu` does.
+ * row tune the same station. Below the dial is the search field, and a row with the genre and the country. The keys
+ * on the title's line choose the layout (rows, or a wall of the stations' squares), the order, and the saved
+ * stations only. Each key and filter that offers a choice opens a menu that drops from it, as SwiftUI's `Menu` does.
  *
  * The question sent to the station directory, the answer, and the list built from it are in `:core`'s [Tuner].
  * The TV app's tuner reads the same code. The tuner waits until the typing pauses. It asks one question at a
@@ -131,7 +149,10 @@ private val ORDERS = listOf(
  * @param tuned the id of the station that is playing. The row's mark and the needle follow it.
  * @param said what that station announces now.
  * @param onSave saves a station, or unsaves it. It is only offered for the person's own saved stations.
- * @param onBack puts the page away, back to the radio home ([RadioHome]). The page then has a back key over its title.
+ * @param onBack puts the page away, back to the radio home ([RadioHome]). The page then has a back key beside its title.
+ * @param layout how the stations are shown: rows, or a wall of squares. The phone keeps it
+ * ([com.rpm.player.phone.PhoneSettings.radioLayout]), so the tuner opens in the layout last chosen.
+ * @param onLayout keeps a new layout.
  */
 @Composable
 fun RadioPage(
@@ -143,6 +164,8 @@ fun RadioPage(
     onTune: (RadioStation) -> Unit,
     onSave: (RadioStation) -> Unit,
     onBack: (() -> Unit)? = null,
+    layout: PlaylistLayout = PlaylistLayout.List,
+    onLayout: (PlaylistLayout) -> Unit = {},
 ) {
     val tuner = radio.tuner
     val settings by tuner.settings.collectAsStateWithLifecycle()
@@ -151,6 +174,8 @@ fun RadioPage(
     val saved by radio.saved.collectAsStateWithLifecycle()
     val rules by radio.rules.collectAsStateWithLifecycle()
     val page = rememberBackdrop()
+    // What the header's glass frosts: the ground and the page under the header, as on the playlists view.
+    val ground = rememberBackdrop()
     val focus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     var picking by remember { mutableStateOf<Picking?>(null) }
@@ -169,40 +194,42 @@ fun RadioPage(
         null -> null
     }
 
+    val pick = { which: Picking.Which, from: Rect ->
+        focusManager.clearFocus()
+        picking = Picking(which, from)
+    }
+
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().backdropSource(page)) {
-            VinylGround()
-            Column(Modifier.fillMaxSize().statusBarsPadding()) {
-                // Room for the back key, which is drawn over the page so that it can frost it.
-                if (onBack != null) Spacer(Modifier.height(BACK_ROW))
-                Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    PageTitle(stringResource(if (onBack != null) R.string.Radio_TunerTitle else R.string.Rpm_Tab_Radio))
-                    BasicText(stringResource(R.string.Radio_Subtitle), style = kicker())
-                }
-                RadioDial(list.stations, tuned, announced, onTune, Modifier.padding(horizontal = 20.dp).padding(top = 4.dp))
-                Controls(
-                    text = settings.text,
-                    onText = { typed -> tuner.update { it.copy(text = typed) } },
-                    focus = focus,
-                    genre = settings.sieve.genre,
-                    country = countries.firstOrNull { it.code == settings.country }?.name,
+            // The header is drawn over the page so that its glass can frost it. The page starts under it.
+            UnderHeader(ground, ground = { VinylGround() }, header = {
+                Header(
+                    ground,
+                    title = stringResource(if (onBack != null) R.string.Radio_TunerTitle else R.string.Rpm_Tab_Radio),
+                    onBack = onBack,
+                    layout = layout,
                     sorted = settings.order != StationOrder.Listed,
                     savedOnly = settings.favoritesOnly,
-                    onPick = { which, from ->
-                        focusManager.clearFocus()
-                        picking = Picking(which, from)
-                    },
+                    onPick = pick,
                     onSaved = { tuner.update { it.copy(favoritesOnly = !it.favoritesOnly) } },
                 )
-                if (list.directoryDown) Trouble()
-                Box(Modifier.weight(1f).imePadding()) {
-                    Stations(list, settings, answer, images, rules.logoStamp, tuned, saved, bottomRoom, onTune, onSave)
+            }) { top ->
+                Column(Modifier.fillMaxSize()) {
+                    Spacer(Modifier.height(top))
+                    RadioDial(list.stations, tuned, announced, onTune, Modifier.padding(horizontal = 20.dp).padding(top = 4.dp))
+                    Controls(
+                        text = settings.text,
+                        onText = { typed -> tuner.update { it.copy(text = typed) } },
+                        focus = focus,
+                        genre = settings.sieve.genre,
+                        country = countries.firstOrNull { it.code == settings.country }?.name,
+                        onPick = pick,
+                    )
+                    if (list.directoryDown) Trouble()
+                    Box(Modifier.weight(1f).imePadding()) {
+                        Stations(list, settings, answer, images, rules.logoStamp, tuned, saved, bottomRoom, layout, onTune, onSave)
+                    }
                 }
-            }
-        }
-        if (onBack != null) {
-            Box(Modifier.statusBarsPadding().height(BACK_ROW).padding(start = 20.dp), contentAlignment = Alignment.Center) {
-                BackKey(page, onBack = onBack)
             }
         }
         picking?.let { open ->
@@ -222,6 +249,9 @@ fun RadioPage(
                     // A picker: the order in force is ticked.
                     Picking.Which.Order ->
                         ORDERS.map { (order, label) -> PullItem(stringResource(label), ticked = order == settings.order) { tuner.update { it.copy(order = order) } } }
+                    // A picker too, as the playlists' layout key: the layout shown is ticked.
+                    Picking.Which.Layout ->
+                        PlaylistLayout.entries.map { choice -> PullItem(stringResource(choice.label), ticked = choice == layout) { onLayout(choice) } }
                 }
                 // Over the tab bar and the mini player, as the iPhone's menu is.
                 OverChrome { PullDownMenu(page, open.from, items, onDismiss = close) }
@@ -231,9 +261,61 @@ fun RadioPage(
 }
 
 /**
- * The search field on a line of its own, and under it the genre, the country, the order and the saved stations. On
- * the desktop these share one row; a phone is not wide enough.
+ * The title, with the back key to its left as inside a folder of the playlists view, and on the title's line the keys
+ * on one glass capsule: the layout, the order and the saved stations only.
  */
+@Composable
+private fun Header(
+    backdrop: Backdrop,
+    title: String,
+    onBack: (() -> Unit)?,
+    layout: PlaylistLayout,
+    sorted: Boolean,
+    savedOnly: Boolean,
+    onPick: (Picking.Which, Rect) -> Unit,
+    onSaved: () -> Unit,
+) {
+    val haptics = rememberHaptics()
+    Row(Modifier.statusBarsPadding().padding(start = 20.dp, end = 16.dp, bottom = 8.dp)) {
+        if (onBack != null) {
+            BackKey(backdrop, onBack = { haptics.pick(); onBack() }, modifier = Modifier.padding(end = BESIDE_TITLE))
+        }
+        PageHeading(title, stringResource(R.string.Radio_Subtitle)) {
+            KeyGroup(backdrop) {
+                // The playlists' layout key: a menu, not a toggle, so the key never has to show either the layout in
+                // force or the one a press would give.
+                GroupKey(layout.mark, on = false, label = stringResource(R.string.Rpm_Library_View)) { onPick(Picking.Which.Layout, it) }
+                GroupKey(Glyph.sortAmount, on = sorted, label = stringResource(R.string.Radio_Sort)) { onPick(Picking.Which.Order, it) }
+                GroupKey(Glyph.heart, on = savedOnly, label = stringResource(R.string.Radio_ShowFavorites)) { onSaved() }
+            }
+        }
+    }
+}
+
+/** The space between the back key and the title beside it (`RPMBackKey.besideTitle` on iPhone). */
+private val BESIDE_TITLE = 12.dp
+
+/**
+ * One plain key on the header's capsule. **Its mark is cyan while it is in force**, which is the whole of its state:
+ * without it, a list in a chosen order, or narrowed to the saved stations, would give no sign of that, and the page
+ * would seem to be missing stations.
+ */
+@Composable
+private fun GroupKey(glyph: String, on: Boolean, label: String, onClick: (Rect) -> Unit) {
+    val place = remember { Place() }
+    Box(
+        Modifier
+            .size(40.dp)
+            .onGloballyPositioned { place.bounds = it.boundsInRoot() }
+            .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Button) { onClick(place.bounds) }
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        BasicText(glyph, style = icon(16f).copy(color = if (on) Ink.cyan else Ink.white(0xB8)))
+    }
+}
+
+/** The search field on a line of its own, and under it the genre and the country. */
 @Composable
 private fun Controls(
     text: String,
@@ -241,10 +323,7 @@ private fun Controls(
     focus: FocusRequester,
     genre: String?,
     country: String?,
-    sorted: Boolean,
-    savedOnly: Boolean,
     onPick: (Picking.Which, Rect) -> Unit,
-    onSaved: () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -260,9 +339,6 @@ private fun Controls(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Chooser(genre ?: stringResource(R.string.Radio_AllGenres), Modifier.weight(1f)) { onPick(Picking.Which.Genre, it) }
             Chooser(country ?: stringResource(R.string.Radio_AllCountries), Modifier.weight(1f)) { onPick(Picking.Which.Country, it) }
-            // Icon only, unlike the two boxes beside it: a third box would make them too narrow to read.
-            Key(Glyph.sortAmount, on = sorted, label = stringResource(R.string.Radio_Sort)) { onPick(Picking.Which.Order, it) }
-            Key(Glyph.heart, on = savedOnly, label = stringResource(R.string.Radio_ShowFavorites)) { onSaved() }
         }
     }
 }
@@ -294,29 +370,6 @@ private fun Chooser(said: String, modifier: Modifier, onClick: (Rect) -> Unit) {
     }
 }
 
-/**
- * A square key at the end of the filter row. **Cyan while it is in force**, which is the whole of its state: without
- * it, a list in a chosen order, or narrowed to the saved stations, would give no sign of that.
- */
-@Composable
-private fun Key(glyph: String, on: Boolean, label: String, onClick: (Rect) -> Unit) {
-    val well = RoundedCornerShape(8.dp)
-    val place = remember { Place() }
-    Box(
-        Modifier
-            .size(44.dp, 40.dp)
-            .onGloballyPositioned { place.bounds = it.boundsInRoot() }
-            .clip(well)
-            .background(if (on) Ink.cyan.copy(alpha = 0x1F / 255f) else Ink.white(0x14))
-            .border(1.dp, if (on) Ink.cyan.copy(alpha = 0x55 / 255f) else Ink.white(0x1A), well)
-            .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Button) { onClick(place.bounds) }
-            .semantics { contentDescription = label },
-        contentAlignment = Alignment.Center,
-    ) {
-        BasicText(glyph, style = icon(14f).copy(color = if (on) Ink.cyan else Ink.white(0x88)))
-    }
-}
-
 /** Explains why the list is short. It is shown in its own row above the list, not over the first station. */
 @Composable
 private fun Trouble() {
@@ -344,6 +397,7 @@ private fun Stations(
     tuned: String?,
     saved: SavedStations,
     bottomRoom: Dp,
+    layout: PlaylistLayout,
     onTune: (RadioStation) -> Unit,
     onSave: (RadioStation) -> Unit,
 ) {
@@ -369,6 +423,10 @@ private fun Stations(
                 BasicText(stringResource(nothing), Modifier.widthIn(max = 300.dp), style = display(14f).copy(color = Ink.white(0x88), textAlign = TextAlign.Center))
             }
         }
+        return
+    }
+    if (layout == PlaylistLayout.Grid) {
+        StationWall(list, images, logoStamp, tuned, bottomRoom, onTune)
         return
     }
     val rows = rememberLazyListState()
@@ -400,6 +458,104 @@ private fun Stations(
         if (list.asking) RecordSpinner(34.dp, Modifier.align(Alignment.TopCenter).padding(top = 18.dp))
     }
 }
+
+/**
+ * The same stations as a wall of their squares, each with its name under it, at the size the other walls open at
+ * ([WALL_STRIDE]) and with the records wall's own sizing ([WallLayout.wall], [AlbumCaption]). A tap tunes the station,
+ * as a row does, and a long press offers the same menu as a row's.
+ */
+@Composable
+private fun StationWall(
+    list: TunerList,
+    images: ImageLoader,
+    logoStamp: String,
+    tuned: String?,
+    bottomRoom: Dp,
+    onTune: (RadioStation) -> Unit,
+) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val (columns, art) = WallLayout.wall(maxWidth.value.toDouble(), WALL_STRIDE, EDGE, WALL_GUTTER, WALL_COLUMNS)
+        val caption = remember(art) { AlbumCaption.of(art) }
+        val grid = rememberLazyGridState()
+        ScrollsToTop(grid)
+        val focus = LocalFocusManager.current
+        LaunchedEffect(grid.isScrollInProgress) { if (grid.isScrollInProgress) focus.clearFocus() }
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            state = grid,
+            modifier = Modifier.fillMaxSize().dissolvesAtTop(30.dp) { grid.scrolled() },
+            contentPadding = PaddingValues(start = EDGE.dp, end = EDGE.dp, top = 4.dp, bottom = FOOT + bottomRoom),
+            horizontalArrangement = Arrangement.spacedBy(WALL_GUTTER.dp),
+        ) {
+            gridItems(list.stations, key = { it.uuid }, contentType = { "station" }) { station ->
+                Box(contentAlignment = Alignment.TopCenter) {
+                    StationTile(station, images, logoStamp, playing = tuned != null && station.answersTo(tuned), caption, onTune)
+                }
+            }
+        }
+        // As over the rows: the last answer stays while a new one is asked for.
+        if (list.asking) RecordSpinner(34.dp, Modifier.align(Alignment.TopCenter).padding(top = 18.dp))
+    }
+}
+
+/** The width a tile on the station wall is asked to be: the size the records and playlists walls open at. */
+private const val WALL_STRIDE = 194.0
+
+/**
+ * One station on the wall: its square, as the radio home's rows draw it, and its name under it in the room of a
+ * record's two lines. **The station that is playing has a white edge**, as the row's white mark in the margin: on a
+ * wall there is no margin to put it in.
+ */
+@Composable
+private fun StationTile(
+    station: RadioStation,
+    images: ImageLoader,
+    logoStamp: String,
+    playing: Boolean,
+    caption: AlbumCaption,
+    onTune: (RadioStation) -> Unit,
+) {
+    val art = caption.art.dp
+    val well = coverSquare(art)
+    val holds = LocalStationHolds.current
+    // The antenna follows the edge, as the mark on an empty playlist square does.
+    val mark = min(max(caption.art * 0.2, 16.0), 52.0).toFloat()
+    Column(
+        Modifier
+            .width(art)
+            .height(caption.card.dp)
+            .holdPress(remember { MutableInteractionSource() }, { onTune(station) }, holds?.let { { it.of(station) } }),
+    ) {
+        Box(
+            Modifier
+                .size(art)
+                .clip(well)
+                .background(Color.Black.copy(alpha = 0x22 / 255f))
+                .border(if (playing) 2.dp else 1.dp, if (playing) PLAYING_EDGE else Ink.cardBorder, well),
+        ) {
+            // The logo is kept off the edges by the share of the side that the radio home's squares use.
+            StationFace(station, logoStamp, images, art, inset = art * TILE_INSET, modifier = Modifier.fillMaxSize()) {
+                BasicText(Glyph.radio, style = icon(mark).copy(color = Ink.white(0x3A)))
+            }
+        }
+        Spacer(Modifier.height(AlbumCaption.ART_GAP.dp))
+        val nameRoom = (caption.albumLine + AlbumCaption.LINE_GAP + caption.artistLine).dp
+        Box(Modifier.width(art).height(nameRoom), contentAlignment = Alignment.TopCenter) {
+            BasicText(
+                station.display,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                style = system(caption.album, FontWeight.Medium).copy(color = Color.White, textAlign = TextAlign.Center),
+            )
+        }
+    }
+}
+
+/** How far a wall tile's logo is kept from its edges, as a share of its side: 16 dp on the radio home's 132 dp squares. */
+private const val TILE_INSET = 16f / 132f
+
+/** The white edge of the tile that is playing, as a brush so that it can stand in for [Ink.cardBorder]. */
+private val PLAYING_EDGE = SolidColor(Color.White)
 
 /**
  * One station: the playing mark in the margin, its logo, its name with the AD mark if it has ads, a line about

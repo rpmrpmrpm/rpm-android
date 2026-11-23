@@ -319,6 +319,16 @@ class PhoneSettings(context: Context) {
         prefs.edit().putString(KEY_PLAYLIST_LAYOUT, layout.stored).apply()
     }
 
+    /** How the tuner lists its stations: rows, or a wall of their squares (`radio.layout`). It opens in the layout last
+     * chosen, as the playlists view does. */
+    var radioLayout by mutableStateOf(PlaylistLayout.of(prefs.getString(KEY_RADIO_LAYOUT, null)) ?: PlaylistLayout.List)
+        private set
+
+    fun changeRadioLayout(layout: PlaylistLayout) {
+        radioLayout = layout
+        prefs.edit().putString(KEY_RADIO_LAYOUT, layout.stored).apply()
+    }
+
     /** How wide a tile on the playlists' covers is asked to be (`playlists.tileArt.v1`), apart from the records wall's,
      * because the two walls are pinched apart. Saved when the fingers lift. */
     var playlistStride by mutableStateOf(prefs.getFloat(KEY_PLAYLIST_STRIDE, 194f).toDouble())
@@ -668,6 +678,7 @@ class PhoneSettings(context: Context) {
         const val KEY_ARTIST_BOX = "library.artistBox.v1"
         const val KEY_PLAYLIST_LAYOUT = "playlists.layout"
         const val KEY_PLAYLIST_STRIDE = "playlists.tileArt.v1"
+        const val KEY_RADIO_LAYOUT = "radio.layout"
     }
 }
 

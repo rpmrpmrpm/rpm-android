@@ -818,6 +818,8 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                                 // The saved stations of a shared collection are its owner's, and are never changed from here.
                                 onSave = { station -> if (services.radio.saved.value.mine) services.radio.favorites.toggle(station) },
                                 onBack = { radioOpened = radioOpened.dropLast(1) },
+                                layout = settings.radioLayout,
+                                onLayout = settings::changeRadioLayout,
                             )
                         }
                     }
