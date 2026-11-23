@@ -35,7 +35,13 @@ import com.rpm.player.core.cloud.Post
 import com.rpm.player.core.library.CloudAlbum
 import com.rpm.player.core.library.Cover
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import com.rpm.player.phone.player.Spinner
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.getValue
@@ -57,6 +63,9 @@ import com.rpm.player.phone.ui.VinylGround
 import kotlinx.coroutines.launch
 
 private val MARGIN = 20.dp
+
+/** How long the feed's first answer takes to fade in over the waiting wheel (0.25 s, ease out, on iPhone). */
+private const val FIRST_FADE_MS = 250
 
 /**
  * The Feed tab: everyone's posts and album reviews, newest first. Its header is the collection's: the title, a line under it, and its
@@ -92,6 +101,13 @@ fun FeedScreen(
     val ground = rememberBackdrop()
     val list = rememberLazyListState()
     LaunchedEffect(Unit) { feed.read() }
+    // The first answer fades in over the waiting wheel, so the page does not change at once some time after it has slid
+    // in (`FeedPage.settled` on iPhone). A feed already answered when the tab is shown, and a later read, change the
+    // rows without it.
+    val settled = feed.answered || feed.trouble != null
+    val firstFade = remember(feed) { if (settled) null else Animatable(0f) }
+    LaunchedEffect(feed, settled) { if (settled) firstFade?.animateTo(1f, tween(FIRST_FADE_MS, easing = EaseOut)) }
+    val fading = if (firstFade == null) Modifier else Modifier.graphicsLayer { alpha = firstFade.value }
 
     Box(Modifier.fillMaxSize().backdropSource(page)) {
         UnderHeader(ground, ground = { VinylGround() }, header = {
@@ -116,12 +132,20 @@ fun FeedScreen(
                 item(key = "top") { Spacer(Modifier.height(top + 4.dp)) }
                 val trouble = feed.trouble
                 when {
-                    trouble != null -> item(key = "trouble") { Quiet(stringResource(trouble), Modifier.padding(horizontal = MARGIN)) }
+                    trouble != null -> item(key = "trouble") { Quiet(stringResource(trouble), fading.padding(horizontal = MARGIN)) }
                     feed.answered && feed.items.isEmpty() -> item(key = "empty") {
-                        Quiet(stringResource(R.string.Rpm_Feed_Empty), Modifier.padding(horizontal = MARGIN))
+                        Quiet(stringResource(R.string.Rpm_Feed_Empty), fading.padding(horizontal = MARGIN))
+                    }
+                    // The first read is not answered yet: the wheel stands where the posts will be.
+                    !feed.answered && feed.items.isEmpty() -> item(key = "waiting") {
+                        Box(
+                            Modifier.fillMaxWidth().padding(horizontal = MARGIN).padding(vertical = 16.dp)
+                                .animateItem(fadeInSpec = null, placementSpec = null, fadeOutSpec = tween(FIRST_FADE_MS, easing = EaseOut)),
+                            contentAlignment = Alignment.Center,
+                        ) { Spinner(20.dp, Color.White) }
                     }
                     else -> items(feed.items, key = { it.key }, contentType = { if (it is FeedItem.OfPost) "post" else "review" }) { item ->
-                        val modifier = Modifier.padding(horizontal = MARGIN).padding(bottom = 12.dp)
+                        val modifier = fading.padding(horizontal = MARGIN).padding(bottom = 12.dp)
                         when (item) {
                             is FeedItem.OfPost -> {
                                 val post = item.post
