@@ -417,7 +417,7 @@ fun LibraryPage(
     CompositionLocalProvider(LocalModeTabs provides motion) {
         Crossfade(settings.libraryMode, animationSpec = tween(MODE_FADE_MS), label = "library view") { mode ->
             when (mode) {
-                LibraryMode.Playlists -> PlaylistsPage(ready, images, settings, onMode = settings::changeLibraryMode, bottomRoom = bottomRoom, onOpen = onOpenList, onMake = onMakePlaylist, onReread = reading.onReread, history = history, onOpenHistory = onOpenHistory)
+                LibraryMode.Playlists -> PlaylistsPage(ready, images, settings, onMode = settings::changeLibraryMode, bottomRoom = bottomRoom, onOpen = onOpenList, onMake = onMakePlaylist, onReread = reading.onReread, history = history, onOpenHistory = onOpenHistory, owner = reading.owner)
                 LibraryMode.Artists -> ArtistsPage(ready, images, artwork, settings, bottomRoom = bottomRoom, onOpen = onOpenArtist, reading = reading)
                 LibraryMode.Genres -> GenresPage(ready, images, settings, bottomRoom = bottomRoom, onOpen = onOpenGenre, reading = reading)
                 LibraryMode.Albums -> AlbumsPage(

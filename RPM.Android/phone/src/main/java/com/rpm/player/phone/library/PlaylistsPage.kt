@@ -73,7 +73,9 @@ import coil3.request.ImageRequest
 import com.rpm.player.core.R
 import com.rpm.player.core.cloud.CloudTrack
 import com.rpm.player.core.cloud.Shelf
+import com.rpm.player.core.library.Genres
 import com.rpm.player.core.library.LibraryState
+import com.rpm.player.core.library.Lists
 import com.rpm.player.core.library.PlaylistBrowse
 import com.rpm.player.core.library.PlaylistRow
 import com.rpm.player.core.library.TrackList
@@ -100,7 +102,8 @@ private val BESIDE_TITLE = 12.dp
 /**
  * The library's playlists view. It matches the iPhone's `PlaylistsPage` (RPMUI/PlaylistsPage.swift). It
  * shows the lists that the computer generated and the lists that the person made, in the folders they were
- * filed in. The folders come first, then the lists. Each row has its picture, its name and how much is in it.
+ * filed in. The folders come first, then the lists. Each row has its picture, its name and a line that says what kind
+ * of row it is ([byline]).
  * Opening a folder shows its contents in place, with a back key beside its name. Opening a list opens its page.
  *
  * The same folder can be shown as covers instead of rows ([PlaylistWall]), chosen from the layout key in the header,
@@ -127,6 +130,8 @@ private val BESIDE_TITLE = 12.dp
  * failed, and null when it is done.
  * @param history the songs played lately, newest first ([PlayedLately]); empty hides the history's row.
  * @param onOpenHistory opens the page of those songs.
+ * @param owner the name of the person whose collection this is: the account's own name on its own collection, the
+ * lender's on a borrowed one, null when it is not known. It is named under each list somebody made ([byline]).
  *
  * Not yet implemented: pull to refresh (the lists are read again when the app comes back to the front instead), and
  * the line that says whose collection a borrowed one is.
@@ -143,6 +148,7 @@ fun PlaylistsPage(
     onReread: suspend () -> Unit = {},
     history: List<CloudTrack> = emptyList(),
     onOpenHistory: () -> Unit = {},
+    owner: String? = null,
 ) {
     val ground = rememberBackdrop()
     // A pull down from the top reads the playlists again (`onReread` on iPhone); the spinner stays while it runs.
@@ -225,7 +231,7 @@ fun PlaylistsPage(
                     val shelf = heads.takeIf { shown.at.isEmpty() }
                     when (settings.playlistLayout) {
                         PlaylistLayout.List -> Column(Modifier.fillMaxSize()) {
-                            Rows(shown, pictureOf, images, bottomRoom, top, ::press, menuOf, shelf) {
+                            Rows(shown, owner, pictureOf, images, bottomRoom, top, ::press, menuOf, shelf) {
                                 Footer(shown, empty = collection.lists.isEmpty(), own = own)
                             }
                         }
@@ -233,6 +239,7 @@ fun PlaylistsPage(
                             PlaylistWall(
                                 shown.rows,
                                 titleOf = { title(it) },
+                                lineOf = { byline(it, owner) },
                                 pictureOf = pictureOf,
                                 framedOf = { framedOf(it) },
                                 images = images,
@@ -311,6 +318,7 @@ private const val FADE_IN_MS = 220
 @Composable
 private fun androidx.compose.foundation.layout.ColumnScope.Rows(
     browse: PlaylistBrowse,
+    owner: String?,
     pictureOf: (PlaylistRow) -> Any?,
     images: ImageLoader,
     bottomRoom: Dp,
@@ -329,7 +337,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.Rows(
     ) {
         if (heads != null) item(key = "heads", contentType = "heads") { heads() }
         items(browse.rows, key = { it.id }, contentType = { "row" }) { row ->
-            Line(row, pictureOf(row), framedOf(row), images, menu = menuOf(row)) { onPress(row) }
+            Line(row, byline(row, owner), pictureOf(row), framedOf(row), images, menu = menuOf(row)) { onPress(row) }
         }
         item(key = "footer", contentType = "footer") { footer() }
     }
@@ -352,6 +360,36 @@ private fun framedOf(row: PlaylistRow): FramedList? = (row as? PlaylistRow.Playl
 private fun title(row: PlaylistRow): String = when (row) {
     is PlaylistRow.Folder -> row.folder.name
     is PlaylistRow.Playlist -> row.name
+}
+
+/**
+ * The line under a row's name, where a record shows its artist: what kind of row it is (`PlaylistRow.byline` on
+ * iPhone).
+ *
+ * - A folder says that it is a folder.
+ * - A list somebody made names the person whose collection is shown ([owner]). Only the owner of a collection can
+ *   make lists in it. With no name known, it says only that it is a playlist.
+ * - A mood list names the genre it is cut to. A list cut across all genres (a whole mood, or a decade) says that it
+ *   is a mood list.
+ * - The lists about listening ([Lists.OWNER_ONLY]) are neither. They say how much they hold.
+ *
+ * The genre is the genres wall's name for it ([Genres.match]), so a list and the wall call the same music by the same
+ * name. Genre names are not translated anywhere.
+ */
+@Composable
+private fun byline(row: PlaylistRow, owner: String?): String = when (row) {
+    is PlaylistRow.Folder -> stringResource(R.string.Playlists_RowFolder)
+    is PlaylistRow.Playlist -> {
+        val list = row.list
+        val genre = list.genre?.trim()?.takeIf { it.isNotEmpty() }
+        when {
+            !list.generated ->
+                if (owner.isNullOrBlank()) stringResource(R.string.Home_QuickPlaylist) else stringResource(R.string.Playlists_RowBy, owner)
+            list.kind in Lists.OWNER_ONLY -> holding(list.tracks.size, seconds(list.tracks), list.missing)
+            genre != null -> Genres.match(genre) ?: genre
+            else -> stringResource(R.string.Playlists_RowMood)
+        }
+    }
 }
 
 /**
@@ -429,9 +467,9 @@ private fun HeadLine(title: String, detail: String, end: String, onClick: () -> 
     }
 }
 
-/** One row: the picture, the name over how much is in it, and the chevron on a folder. The row is lit while pressed. */
+/** One row: the picture, the name over [line] ([byline]), and the chevron on a folder. The row is lit while pressed. */
 @Composable
-private fun Line(row: PlaylistRow, picture: Any?, framed: FramedList?, images: ImageLoader, menu: (() -> List<MenuItem>)? = null, onClick: () -> Unit) {
+private fun Line(row: PlaylistRow, line: String, picture: Any?, framed: FramedList?, images: ImageLoader, menu: (() -> List<MenuItem>)? = null, onClick: () -> Unit) {
     val presses = remember { MutableInteractionSource() }
     val pressed by presses.collectIsPressedAsState()
     Row(
@@ -446,12 +484,8 @@ private fun Line(row: PlaylistRow, picture: Any?, framed: FramedList?, images: I
     ) {
         PlaylistSleeve(picture, row.mark, edge = 44.dp, mark = 16f, images, framed, markPicture = row.markPicture, folderFrame = row.folderFrame)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            val detail = when (row) {
-                is PlaylistRow.Folder -> playlistsCount(row.folder.playlists)
-                is PlaylistRow.Playlist -> holding(row.list.tracks.size, seconds(row.list.tracks), row.list.missing)
-            }
             BasicText(title(row), maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(15f).copy(color = Color.White))
-            BasicText(detail, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(11f).copy(color = Ink.white(0x88)))
+            BasicText(line, maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(11f).copy(color = Ink.white(0x88)))
         }
         if (row is PlaylistRow.Folder) BasicText(Glyph.into, style = icon(12f).copy(color = Ink.white(0x55)))
     }

@@ -766,7 +766,16 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                                     onMakePlaylist = playlistWrites::make,
                                     standing = wall,
                                     onRetry = services.library::retry,
-                                    reading = WallReading(refreshing, services.library::refresh, shelfRows.firstOrNull { it.isOpen && !it.isOwn }?.name, services.library::rereadLists),
+                                    reading = WallReading(
+                                        refreshing,
+                                        services.library::refresh,
+                                        shelfRows.firstOrNull { it.isOpen && !it.isOwn }?.name,
+                                        services.library::rereadLists,
+                                        // The open collection's owner by the name their profile gives, and the
+                                        // account's sign-in name on its own collection before its profile is read.
+                                        owner = shelfRows.firstOrNull { it.isOpen }?.face?.name
+                                            ?: session?.displayName?.takeIf { collection.shelf == Shelf.Own && it.isNotBlank() },
+                                    ),
                                     history = history,
                                     onOpenHistory = { opened = opened + Step.History },
                                 )

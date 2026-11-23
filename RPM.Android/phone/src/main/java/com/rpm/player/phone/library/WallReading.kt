@@ -9,8 +9,18 @@ import com.rpm.player.core.R
  * ([refreshing]), what a pull does ([onRefresh], the collection read again with the one on screen kept until the new
  * one is in), and whose the collection is when it is borrowed ([lender], null on the person's own). The playlists view
  * reads only the lists again on a pull ([onReread]), as the iPhone's does.
+ *
+ * [owner] is the name of the person whose collection it is, on their own collection too: the account's own profile
+ * name, or the lender's. Null when no name is known: unlike [lender], it has no word for an unknown person. The
+ * playlists view names it under each list somebody made (`ownerName` on iPhone).
  */
-class WallReading(val refreshing: Boolean, val onRefresh: () -> Unit, val lender: String?, val onReread: suspend () -> Unit)
+class WallReading(
+    val refreshing: Boolean,
+    val onRefresh: () -> Unit,
+    val lender: String?,
+    val onReread: suspend () -> Unit,
+    val owner: String? = null,
+)
 
 /** The smallest a pinch makes the album wall's covers, and the largest it makes any wall's (`bounded` on iPhone). */
 internal const val WALL_SMALLEST = 60.0

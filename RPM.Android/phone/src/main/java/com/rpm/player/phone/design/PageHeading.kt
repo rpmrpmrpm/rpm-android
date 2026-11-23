@@ -17,10 +17,12 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.core.content.res.ResourcesCompat
 import com.rpm.player.phone.R
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
@@ -28,14 +30,15 @@ import kotlin.math.roundToInt
  */
 private val SUBTITLE_GAP = 6.dp
 
-/** The space between the last descender and the line set beside it. */
+/** The space between a descender and the line set next to it. */
 private val BESIDE_DESCENDER = 6.dp
 
 /**
  * The title of a library view, the line under it, and the keys on the title's line. The iPhone app has the
- * same `PageHeading` (RPMUI/PageTitle.swift). The title is laid out as if it had no descender. If the title
- * has one, the line under it starts just to the right of the last letter that goes below the baseline, at
- * the same height. So every header is the same height, whatever the title. The keys are centred on the title's line.
+ * same `PageHeading` (RPMUI/PageTitle.swift). The title is laid out as if it had no descender, and the line sits
+ * level with the descenders. A line short enough to end before the first letter that goes below the baseline is set
+ * at the left, under the title. A longer line starts just to the right of the last such letter, so it never runs into
+ * one. So every header is the same height, whatever the title. The keys are centred on the title's line.
  */
 @Composable
 fun PageHeading(title: String, line: String, keys: @Composable () -> Unit) {
@@ -45,7 +48,6 @@ fun PageHeading(title: String, line: String, keys: @Composable () -> Unit) {
     val sizePx = with(density) { size.dp.toPx() }
     val metrics = remember(title, sizePx) { TitleMetrics.of(context, title, sizePx) }
 
-    val start = if (metrics.descenderEnd > 0) with(density) { metrics.descenderEnd.toDp() } + BESIDE_DESCENDER else 0.dp
     // Placed by baselines, not stacked: the line's baseline is SUBTITLE_GAP plus the iPhone's ascent for the line's
     // 11 points under the title's baseline, which is where the iPhone's stack puts it (the title trimmed to its
     // baseline, the gap, then the line). Stacked boxes stood the line 11 dp lower than that here, because Android's
@@ -54,13 +56,20 @@ fun PageHeading(title: String, line: String, keys: @Composable () -> Unit) {
         content = {
             BasicText(title, maxLines = 1, style = header(size).copy(color = Color.White))
             Box { keys() }
-            BasicText(line, maxLines = 1, style = kicker(), modifier = Modifier.padding(start = start))
+            BasicText(line, maxLines = 1, style = kicker())
         },
     ) { (titleText, keyRow, lineText), constraints ->
         val loose = constraints.copy(minWidth = 0, minHeight = 0)
         val shownTitle = titleText.measure(loose)
         val shownKeys = keyRow.measure(loose)
-        val shownLine = lineText.measure(loose)
+        // Where the line starts: at the left when its whole width, and the gap, ends before the first descender,
+        // else the gap past the last one. Its width is asked first, without measuring it, because a measure can be
+        // made only once and the room it is measured in depends on where it starts.
+        val gap = BESIDE_DESCENDER.toPx()
+        val natural = lineText.maxIntrinsicWidth(Constraints.Infinity)
+        val lineStart = if (metrics.descenderEnd > 0 && natural + gap > metrics.descenderStart) (metrics.descenderEnd + gap).roundToInt() else 0
+        val room = if (loose.hasBoundedWidth) (loose.maxWidth - lineStart).coerceAtLeast(0) else Constraints.Infinity
+        val shownLine = lineText.measure(loose.copy(maxWidth = room))
         val titleBase = shownTitle[FirstBaseline].takeIf { it != AlignmentLine.Unspecified } ?: shownTitle.height
         val lineBase = shownLine[FirstBaseline].takeIf { it != AlignmentLine.Unspecified } ?: 0
         val lineTop = titleBase + (SUBTITLE_GAP + LINE_ASCENT).roundToPx() - lineBase
@@ -73,7 +82,7 @@ fun PageHeading(title: String, line: String, keys: @Composable () -> Unit) {
         layout(width, height) {
             shownTitle.place(0, 0)
             shownKeys.place(width - shownKeys.width, keysTop)
-            shownLine.place(0, lineTop)
+            shownLine.place(lineStart, lineTop)
         }
     }
 }
@@ -112,6 +121,8 @@ private class TitleMetrics(
     val descent: Float,
     /** Where the last letter that reaches below the baseline ends, in pixels from the word's start; 0 for none. */
     val descenderEnd: Float,
+    /** Where the first letter that reaches below the baseline starts, in pixels from the word's start; 0 for none. */
+    val descenderStart: Float,
     /** The part of the descent that this word does not use. It is all of the descent when the word has no descender. */
     val slack: Float,
 ) {
@@ -136,12 +147,22 @@ private class TitleMetrics(
                 return ink
             }
             val slack = max(0f, paint.fontMetrics.descent - max(0f, inkOf(0, said.length).bottom))
+            var start = Float.POSITIVE_INFINITY
             var end = 0f
             for (i in said.indices) {
                 val letter = inkOf(i, i + 1)
-                if (letter.bottom > dip) end = max(end, paint.measureText(said, 0, i) + letter.right)
+                if (letter.bottom > dip) {
+                    val at = paint.measureText(said, 0, i)
+                    start = min(start, at + letter.left)
+                    end = max(end, at + letter.right)
+                }
             }
-            return TitleMetrics(descent = paint.fontMetrics.descent, descenderEnd = end, slack = slack)
+            return TitleMetrics(
+                descent = paint.fontMetrics.descent,
+                descenderEnd = end,
+                descenderStart = if (start.isFinite()) max(0f, start) else 0f,
+                slack = slack,
+            )
         }
     }
 }

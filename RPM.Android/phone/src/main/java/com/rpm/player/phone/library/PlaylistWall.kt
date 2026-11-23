@@ -44,6 +44,7 @@ import com.rpm.player.core.library.FolderFace
 import com.rpm.player.core.library.PlaylistRow
 import com.rpm.player.phone.R as PhoneR
 import com.rpm.player.phone.design.Glyph
+import com.rpm.player.phone.design.Ink
 import com.rpm.player.phone.design.dissolvesAtTop
 import com.rpm.player.phone.design.scrolled
 import com.rpm.player.phone.design.system
@@ -77,6 +78,7 @@ internal fun boundedStride(art: Double): Double = min(max(art, 60.0), 900.0)
  *
  * The header already says where the folder is, so no path is drawn over the tiles.
  *
+ * @param lineOf the line under a tile's name, where a record shows its artist ([byline]).
  * @param targetStride how wide a tile should be. It is fitted to a whole number of columns by the records wall's own
  * rule ([WallLayout.wall]).
  * @param onPinch a pinch as a factor on [targetStride], and null when the fingers lift. The wall does not own its size.
@@ -86,6 +88,7 @@ internal fun boundedStride(art: Double): Double = min(max(art, 60.0), 900.0)
 fun PlaylistWall(
     rows: List<PlaylistRow>,
     titleOf: @Composable (PlaylistRow) -> String,
+    lineOf: @Composable (PlaylistRow) -> String,
     pictureOf: (PlaylistRow) -> Any?,
     framedOf: @Composable (PlaylistRow) -> FramedList?,
     images: ImageLoader,
@@ -130,7 +133,7 @@ fun PlaylistWall(
             }
             items(rows, key = { it.id }, contentType = { "list" }) { row ->
                 Box(contentAlignment = Alignment.TopCenter) {
-                    PlaylistTile(row, titleOf(row), pictureOf(row), framedOf(row), caption, images, menuOf(row)) { onPress(row) }
+                    PlaylistTile(row, titleOf(row), lineOf(row), pictureOf(row), framedOf(row), caption, images, menuOf(row)) { onPress(row) }
                 }
             }
             item(key = "footer", span = { GridItemSpan(maxLineSpan) }, contentType = "footer") { footer() }
@@ -139,13 +142,13 @@ fun PlaylistWall(
 }
 
 /**
- * One list, folder or generated list on the wall: the square cover and the name under it. It matches the iPhone's
- * `PlaylistTile`, with the records wall's measurements: a list and a record are both pictures in a grid of pictures.
- * A list has only a name, so the name takes the room of both of a record's lines and wraps to two, set at the top of
- * that room so a short name sits right under the picture. The whole tile answers a tap.
+ * One list, folder or generated list on the wall: the square cover, the name under it, and one quiet line under the
+ * name. It matches the iPhone's `PlaylistTile`, with the records wall's measurements: a list and a record are both
+ * pictures in a grid of pictures. The name takes the record's title line and [line] takes its artist line, in the same
+ * type ([byline] says what that line says). The whole tile answers a tap.
  */
 @Composable
-private fun PlaylistTile(row: PlaylistRow, title: String, picture: Any?, framed: FramedList?, caption: AlbumCaption, images: ImageLoader, menu: (() -> List<MenuItem>)?, onPress: () -> Unit) {
+private fun PlaylistTile(row: PlaylistRow, title: String, line: String, picture: Any?, framed: FramedList?, caption: AlbumCaption, images: ImageLoader, menu: (() -> List<MenuItem>)?, onPress: () -> Unit) {
     val art = caption.art.dp
     // The mark on an empty square follows the edge, as on the records wall: a glyph that suits two columns is far
     // too big at one and far too small at four.
@@ -158,13 +161,22 @@ private fun PlaylistTile(row: PlaylistRow, title: String, picture: Any?, framed:
     ) {
         PlaylistSleeve(picture, row.mark, art, mark = glyphSize, images, framed, markPicture = row.markPicture, folderFrame = row.folderFrame)
         Spacer(Modifier.height(AlbumCaption.ART_GAP.dp))
-        val nameRoom = (caption.albumLine + AlbumCaption.LINE_GAP + caption.artistLine).dp
-        Box(Modifier.width(art).height(nameRoom), contentAlignment = Alignment.TopCenter) {
+        Box(Modifier.width(art).height(caption.albumLine.dp), contentAlignment = Alignment.Center) {
             BasicText(
                 title,
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = system(caption.album, FontWeight.Medium).copy(color = Color.White, textAlign = TextAlign.Center),
+            )
+        }
+        Spacer(Modifier.height(AlbumCaption.LINE_GAP.dp))
+        // The record's artist line: the same size and the same quiet colour.
+        Box(Modifier.width(art).height(caption.artistLine.dp), contentAlignment = Alignment.Center) {
+            BasicText(
+                line,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = system(caption.artist).copy(color = Ink.secondary, textAlign = TextAlign.Center),
             )
         }
     }
