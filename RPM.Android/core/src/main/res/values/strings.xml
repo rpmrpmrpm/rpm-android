@@ -7846,6 +7846,24 @@
     <!-- Phone backdrop tile: folds of warm copper light on black, with a fine grain. A name, so untranslated. -->
     <string name="Settings_BackgroundAero">Aero</string>
 
+    <!-- iPhone backdrop tile: a plain dark grey, with no picture. -->
+    <string name="Settings_BackgroundGraphite">Graphite</string>
+
+    <!-- iPhone backdrop tile: rows of soft brown squares, like a bar of chocolate. -->
+    <string name="Settings_BackgroundCocoa">Cocoa</string>
+
+    <!-- iPhone settings, Appearance, under the backdrop tiles, and the welcome's look step: the label over a slider that darkens the app's background so text reads more easily. -->
+    <string name="Settings_BackgroundDim">Dim the background</string>
+
+    <!-- iPhone settings, Appearance, under Settings_BackgroundDim: the label over a slider that blurs the app's background. -->
+    <string name="Settings_BackgroundBlur">Blur the background</string>
+
+    <!-- iPhone settings, Appearance, and the welcome's look step: heading over a row of colour bubbles that tint the app's bubbles, cards, buttons, switches and sliders. -->
+    <string name="Settings_Colour">Colour of buttons and cards</string>
+
+    <!-- iPhone settings: what VoiceOver reads for the first colour bubble under Settings_Colour, which keeps the app's own white glass. -->
+    <string name="Settings_ColourNone">No colour</string>
+
     <!-- Phone settings, General: switch for the short sound rpm plays when it opens. -->
     <string name="Settings_StartupSound">Play the opening sound</string>
 
@@ -7872,6 +7890,12 @@
 
     <!-- Phone settings: the first choice of description language, the phone's own. {0} is that language's name in itself, e.g. 'Nederlands'. -->
     <string name="Settings_ArticleLanguagePhone">Same as your phone (%1$s)</string>
+
+    <!-- iPhone settings, General: heading over the choice of the language the app is shown in. -->
+    <string name="Settings_AppLanguage">App language</string>
+
+    <!-- iPhone settings and welcome: the first choice of app language, which follows the phone's own language. -->
+    <string name="Settings_AppLanguagePhone">Same as your phone</string>
 
     <!-- Phone settings, Appearance: switch for the spectrum bars that move with the music beside the cover in the player. -->
     <string name="Settings_PlayerBars">Moving bars in the player</string>
@@ -7926,6 +7950,15 @@
 
     <!-- Phone welcome, the look step: the line under Wizard_LookTitle, over the backdrop tiles. The phone's Wizard_LookBackgroundHint. -->
     <string name="Wizard_Phone_LookHint">Pick the picture behind the whole app. You can change it any time in Settings.</string>
+
+    <!-- iPhone welcome, the look step: the line under Wizard_LookTitle, over the backdrop tiles, the dim and blur sliders and the colour bubbles. -->
+    <string name="Wizard_Phone_LookAllHint">Pick the picture behind the whole app, soften it if you like, and give your buttons and cards a colour. You can change it all any time in Settings.</string>
+
+    <!-- iPhone welcome, the language step: its heading, over the list of the app's languages. -->
+    <string name="Wizard_Phone_LanguageTitle">Pick your language</string>
+
+    <!-- iPhone welcome, the language step: the line under Wizard_Phone_LanguageTitle. -->
+    <string name="Wizard_Phone_LanguageHint">rpm speaks five languages. You can change this any time in Settings.</string>
 
     <!-- Phone welcome, the player step: heading. A pun on a record spinning is welcome where the language has one. -->
     <string name="Wizard_Phone_PlayerTitle">Let’s take it for a spin!</string>
