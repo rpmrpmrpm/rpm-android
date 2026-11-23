@@ -25,6 +25,11 @@ import com.rpm.player.phone.ui.Ground
 import com.rpm.player.phone.ui.LocalGround
 import com.rpm.player.phone.ui.LocalNightMode
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.rpm.player.core.power.LocalMotionPlan
+import com.rpm.player.core.power.MotionPlan
+import com.rpm.player.core.power.PowerSaving
 
 class MainActivity : ComponentActivity() {
     private val app get() = application as PhoneApplication
@@ -56,9 +61,13 @@ class MainActivity : ComponentActivity() {
         // music app. Without this a paused app's keys move the ringer.
         volumeControlStream = AudioManager.STREAM_MUSIC
         setContent {
+            // The plan for the power state, followed here once for the whole app, so turning battery saver on or off
+            // reaches every screen at once.
+            val saving by PowerSaving.on.collectAsState()
             // The backdrop every page's ground draws, and night mode, both chosen in the profile. Read here, once for
             // the whole app, so a choice shows on every page at once.
             CompositionLocalProvider(
+                LocalMotionPlan provides MotionPlan(saving),
                 LocalGround provides Ground.standing(app.settings.backdrop, app.settings.isGold),
                 LocalNightMode provides app.settings.nightMode,
                 com.rpm.player.phone.ui.LocalDiscStandIn provides app.settings.discStandIn,

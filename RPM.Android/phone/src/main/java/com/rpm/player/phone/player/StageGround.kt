@@ -54,9 +54,10 @@ class Stage {
 /**
  * The sheet's background: the room, lit by the record that is playing (the iPhone's `NowPlayingSheet.ground`). It is the
  * one room in the app that IS the record being played, so the music lights it and it does not breathe on its own. Its
- * colours are those of [lit] ([rememberLitPicture]), dissolving to the next one's. It runs while the sheet is up, at half
- * its rate while the phone saves power ([com.rpm.player.core.room.RoomPainter.saving]), and while the sheet covers the
- * screen every other room stops ([covers]).
+ * colours are those of [lit] ([rememberLitPicture]), dissolving to the next one's. It runs while the sheet is up, at the
+ * same pace whatever the power state, unless the plan holds it ([com.rpm.player.core.power.MotionPlan.stageRoom]), and
+ * while the sheet covers the screen every other room stops ([covers]). Its spectrum's run comes on every display frame
+ * either way.
  *
  * [foot] is where the room starts to be darker, as a share of its height from the top. Below 0 leaves it to the cover
  * ([Stage.footAt]).
@@ -92,10 +93,12 @@ internal fun rememberLitPicture(now: NowPlaying): Any? {
  * the top end at the screen's edge ([width] across), mirrored about the cover's middle line. [left] and [right] are the
  * cover's edges as drawn and [centre] its middle line, in this scope; [side] its side as drawn, which the reach is
  * measured against; [pitch] the room one bar and its gap want.
- * Read from the stage's room on each of its pictures, so only this drawing follows the music.
+ * Read from the stage's room on every display frame ([PaintedRoom.heard]), apart from its pictures, so the bars move at
+ * the display's rate in every power state and only this drawing follows the music. The colours are the newest
+ * picture's.
  */
 fun DrawScope.spectrumRun(room: PaintedRoom, width: Float, left: Float, right: Float, centre: Float, side: Float, pitch: Float) {
-    room.frame
+    room.heard
     val run = room.run ?: return
     val palette = room.shownPalette ?: return
     if (side <= 0f) return

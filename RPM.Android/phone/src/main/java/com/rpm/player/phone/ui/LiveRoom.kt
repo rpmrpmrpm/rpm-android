@@ -57,9 +57,9 @@ import androidx.compose.ui.graphics.drawscope.withTransform
  *
  * **It moves only while it can be seen.** The caller says when it should move ([running]: the iPhone's own condition
  * for each place). Besides that it stops while the app is not in front, while none of it is inside the window (scrolled
- * away, or on a banner card that is not in front), while the player covers the screen, and while the phone saves power
- * ([com.rpm.player.core.room.RoomPainter.saving]). A stopped room keeps its picture. It is drawn at a tenth of its
- * pixels ([share]) and stretched smooth.
+ * away, or on a banner card that is not in front), while the player covers the screen, and while the plan says the cards'
+ * rooms hold still ([com.rpm.player.core.power.MotionPlan.cardRoomsMove], false while the phone saves power). A stopped
+ * room keeps its picture. It is drawn at a tenth of its pixels ([share]) and stretched smooth.
  */
 @Composable
 fun LiveRoom(
@@ -89,7 +89,7 @@ fun LiveRoom(
  * that is playing, dimmed to read the text over it, darker below [foot] (where the text starts, as a share of the
  * height from the top; below 0 leaves it to whoever sets [PaintedRoom.foot] itself) and in the corners. While it runs and
  * [covers] the screen, every other room stops.
- * [onRoom] hands the room to the caller, whose spectrum reads its run ([PaintedRoom.run]).
+ * [onRoom] hands the room to the caller, whose spectrum reads its run ([PaintedRoom.run]) on every display frame.
  */
 @Composable
 fun StageRoom(palette: RoomPalette, running: Boolean, covers: Boolean, foot: Float, modifier: Modifier, onRoom: (PaintedRoom) -> Unit = {}) {

@@ -22,6 +22,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import com.rpm.player.core.playback.AudioTap
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import com.rpm.player.core.power.MotionPlan
+import com.rpm.player.core.power.PowerSaving
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.android.asCoroutineDispatcher
+import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.exp
 import kotlin.math.sin
@@ -51,15 +57,17 @@ import kotlin.math.sin
  * picture, as the iPhone's paused room keeps its frame; it is drawn once more only when its size or colours change.
  * While a room that covers the screen runs ([PaintedRoom.covers]: the now playing sheet), every other room stops.
  *
- * **While the phone saves power** ([saving]) the rooms cost less. Each new picture makes the whole window draw again,
- * and the glass over the room blurs it again, so a running room keeps the render thread busy even when nothing else
- * moves. Battery saver often runs the processor and the GPU slower, and then a scroll or a tap waits behind that work.
- * So a card's room keeps its picture, as a stopped room does, and the stage room is drawn on every [SAVING_EVERY]th
- * frame.
+ * **What moves follows the plan** ([MotionPlan], for the power state in [PowerSaving]). Each new picture makes the
+ * whole window draw again, and the glass over the room blurs it again, so a running room keeps the render thread busy
+ * even when nothing else moves. While the phone saves power the plan stops the cards' rooms
+ * ([MotionPlan.cardRoomsMove]): each keeps its picture, as a stopped room does. The stage room moves unless the plan
+ * holds it ([MotionPlan.StageRoom.Still]). While it moves, it is drawn at the same pace in both power states, never at a
+ * lower one: it is already drawn at a small share of its pixels, so it costs little, and a lower pace looks broken.
  *
  * A stage room ([stage]) is lit by the music: the three levels and the spectrum's run are read from [tap] on every
  * display frame, because their envelopes are tuned to the display's rate (RoomLevels), even when the room itself is
- * drawn on every other one.
+ * drawn on every other one or holds its picture. The run is handed to the screen on every display frame too
+ * ([PaintedRoom.run]), apart from the pictures, so the player's spectrum moves at the display's rate.
  */
 class RoomPainter(private val tap: AudioTap) {
     private val thread = HandlerThread("rpm.room-paint").apply { start() }
@@ -106,16 +114,22 @@ class RoomPainter(private val tap: AudioTap) {
     fun card(seed: String, zeroNanos: Long = System.nanoTime()): PaintedRoom = open(PaintedRoom(this, false, seed, zeroNanos))
 
     /** The player's room (`RoomView(breathes: false)`): dimmed to 0.62, darker below [PaintedRoom.foot] and in the
-     * corners, and lit by the music that is playing. Its spectrum's run comes with each picture. */
+     * corners, and lit by the music that is playing. Its spectrum's run comes on every display frame while it runs. */
     fun stage(seed: String): PaintedRoom = open(PaintedRoom(this, true, seed, System.nanoTime()))
 
-    /** Whether the phone saves power (battery saver): see the class comment. Set it from any thread. */
-    @Volatile var saving: Boolean = false
-        set(value) {
-            if (value == field) return
-            field = value
-            wake()
+    /** The plan for the power state now ([PowerSaving]). Written on the GL thread, which also reads it. */
+    private var plan = MotionPlan(PowerSaving.isOn)
+
+    init {
+        // Follows battery saver for the life of the app, as the painter lives that long. A change wakes the thread, so
+        // a room that starts or stops moving does so at once.
+        CoroutineScope(SupervisorJob() + gl.asCoroutineDispatcher()).launch {
+            PowerSaving.on.collect { saving ->
+                plan = MotionPlan(saving)
+                wake()
+            }
         }
+    }
 
     private fun open(room: PaintedRoom): PaintedRoom {
         open.add(room)
@@ -141,29 +155,36 @@ class RoomPainter(private val tap: AudioTap) {
         if (!ready()) return
         frames++
         val now = System.nanoTime()
-        val saving = saving
-        val every = if (saving) SAVING_EVERY else EVERY
+        val plan = plan
         var covered = false
         for (room in rooms) if (room.covers && room.running) covered = true
         var again = false
         var heard = false
-        var painted = false
+        var shown = false
         for (room in rooms) {
-            val active = room.running && (room.covers || !covered) && (room.stage || !saving)
-            if (active && room.stage && !heard) {
-                listen(now)
-                heard = true
+            val active = room.running && (room.covers || !covered)
+            if (active && room.stage) {
+                // The music is read once a frame, and every running stage room is handed the run on every frame,
+                // whether its picture moves or not.
+                if (!heard) {
+                    listen(now)
+                    heard = true
+                }
+                room.hear(levels?.run)
+                shown = true
+                again = true
             }
+            val moves = active && if (room.stage) plan.stageRoom != MotionPlan.StageRoom.Still else plan.cardRoomsMove
             if (room.wide <= 0 || room.high <= 0) continue
-            if (active) {
-                // A running room is drawn on every EVERYth frame, and at once when it has no picture for its size.
-                if (room.fresh() || frames % every == 0L) painted = paint(room, now, true) || painted
+            if (moves) {
+                // A moving room is drawn on every EVERYth frame, and at once when it has no picture for its size.
+                if (room.fresh() || frames % EVERY == 0L) shown = paint(room, now, true) || shown
                 again = true
             } else if (room.owed()) {
-                painted = paint(room, now, false) || painted
+                shown = paint(room, now, false) || shown
             }
         }
-        if (painted) main.post(showAll)
+        if (shown) main.post(showAll)
         if (again) {
             ticking = true
             Choreographer.getInstance().postFrameCallback(tick)
@@ -237,10 +258,6 @@ class RoomPainter(private val tap: AudioTap) {
         // the rows GL reads first are the bitmap's first rows and nothing is turned over.
         slot.bitmap.copyPixelsFromBuffer(pixels)
         slot.palette = shown
-        if (room.stage) {
-            val run = levels?.run
-            if (run != null) System.arraycopy(run, 0, slot.run, 0, RoomLevels.BANDS) else slot.run.fill(0f)
-        }
         room.publish(slot)
         stats?.paint(now, System.nanoTime() - started, rooms.size)
         return true
@@ -363,11 +380,8 @@ class RoomPainter(private val tap: AudioTap) {
     companion object {
         private const val TAG = "rpm.paint"
 
-        /** Rooms are drawn on every second display frame: 30 a second at 60 Hz. */
+        /** Moving rooms are drawn on every second display frame: 30 a second at 60 Hz, whatever the power state. */
         const val EVERY = 2L
-
-        /** While the phone saves power, the stage room is drawn on every fourth display frame: 15 a second at 60 Hz. */
-        const val SAVING_EVERY = 4L
 
         /** How much quicker a card's room runs than the stage's (`CardRoomBreath.rate`). */
         private const val CARD_RATE = 2.2
@@ -471,8 +485,14 @@ class PaintedRoom internal constructor(
     var shownPalette: RoomPalette? = null
         private set
 
-    /** For a stage room: the spectrum's run, 0 to 1 in 128 bands, as it stood when the newest picture was drawn. The
-     * array is reused: read it while drawing, do not keep it. Main thread. */
+    /** Counts the spectrum's runs shown, one a display frame while a stage room runs. Read it where the spectrum is
+     * drawn, so a new run redraws only that. */
+    var heard by mutableIntStateOf(0)
+        private set
+
+    /** For a stage room: the spectrum's run, 0 to 1 in 128 bands, as it stood on the newest display frame the painter
+     * read the music on. It comes apart from the pictures, on every display frame. The array is reused: read it while
+     * drawing, do not keep it. Main thread. */
     var run: FloatArray? = null
         private set
 
@@ -494,7 +514,6 @@ class PaintedRoom internal constructor(
     internal class Slot(w: Int, h: Int) {
         val bitmap: Bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val image: ImageBitmap = bitmap.asImageBitmap()
-        val run = FloatArray(RoomLevels.BANDS)
         @Volatile var palette: RoomPalette? = null
         @Volatile var paint = 0L
     }
@@ -503,14 +522,36 @@ class PaintedRoom internal constructor(
     private var paints = 0L
     private var shownPaint = 0L
 
-    /** Shows the newest picture, if it is not the one shown. Main thread. */
+    // A stage room's runs of the spectrum, three to take turns with, as the pictures do. The painter writes one that is
+    // neither the newest ([readyRun]) nor the one the screen may be drawing from ([shownRun]), so a run is not changed
+    // while it is drawn.
+    private val runs = if (stage) Array(3) { FloatArray(RoomLevels.BANDS) } else null
+    @Volatile private var readyRun: FloatArray? = null
+    @Volatile private var shownRun: FloatArray? = null
+
+    /** Hands the screen the spectrum's run of this display frame: all zeros before the music is read. GL thread. */
+    internal fun hear(bands: FloatArray?) {
+        val all = runs ?: return
+        val ready = readyRun
+        val shown = shownRun
+        val next = all.first { it !== ready && it !== shown }
+        if (bands != null) System.arraycopy(bands, 0, next, 0, RoomLevels.BANDS) else next.fill(0f)
+        readyRun = next
+    }
+
+    /** Shows the newest picture and the newest run, each if it is not the one shown. Main thread. */
     internal fun show() {
+        val newest = readyRun
+        if (newest != null && newest !== shownRun) {
+            shownRun = newest
+            run = newest
+            heard++
+        }
         val slot = ready ?: return
         if (slot.paint == shownPaint) return
         shownPaint = slot.paint
         picture = slot.image
         shownPalette = slot.palette
-        run = if (stage) slot.run else null
         frame++
     }
 

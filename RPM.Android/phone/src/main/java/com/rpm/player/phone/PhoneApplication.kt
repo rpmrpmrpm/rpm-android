@@ -1,13 +1,9 @@
 package com.rpm.player.phone
 
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.PowerManager
-import androidx.core.content.ContextCompat
 import com.rpm.player.core.RpmApplication
 import com.rpm.player.core.Services
 import com.rpm.player.core.SessionOpening
@@ -68,6 +64,8 @@ class PhoneApplication : RpmApplication() {
 
     override fun onCreate() {
         super.onCreate()
+        // Battery saver, read before any screen or room, which all follow it ([com.rpm.player.core.power.MotionPlan]).
+        com.rpm.player.core.power.PowerSaving.watch(this)
         // Somebody already signed in when this build first runs had the app before the welcome and the hints existed.
         settings.settleFirstRun(signedIn = services.auth.session.value != null)
         com.rpm.player.phone.ui.Look.open(this)
@@ -85,25 +83,9 @@ class PhoneApplication : RpmApplication() {
 
     /**
      * The moving rooms inside pages: one thread and one GL context for all of them ([com.rpm.player.phone.ui.LiveRoom]).
-     * They follow the phone's battery saver ([com.rpm.player.core.room.RoomPainter.saving]), told by the system's
-     * broadcast whenever it is turned on or off.
+     * They follow the plan for the phone's battery saver ([com.rpm.player.core.power.PowerSaving]) on their own.
      */
-    val rooms: com.rpm.player.core.room.RoomPainter by lazy {
-        com.rpm.player.core.room.RoomPainter(services.audioTap).also { painter ->
-            val power = getSystemService(PowerManager::class.java)
-            painter.saving = power?.isPowerSaveMode == true
-            ContextCompat.registerReceiver(
-                this,
-                object : BroadcastReceiver() {
-                    override fun onReceive(context: Context, intent: Intent) {
-                        painter.saving = power?.isPowerSaveMode == true
-                    }
-                },
-                IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED),
-                ContextCompat.RECEIVER_NOT_EXPORTED,
-            )
-        }
-    }
+    val rooms: com.rpm.player.core.room.RoomPainter by lazy { com.rpm.player.core.room.RoomPainter(services.audioTap) }
 
     /** Artists' logos, trimmed and kept for the life of the app. */
     val logos: Logos by lazy { Logos(this, services.images, services.artwork) }
