@@ -518,6 +518,13 @@ fun RpmApp(
                                         radioFront = radioFront,
                                         backdrop = backdrop,
                                         ownFace = ownFace,
+                                        // Whose lists are on screen, for "Playlist by" under a list somebody made: the
+                                        // person, as the side menu's header names them, or nobody known on a shared
+                                        // collection with no face.
+                                        listOwner = when (val shelf = shelfOnScreen) {
+                                            is Shelf.Borrowed -> (shared.firstOrNull { it.shelf == shelf }?.face ?: services.shared.faceOf(shelf))?.name
+                                            else -> ownFace?.name ?: signedIn.displayName.ifBlank { null }
+                                        },
                                         wallSearch = wallSearch,
                                         albumCarousel = settings.albumCarousel,
                                         albumOrder = settings.albumOrder,
@@ -776,6 +783,7 @@ private fun Screens(
     radioFront: RadioFront,
     backdrop: Backdrop,
     ownFace: com.rpm.player.core.library.Face?,
+    listOwner: String?,
     wallSearch: WallSearchState,
     /** Whether the albums screen is the carousel ([PlayerSettings.albumCarousel]). */
     albumCarousel: Boolean,
@@ -969,7 +977,12 @@ private fun Screens(
                             onOpenAlbum = homeActions.openAlbum,
                             onTune = ::tune,
                         )
-                        Route.Playlists -> PlaylistsScreen(collection, services.images, homeActions.openList)
+                        Route.Playlists -> PlaylistsScreen(
+                            collection = collection,
+                            owner = listOwner,
+                            images = services.images,
+                            onOpenList = homeActions.openList,
+                        )
                         Route.Computers -> ComputersScreen(
                             computers = services.computers,
                             shared = services.shared,

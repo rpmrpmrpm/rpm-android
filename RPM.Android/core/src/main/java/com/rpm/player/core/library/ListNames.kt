@@ -63,6 +63,31 @@ fun listAbout(tracks: List<CloudTrack>, mood: MoodLine?): String? {
     return if (blurb == null) featuring else "$blurb $featuring"
 }
 
+/**
+ * The line under a list's name on its row or card, where a record shows its artist: what kind of list it is
+ * (`PlaylistRow.byline` on the iPhone). The phone's playlists tab and the TV's Playlists screen both show it.
+ *
+ * - A list somebody made names the person whose collection is shown ([owner]). Only the owner of a collection can
+ *   make lists in it. With no name known, it says only that it is a playlist.
+ * - A mood list names the genre it is cut to. A list cut across all genres (a whole mood, or a decade) says that it
+ *   is a mood list.
+ * - The lists about listening ([Lists.OWNER_ONLY]) are neither: null, and the caller says how much they hold.
+ *
+ * The genre is the genres wall's name for it ([Genres.match]), so a list and the wall call the same music by the same
+ * name. Genre names are not translated anywhere.
+ */
+@Composable
+fun listKindLine(list: TrackList, owner: String?): String? {
+    val genre = list.genre?.trim()?.takeIf { it.isNotEmpty() }
+    return when {
+        !list.generated ->
+            if (owner.isNullOrBlank()) stringResource(R.string.Home_QuickPlaylist) else stringResource(R.string.Playlists_RowBy, owner)
+        list.kind in Lists.OWNER_ONLY -> null
+        genre != null -> Genres.match(genre) ?: genre
+        else -> stringResource(R.string.Playlists_RowMood)
+    }
+}
+
 /** "rock", "rock and pop", "rock, pop and jazz". The last join is a localised template because only some
  * languages put a word there. */
 @Composable

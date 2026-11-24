@@ -79,6 +79,7 @@ import com.rpm.player.core.cloud.Shelf
 import com.rpm.player.core.library.Genres
 import com.rpm.player.core.library.LibraryState
 import com.rpm.player.core.library.Lists
+import com.rpm.player.core.library.listKindLine
 import com.rpm.player.core.library.PlaylistBrowse
 import com.rpm.player.core.library.PlaylistRow
 import com.rpm.player.core.library.TrackList
@@ -370,30 +371,13 @@ private fun title(row: PlaylistRow): String = when (row) {
  * The line under a row's name, where a record shows its artist: what kind of row it is (`PlaylistRow.byline` on
  * iPhone).
  *
- * - A folder says that it is a folder.
- * - A list somebody made names the person whose collection is shown ([owner]). Only the owner of a collection can
- *   make lists in it. With no name known, it says only that it is a playlist.
- * - A mood list names the genre it is cut to. A list cut across all genres (a whole mood, or a decade) says that it
- *   is a mood list.
- * - The lists about listening ([Lists.OWNER_ONLY]) are neither. They say how much they hold.
- *
- * The genre is the genres wall's name for it ([Genres.match]), so a list and the wall call the same music by the same
- * name. Genre names are not translated anywhere.
+ * A folder says that it is a folder. A list says what kind of list it is ([listKindLine]): who made it, its genre,
+ * or that it is a mood list. The lists about listening say how much they hold.
  */
 @Composable
 private fun byline(row: PlaylistRow, owner: String?): String = when (row) {
     is PlaylistRow.Folder -> stringResource(R.string.Playlists_RowFolder)
-    is PlaylistRow.Playlist -> {
-        val list = row.list
-        val genre = list.genre?.trim()?.takeIf { it.isNotEmpty() }
-        when {
-            !list.generated ->
-                if (owner.isNullOrBlank()) stringResource(R.string.Home_QuickPlaylist) else stringResource(R.string.Playlists_RowBy, owner)
-            list.kind in Lists.OWNER_ONLY -> holding(list.tracks.size, seconds(list.tracks), list.missing)
-            genre != null -> Genres.match(genre) ?: genre
-            else -> stringResource(R.string.Playlists_RowMood)
-        }
-    }
+    is PlaylistRow.Playlist -> listKindLine(row.list, owner) ?: holding(row.list.tracks.size, seconds(row.list.tracks), row.list.missing)
 }
 
 /**

@@ -45,6 +45,7 @@ import com.rpm.player.core.library.PlaylistPhoto
 import com.rpm.player.core.library.PlaylistPhotos
 import com.rpm.player.core.library.PlaylistRow
 import com.rpm.player.core.library.TrackList
+import com.rpm.player.core.library.listKindLine
 import com.rpm.player.core.library.listName
 import com.rpm.player.core.motion.LocalMotion
 import com.rpm.player.core.motion.Motion
@@ -65,7 +66,7 @@ import kotlinx.coroutines.launch
  * a folder. The heading names the folder that is open, after the folders above it.
  */
 @Composable
-fun PlaylistsScreen(collection: Collection, images: ImageLoader, onOpenList: (TrackList) -> Unit) {
+fun PlaylistsScreen(collection: Collection, owner: String?, images: ImageLoader, onOpenList: (TrackList) -> Unit) {
     val resources = LocalContext.current.resources
     val shown = remember(collection) { collection.lists.filter { it.generated || it.tracks.isNotEmpty() } }
     var walk by remember { mutableStateOf(FolderWalk()) }
@@ -84,6 +85,7 @@ fun PlaylistsScreen(collection: Collection, images: ImageLoader, onOpenList: (Tr
                     focusAt = remember { walk.focusIndex(browse.rows) },
                     fadeIn = walk != FolderWalk(),
                     collection = collection,
+                    owner = owner,
                     images = images,
                     onPress = { row ->
                         when (row) {
@@ -107,6 +109,7 @@ private fun FolderGrid(
     focusAt: Int,
     fadeIn: Boolean,
     collection: Collection,
+    owner: String?,
     images: ImageLoader,
     onPress: (PlaylistRow) -> Unit,
 ) {
@@ -154,7 +157,7 @@ private fun FolderGrid(
                 is PlaylistRow.Playlist -> WallCard(
                     art = { ListPicture(row.list, collection, images, drift = false, keepFrame = false, modifier = Modifier.fillMaxSize()) },
                     title = row.name,
-                    line = stringResource(R.string.Home_Songs, row.list.tracks.size.toString()),
+                    line = listKindLine(row.list, owner) ?: stringResource(R.string.Home_Songs, row.list.tracks.size.toString()),
                     explicit = row.list.tracks.any { it.tags?.advisory == EXPLICIT },
                     onClick = { onPress(row) },
                     modifier = focus,
