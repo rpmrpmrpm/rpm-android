@@ -212,7 +212,9 @@ fun TrackPage(page: PageOf, collection: Collection, images: ImageLoader, dossier
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(Modifier.size(size.edge)) {
-                    RecordArt(
+                    // A record slides its disc out of the sleeve. A list is not a record and has no disc: its framed
+                    // picture stands alone.
+                    if (page is PageOf.OfAlbum) RecordArt(
                         cover = picture,
                         disc = disc,
                         images = images,
@@ -225,7 +227,7 @@ fun TrackPage(page: PageOf, collection: Collection, images: ImageLoader, dossier
                         // fifth of a core on a low-end TV box).
                         turning = false,
                         turnSeconds = RECORD_TURN_SECONDS,
-                        isRecord = page is PageOf.OfAlbum,
+                        isRecord = true,
                     )
                     // A list's sleeve is its framed picture (the desktop's ListCoverDoor).
                     if (page is PageOf.OfList) {
