@@ -149,7 +149,7 @@ import com.rpm.player.phone.player.OnListeningEnded
 import com.rpm.player.phone.player.PutAwayWhenPlayedOut
 import com.rpm.player.phone.player.rememberPlayerWiring
 import com.rpm.player.phone.library.LibraryPage
-import com.rpm.player.phone.library.FramedList
+import com.rpm.player.core.frames.FramedList
 import com.rpm.player.phone.library.WallStanding
 import com.rpm.player.core.library.CoverIndex
 import com.rpm.player.core.library.Home

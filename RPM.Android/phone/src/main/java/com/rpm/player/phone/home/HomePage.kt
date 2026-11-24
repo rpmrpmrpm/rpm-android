@@ -103,7 +103,7 @@ import com.rpm.player.core.library.Kicker
 import com.rpm.player.core.library.LibraryState
 import com.rpm.player.core.library.QuickPick
 import com.rpm.player.core.library.TrackList
-import com.rpm.player.phone.library.FramedList
+import com.rpm.player.core.frames.FramedList
 import com.rpm.player.phone.library.PlaylistSleeve
 import com.rpm.player.core.library.listName
 import com.rpm.player.core.radio.RadioStation

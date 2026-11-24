@@ -1,5 +1,6 @@
 package com.rpm.player.phone.library
 
+import com.rpm.player.core.frames.FramedList
 import com.rpm.player.core.library.isExplicit
 import com.rpm.player.phone.design.MarkedTitle
 import com.rpm.player.phone.ui.ArtistMark

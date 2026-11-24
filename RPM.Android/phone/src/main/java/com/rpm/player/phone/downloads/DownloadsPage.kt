@@ -60,7 +60,7 @@ import com.rpm.player.phone.design.display
 import com.rpm.player.phone.design.icon
 import com.rpm.player.phone.design.iconOutline
 import com.rpm.player.phone.design.kicker
-import com.rpm.player.phone.library.FramedList
+import com.rpm.player.core.frames.FramedList
 import com.rpm.player.phone.library.PlaylistSleeve
 import com.rpm.player.phone.library.SleeveSquare
 import java.util.Locale

@@ -1,4 +1,4 @@
-package com.rpm.player.phone.library
+package com.rpm.player.core.frames
 
 import android.content.Context
 import android.graphics.BitmapFactory
@@ -30,19 +30,19 @@ import kotlinx.coroutines.withContext
 
 /**
  * The frame on the cover of a playlist folder, lettered with the folder's name (the iPhone's `FolderFrame`,
- * RPMSharedUI/FolderFrame.swift).
+ * RPMSharedUI/FolderFrame.swift). The phone's and the TV's playlists screens both draw it.
  *
- * It is a different drawing from a list's frame ([ListFrameOverlay]), so a folder does not look like one more list:
- * a black square with a window cut out of it in the shape of the app's folder icon (round corners, a tab at the top
- * left), a soft glow round the window's edge, and the folder's name centred under it on one line
- * ([FolderFrameMetrics]). The caller draws what shows through the window under this layer: one of the app's own
- * folders shows its photograph ([PlaylistPhotos.folder][com.rpm.player.core.library.PlaylistPhotos.folder]), a folder
- * somebody made a still room in its colours.
+ * It is a different drawing from a list's frame, so a folder does not look like one more list: a black square with a
+ * window cut out of it in the shape of the app's folder icon (round corners, a tab at the top left), a soft glow round
+ * the window's edge, and the folder's name centred under it on one line ([FolderFrameMetrics]). The caller draws what
+ * shows through the window under this layer: one of the app's own folders shows its photograph
+ * ([PlaylistPhotos.folder][com.rpm.player.core.library.PlaylistPhotos.folder]), a folder somebody made a still room in
+ * its colours ([ListRoom]).
  *
  * The drawing is inked in the folder's two colours as a list's frame is ([ramp]): its black in the border colour, the
- * glow running from it towards the lettering colour, and
- * the name in the lettering colour, in Cabin Bold with a system font for letters Cabin does not have. The window stays
- * transparent. The drawing is read once for the whole app, off the main thread; until then nothing is drawn.
+ * glow running from it towards the lettering colour, and the name in the lettering colour, in Cabin Bold with a system
+ * font for letters Cabin does not have ([FrameFace]). The window stays transparent. The drawing is read once for the
+ * whole app, off the main thread; until then nothing is drawn.
  */
 @Composable
 fun FolderFrameOverlay(framed: FramedList, modifier: Modifier) {
@@ -58,7 +58,7 @@ fun FolderFrameOverlay(framed: FramedList, modifier: Modifier) {
             val edge = size.width
             val text = framed.look.text
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                typeface = FrameDrawing.face(context)
+                typeface = FrameFace.of(context)
                 color = Color(text.r, text.g, text.b).toArgb()
             }
             val set = FolderFrameMetrics.lettering(framed.name, edge) { said, at -> ink(paint, said, at) }
