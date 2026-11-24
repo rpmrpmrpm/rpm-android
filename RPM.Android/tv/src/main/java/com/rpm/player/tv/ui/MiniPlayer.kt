@@ -77,6 +77,9 @@ class MiniPlayerState {
     private var page by mutableStateOf<State<Boolean>?>(null)
     val atTop: Boolean get() = page?.value ?: true
 
+    /** The page in front, as a key: a new page starts the card's five seconds again ([MINI_AWAY_MS]). */
+    val following: Any? get() = page
+
     fun follow(atTop: State<Boolean>) {
         if (page !== atTop) com.rpm.player.core.diag.Diag.d(MINI_LOG, "follows page ${System.identityHashCode(atTop)}, from ${caller()}")
         page = atTop
@@ -116,6 +119,11 @@ class MiniPlayerState {
  * and comes back when the page is at its top again. It slides down and fades in over 300 ms (PlayerAway.cs).
  * It is one stop for the remote; OK opens the player.
  *
+ * While nothing plays (a paused or stopped song or station), the card goes after five seconds ([MINI_AWAY_MS]), as
+ * the desktop's card goes (PlayerAway.cs). It comes back when something plays, when another page comes to the front,
+ * and when the remote goes Up onto it: the card that went can still take the focus, and the focus brings it in. The
+ * five seconds start again when the remote leaves it.
+ *
  * Unlike the desktop, the wordmark does not hide after 5 seconds (MarkKeptOff). On a fresh start the player is
  * empty until Play resumes the saved queue, so a timer would run out under the opening screen and home would
  * have no card to bring back by returning to the top. The wordmark stays at the top of home like the playing card.
@@ -141,7 +149,20 @@ fun MiniPlayer(
     modifier: Modifier,
 ) {
     var focused by remember { mutableStateOf(false) }
-    val wanted = !state.covered && (focused || state.atTop && (nowPlaying != null || showsMark))
+    // Gone after five seconds of nothing playing, at the top of a page and without the focus. Any change of these
+    // brings the card back and starts the five seconds again.
+    var away by remember { mutableStateOf(false) }
+    val resting = nowPlaying != null && !nowPlaying.playing
+    val upAtTop = !state.covered && state.atTop
+    androidx.compose.runtime.LaunchedEffect(resting, upAtTop, focused, state.following) {
+        away = false
+        if (resting && upAtTop && !focused) {
+            kotlinx.coroutines.delay(MINI_AWAY_MS)
+            away = true
+            com.rpm.player.core.diag.Diag.d(MINI_LOG, "away: nothing has played for ${MINI_AWAY_MS / 1000} s")
+        }
+    }
+    val wanted = !state.covered && (focused || state.atTop && !away && (nowPlaying != null || showsMark))
     // Logs every change of what decides whether it shows, for `adb logcat -s rpm.mini` when it is missing where it
     // should be.
     androidx.compose.runtime.LaunchedEffect(wanted, state.covered, state.atTop, focused, nowPlaying != null) {
@@ -179,7 +200,8 @@ fun MiniPlayer(
                 corner = 7.ms,
                 modifier = Modifier
                     .focusProperties {
-                        canFocus = nowPlaying != null && reachable
+                        // A card that went after its five seconds can still take the focus: Up onto it brings it back.
+                        canFocus = nowPlaying != null && (reachable || away)
                         // The screen is under a card at the top and over one at the bottom.
                         if (place.atTop) down = below else up = below
                     }
@@ -308,6 +330,9 @@ private val Number.ms: androidx.compose.ui.unit.Dp get() = (toFloat() * MINI).s
 private val Number.mts: androidx.compose.ui.unit.TextUnit get() = (toFloat() * MINI).ts
 
 private const val SLIDE_MS = 300
+
+/** How long the card stays up while nothing plays, before it goes (the desktop's PlayerAwayAfter). */
+private const val MINI_AWAY_MS = 5_000L
 
 /** For `adb logcat -s rpm.mini`: what the mini player follows and what covers it, and each change of whether it shows. */
 private const val MINI_LOG = "rpm.mini"
