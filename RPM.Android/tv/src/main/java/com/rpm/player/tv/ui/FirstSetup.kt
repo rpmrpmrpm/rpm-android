@@ -322,10 +322,8 @@ private object SetupLoop {
     private const val FADE_STEP_MS = 40
 }
 
-/** The website's page for becoming a supporter, as the desktop's supporter dialog opens it. */
-private const val SUPPORTER_PAGE = "https://rpmrpmrpm.com/become-supporter"
-
-/** What supporters get, each with the desktop's glyph (SupporterPerks.cs), beside the code for [SUPPORTER_PAGE]. */
+/** What supporters get, each with the desktop's glyph (SupporterPerks.cs), and where to subscribe: the phone app,
+ * which sells the subscription through its store. The TV app sells nothing and links to no payment page. */
 @Composable
 private fun SupporterOffer() {
     val perks = listOf(
@@ -349,14 +347,7 @@ private fun SupporterOffer() {
             }
             Text(stringResource(R.string.Supporter_PerkMore), style = ui(18.ts), color = Ink.Artist, modifier = Modifier.padding(start = 48.s))
         }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(Modifier.size(260.s).background(Color.White, RoundedCornerShape(12.s)).padding(14.s)) {
-                val code = remember { qrBitmap(SUPPORTER_PAGE) }
-                Image(code, contentDescription = null, modifier = Modifier.fillMaxSize(), filterQuality = androidx.compose.ui.graphics.FilterQuality.None)
-            }
-            Spacer(Modifier.height(14.s))
-            Text(stringResource(R.string.Tv_Setup_SupporterScan), style = ui(17.ts), color = Ink.Artist, textAlign = TextAlign.Center, modifier = Modifier.width(300.s))
-        }
+        Text(stringResource(R.string.Tv_Setup_SupporterPhone), style = ui(22.ts), color = Ink.Words, textAlign = TextAlign.Center, modifier = Modifier.width(300.s))
     }
 }
 

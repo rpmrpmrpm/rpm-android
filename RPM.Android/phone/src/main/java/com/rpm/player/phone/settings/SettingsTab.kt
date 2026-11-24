@@ -15,6 +15,7 @@ import androidx.media3.common.Player
 import com.rpm.player.core.Services
 import com.rpm.player.phone.PhoneApplication
 import com.rpm.player.phone.PhoneSettings
+import com.rpm.player.phone.supporter.SupporterSheet
 import com.rpm.player.phone.ui.Ground
 import com.rpm.player.core.cloud.ownPage
 import com.rpm.player.core.cloud.setSharesListening
@@ -49,6 +50,8 @@ fun SettingsTab(
     var crashReports by remember { mutableStateOf(services.diagnostics.sendsCrashReports) }
     // Whether the profile shows what plays. Read from the reader's own profile; true until then, as the server's default.
     var sharesListening by remember { mutableStateOf(true) }
+    // The subscription sheet, over the page.
+    var supporting by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { runCatching { services.community.ownPage() }.onSuccess { sharesListening = it.sharesListening } }
 
     // Each time the tab is shown: how much the kept covers take (it asks the cache), and the plan again if the last
@@ -98,7 +101,8 @@ fun SettingsTab(
         // In the app's scope, not the sheet's: a deletion signs out, the gate replaces this page, and the sign-out must
         // not be cancelled with it.
         onDeleteAccount = { services.scope.async { account.deleteAccount(session?.email.orEmpty(), controller) }.await() },
-        onSupport = { links.openUri(RpmSite.BECOME_SUPPORTER) },
+        onSupport = { supporting = true },
+        onManageSubscription = { links.openUri(RpmSite.PLAY_SUBSCRIPTION) },
         crashReports = crashReports,
         onCrashReports = { on ->
             services.diagnostics.sendsCrashReports = on
@@ -121,4 +125,10 @@ fun SettingsTab(
         onReplayHints = settings::replayWelcome,
         equalizer = settings.eqOutput?.let { EqControls(it, settings.eqCurve, settings::changeEq) },
     )
+
+    val accountId = session?.userId
+    if (supporting && accountId != null) {
+        val app = LocalContext.current.applicationContext as PhoneApplication
+        SupporterSheet(app.supporters, accountId, onClose = { supporting = false })
+    }
 }

@@ -70,8 +70,9 @@ internal object RpmSite {
     const val PRIVACY = "https://rpmrpmrpm.com/privacy"
     const val TERMS = "https://rpmrpmrpm.com/terms"
 
-    /** Where a person goes to become a supporter. Opened in the browser: support is not sold in the app. */
-    const val BECOME_SUPPORTER = "https://rpmrpmrpm.com/become-supporter"
+    /** Google Play's page for the supporter subscription, where it is changed or cancelled. Support is sold through
+     * Google Play, and the app links to no other payment page. */
+    const val PLAY_SUBSCRIPTION = "https://play.google.com/store/account/subscriptions?sku=rpm_supporter&package=com.rpm.player"
 }
 
 /** The licence being read, with the entry it belongs to. One value rather than a flag and two others, so there is no

@@ -106,6 +106,29 @@ class AuthClientTest {
         assertEquals(listOf("r2"), wire.revoked)
     }
 
+    /** After a purchase the cloud API must read the account again, and it keeps its answer per access token for a
+     * minute. A new token is a new read, so the phone asks for one at once. */
+    @Test fun refreshNowAsksForANewTokenEvenWhenTheOldOneIsGood() = runTest {
+        val wire = HeldWire().apply { answer.complete(RefreshAnswer.Fresh(LoginResponse(accessToken = "new", expiresIn = 3600))) }
+        val good = Session("u", "e", "n", accessToken = "good", refreshToken = "r1", expiresAtMillis = now + 3_600_000)
+        val auth = AuthClient(wire, MemoryStore(good), clock = { now }).apply { load() }
+
+        auth.refreshNow()
+
+        assertEquals(1, wire.refreshes)
+        assertEquals("new", auth.accessToken())
+    }
+
+    @Test fun refreshNowThatCannotReachTheServiceKeepsTheSession() = runTest {
+        val wire = HeldWire().apply { answer.complete(RefreshAnswer.Unavailable) }
+        val good = Session("u", "e", "n", accessToken = "good", refreshToken = "r1", expiresAtMillis = now + 3_600_000)
+        val auth = AuthClient(wire, MemoryStore(good), clock = { now }).apply { load() }
+
+        auth.refreshNow()
+
+        assertEquals("good", auth.accessToken())
+    }
+
     @Test fun aFreshTokenIsReturnedWithoutAskingTheServer() = runTest {
         val wire = HeldWire()
         val session = Session("u", "e", "n", "fresh", "r1", expiresAtMillis = now + AuthClient.REFRESH_MARGIN_MS + 60_000)

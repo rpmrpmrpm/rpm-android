@@ -156,6 +156,8 @@ class MainActivity : ComponentActivity() {
         // Back from the browser a sign-in opened, closed or finished: see SignIn.backFromBrowser. A finished
         // sign-in's link arrives in onNewIntent, before this.
         app.signIn.backFromBrowser()
+        // A renewal, a refund or a purchase on another device can happen while the app is away.
+        if (app.services.auth.session.value != null) app.supporters.sync()
     }
 
     companion object {

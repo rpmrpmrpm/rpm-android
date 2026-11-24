@@ -5,6 +5,9 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.rpm.player.core.RpmApplication
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import com.rpm.player.core.Services
 import com.rpm.player.core.SessionOpening
 import androidx.compose.runtime.getValue
@@ -71,11 +74,41 @@ class PhoneApplication : RpmApplication() {
         com.rpm.player.phone.ui.Look.open(this)
         account = Account(this, services, settings, onDeleted = { signIn.notice = Said(com.rpm.player.core.R.string.Account_DeletedBody) })
         account.begin()
+        // At start and after each sign-in: a purchase made while signed out, or one that did not reach the service.
+        services.scope.launch {
+            services.auth.session.map { it?.userId }.distinctUntilChanged().collect { user -> if (user != null) supporters.sync() }
+        }
         // The player follows the same reading as the offline bar: offline, only what is on the phone plays. Set here,
         // before the playback service can start.
         services.line = line
         // The equaliser follows the speakers even while no screen is open, as the playback service plays on without one.
         EqOutputs(this, services.casting.state, services.scope, settings::useEqOutput).start()
+    }
+
+    /**
+     * The Google Play subscription and the accounts service. Every bought purchase is sent at start, after each sign-in
+     * and on return to the foreground ([MainActivity.onResume]); a confirmed one makes the app read the account again.
+     */
+    val supporters: com.rpm.player.phone.supporter.SupporterBilling by lazy {
+        com.rpm.player.phone.supporter.SupporterBilling(
+            this,
+            com.rpm.player.core.cloud.SupporterClient(services.http, services.auth),
+            services.scope,
+            onConfirmed = ::supportConfirmed,
+        )
+    }
+
+    /**
+     * The accounts service took a purchase. The cloud API keeps the account's standing per access token for a minute,
+     * so a new token is asked for first and the quota is then read again. After a sync that is skipped when the quota
+     * already says the same, so the sync on every start costs nothing; after a purchase in the sheet ([bought]) it is
+     * never skipped. The gold ground follows the quota as it always does.
+     */
+    private suspend fun supportConfirmed(answer: com.rpm.player.core.cloud.SupporterAnswer, bought: Boolean) {
+        val quota = services.ownFace.quota.value
+        if (!bought && quota != null && quota.wearsMark == (answer.grSupporter && !answer.grTester) && quota.store == answer.grSupporterStore) return
+        services.auth.refreshNow()
+        services.ownFace.readAgain()
     }
 
     /** Artists' photographs, cropped around their faces. Kept for the life of the app. */

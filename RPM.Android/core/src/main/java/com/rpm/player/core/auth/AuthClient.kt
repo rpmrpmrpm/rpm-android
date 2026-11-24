@@ -65,10 +65,24 @@ class AuthClient(
         // token and returns it.
         val session = current.value ?: return@withLock null
         if (session.expiresAtMillis - clock() > REFRESH_MARGIN_MS) return@withLock session.accessToken
-        // With no refresh token the session is kept. The call that uses the token fails by itself.
-        if (session.refreshToken.isEmpty()) return@withLock session.accessToken
+        refreshed(session)
+    }
 
-        when (val answer = wire.refresh(session.refreshToken)) {
+    /**
+     * Asks for a new access token now, even when the one held is still good. After a purchase the cloud API must read
+     * the account again, and it keeps its answer per access token for a minute; a new token is read fresh. A refresh
+     * that cannot be sent keeps the session as it is.
+     */
+    suspend fun refreshNow() {
+        lock.withLock { current.value?.let { refreshed(it) } }
+    }
+
+    /** Refreshes [session]'s token. Called with [lock] held. */
+    private suspend fun refreshed(session: Session): String? {
+        // With no refresh token the session is kept. The call that uses the token fails by itself.
+        if (session.refreshToken.isEmpty()) return session.accessToken
+
+        return when (val answer = wire.refresh(session.refreshToken)) {
             is RefreshAnswer.Fresh -> {
                 val next = merge(previous = session, answer.said)
                 replace(next)

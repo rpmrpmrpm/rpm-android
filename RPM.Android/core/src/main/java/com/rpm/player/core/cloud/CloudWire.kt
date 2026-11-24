@@ -281,6 +281,9 @@ data class CloudQuota(
     @SerialName("supporter") private val supporterSent: Boolean? = null,
     /** A closed beta tester who does not pay: the supporter features, a ceiling and no supporter's mark. */
     val tester: Boolean = false,
+    /** `apple` or `google` while that store pays for the account's support, else null. The phone shows Manage
+     * subscription only for `google`, because a Google Play subscription is managed in Google Play. */
+    val store: String? = null,
 ) {
     /** Whether the account has the supporter features (higher bitrates, karaoke, the gold ground and the rest). Paying
      * supporters and closed beta testers have them. A server that does not send the field has no testers, so it
@@ -290,6 +293,27 @@ data class CloudQuota(
     /** Whether the supporter's mark is shown for this account. The mark says "Supporter", so a tester, who does not
      * pay, does not wear it. */
     val wearsMark: Boolean get() = supporter && !tester
+
+    /** What the phone offers on the supporter card. The iPhone's `CloudQuota.supporterOffer` follows the same rule. */
+    val supporterOffer: SupporterOffer
+        get() = when {
+            !wearsMark -> SupporterOffer.BECOME
+            store == "google" -> SupporterOffer.MANAGE_IN_GOOGLE_PLAY
+            else -> SupporterOffer.NOTHING
+        }
+}
+
+/** What the phone offers on the supporter card. */
+enum class SupporterOffer {
+    /** The account does not pay: the subscription sheet. A closed beta tester has the features but does not pay, so
+     * is offered it too. */
+    BECOME,
+
+    /** Google Play pays: Google Play's own page to change or cancel the subscription. */
+    MANAGE_IN_GOOGLE_PLAY,
+
+    /** Stripe, the App Store or a grant pays. It is managed there, and the phone does not link to it. */
+    NOTHING,
 }
 
 /** One record that its owner marked, as `cloud/album-marks` returns it, identified by the key its cover is filed under. */

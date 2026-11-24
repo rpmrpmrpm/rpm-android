@@ -82,6 +82,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.rpm.player.core.R
 import com.rpm.player.core.cloud.CloudQuota
+import com.rpm.player.core.cloud.SupporterOffer
 import com.rpm.player.core.library.DiscStandIn
 import com.rpm.player.core.playback.AudioLadder
 import com.rpm.player.core.playback.EqCurve
@@ -213,6 +214,7 @@ fun SettingsPage(
     onSignOut: () -> Unit,
     onDeleteAccount: suspend () -> String?,
     onSupport: () -> Unit,
+    onManageSubscription: () -> Unit,
     crashReports: Boolean,
     onCrashReports: (Boolean) -> Unit,
     onFeedback: (() -> Unit)?,
@@ -242,7 +244,7 @@ fun SettingsPage(
     var menu by remember { mutableStateOf<MenuAsk?>(null) }
     BackHandler(enabled = menu != null) { menu = null }
 
-    val cards = Cards(offer, onSupport, onAsk = { menu = it })
+    val cards = Cards(offer, onSupport, onManageSubscription, onAsk = { menu = it })
     // Each section opens at its top.
     LaunchedEffect(section) { scroll.scrollTo(0) }
 
@@ -348,7 +350,14 @@ class EqControls(val output: EqOutput, val curve: EqCurve, val onCurve: (EqCurve
 class Rates(val onWifi: (Int) -> Unit, val onCellular: (Int) -> Unit, val onDownload: (Int) -> Unit)
 
 /** The cards of the page. They share the offer and the way to open a menu. */
-private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit, val onAsk: (MenuAsk) -> Unit) {
+private class Cards(
+    val offer: AudioLadder.RateOffer,
+    /** Opens the subscription sheet. */
+    val onSupport: () -> Unit,
+    /** Opens Google Play's page for the account's subscription. */
+    val onManageSubscription: () -> Unit,
+    val onAsk: (MenuAsk) -> Unit,
+) {
 
     // ── account ──
 
@@ -474,6 +483,14 @@ private class Cards(val offer: AudioLadder.RateOffer, val onSupport: () -> Unit,
                         stringResource(if (quota.tester) R.string.Rpm_Profile_PlanTester else R.string.Rpm_Profile_PlanFree),
                         style = display(17f).copy(color = Ink.cyan),
                     )
+                }
+                when (quota.supporterOffer) {
+                    SupporterOffer.BECOME -> Key(stringResource(R.string.Cloud_BecomeSupporter), Modifier.padding(top = 6.dp), onClick = onSupport)
+                    SupporterOffer.MANAGE_IN_GOOGLE_PLAY -> {
+                        BasicText(stringResource(R.string.Supporter_ThroughGooglePlay), style = display(13f).copy(color = Ink.white(0xCC)))
+                        Key(stringResource(R.string.Supporter_Manage), Modifier.padding(top = 6.dp), onClick = onManageSubscription)
+                    }
+                    SupporterOffer.NOTHING -> Unit
                 }
             }
         }

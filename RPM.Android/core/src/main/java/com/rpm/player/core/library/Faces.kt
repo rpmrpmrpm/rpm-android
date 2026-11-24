@@ -71,6 +71,12 @@ class OwnFace(private val cloud: CloudClient, private val auth: AuthClient, priv
         }
     }
 
+    /** Reads the face and the quota again now: after a store purchase, when the account's standing has changed. */
+    fun readAgain() {
+        val user = auth.session.value?.userId ?: return
+        scope.launch { read(user) }
+    }
+
     /** Asks again if the last read failed, as the iPhone does when the network comes back or the profile is shown. */
     fun readAgainIfMissing() {
         val user = auth.session.value?.userId ?: return

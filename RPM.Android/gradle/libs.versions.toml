@@ -14,6 +14,7 @@ okhttp = "5.5.0"
 coil = "3.6.3"
 mlkitFace = "16.1.7"
 zxing = "3.5.4"
+billing = "8.3.0"
 junit = "4.13.2"
 
 [libraries]
@@ -43,6 +44,7 @@ coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" 
 coil-svg = { module = "io.coil-kt.coil3:coil-svg", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
+billing = { module = "com.android.billingclient:billing", version.ref = "billing" }
 junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]

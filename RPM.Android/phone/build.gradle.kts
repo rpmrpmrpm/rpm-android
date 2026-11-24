@@ -96,6 +96,8 @@ dependencies {
     // Installs the baseline profiles that Compose and the other libraries ship, so their code is compiled
     // ahead of time on a sideloaded install too, not only on one from Google Play.
     implementation(libs.androidx.profileinstaller)
+    // Supporter subscriptions through Google Play. The purchase is checked and acknowledged by rpm's accounts service.
+    implementation(libs.billing)
 
     testImplementation(libs.junit)
 }

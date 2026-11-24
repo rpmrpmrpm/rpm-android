@@ -36,4 +36,23 @@ class CloudQuotaTest {
         assertFalse(free.supporter)
         assertFalse(free.wearsMark)
     }
+
+    @Test fun theQuotaNamesThePayingStore() {
+        assertEquals("google", read("""{"usedBytes":1,"quotaBytes":2,"fileCount":3,"unlimited":true,"supporter":true,"tester":false,"store":"google"}""").store)
+        assertEquals(null, read("""{"usedBytes":1,"quotaBytes":2,"fileCount":3}""").store)
+    }
+
+    @Test fun aFreeAccountOrATesterIsOfferedTheSubscription() {
+        assertEquals(SupporterOffer.BECOME, read("""{"supporter":false}""").supporterOffer)
+        assertEquals(SupporterOffer.BECOME, read("""{"supporter":true,"tester":true}""").supporterOffer)
+    }
+
+    @Test fun aGooglePlaySupporterIsOfferedPlaysPage() {
+        assertEquals(SupporterOffer.MANAGE_IN_GOOGLE_PLAY, read("""{"supporter":true,"unlimited":true,"store":"google"}""").supporterOffer)
+    }
+
+    @Test fun aSupporterWhoPaysElsewhereIsOfferedNothing() {
+        assertEquals(SupporterOffer.NOTHING, read("""{"supporter":true,"unlimited":true,"store":"apple"}""").supporterOffer)
+        assertEquals(SupporterOffer.NOTHING, read("""{"supporter":true,"unlimited":true}""").supporterOffer)
+    }
 }
