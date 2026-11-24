@@ -29,15 +29,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * The frame on the cover of one of the app's own playlist folders, lettered with the folder's name (the iPhone's
- * `FolderFrame`, RPMSharedUI/FolderFrame.swift).
+ * The frame on the cover of a playlist folder, lettered with the folder's name (the iPhone's `FolderFrame`,
+ * RPMSharedUI/FolderFrame.swift).
  *
  * It is a different drawing from a list's frame ([ListFrameOverlay]), so a folder does not look like one more list:
- * a black square with a folder-shaped window cut out of it (a tab at the top right), and a bar under the window where
- * the folder's name is set in the middle on one line ([FolderFrameMetrics]). The folder's photograph shows through the window
- * ([PlaylistPhotos.folder][com.rpm.player.core.library.PlaylistPhotos.folder]); the caller draws it under this layer.
+ * a black square with a window cut out of it in the shape of the app's folder icon (round corners, a tab at the top
+ * left), a soft glow round the window's edge, and the folder's name centred under it on one line
+ * ([FolderFrameMetrics]). The caller draws what shows through the window under this layer: one of the app's own
+ * folders shows its photograph ([PlaylistPhotos.folder][com.rpm.player.core.library.PlaylistPhotos.folder]), a folder
+ * somebody made a still room in its colours.
  *
- * The drawing is inked in the folder's two colours as a list's frame is ([ramp]): its black in the border colour, and
+ * The drawing is inked in the folder's two colours as a list's frame is ([ramp]): its black in the border colour, the
+ * glow running from it towards the lettering colour, and
  * the name in the lettering colour, in Cabin Bold with a system font for letters Cabin does not have. The window stays
  * transparent. The drawing is read once for the whole app, off the main thread; until then nothing is drawn.
  */

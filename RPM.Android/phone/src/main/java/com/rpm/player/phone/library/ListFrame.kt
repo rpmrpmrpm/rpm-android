@@ -59,17 +59,18 @@ data class FramedList(val name: String, val look: GeneratedListLook.Look) {
         fun of(list: TrackList?, name: String): FramedList? = list?.let(GeneratedListLook::of)?.let { FramedList(name, it) }
 
         /**
-         * The name and inks of one of the app's own folders, for its frame ([FolderFrameOverlay]), or null for a
-         * folder somebody made (`FramedList.folder` on the iPhone). A photograph of its own goes behind the frame's
-         * window ([PlaylistPhotos.folder][com.rpm.player.core.library.PlaylistPhotos.folder]).
+         * The name and inks of a folder, for its frame ([FolderFrameOverlay]) (`FramedList.folder` on the iPhone).
+         * One of the app's own folders has a photograph of its own behind the frame's window
+         * ([PlaylistPhotos.folder][com.rpm.player.core.library.PlaylistPhotos.folder]); a folder somebody made has a
+         * still room in its colours there ([ListRoom]).
          *
          * One mood's folder wears the colours of that mood's list of the whole collection, so the folder and what is
-         * in it look alike. The folder of the decades wears the 1980s'. The folder of all the moods wears the app's
-         * own colours ([GeneratedListLook.app]).
+         * in it look alike. The folder of the decades wears the 1980s'. The folder of all the moods and every folder
+         * somebody made wear the app's own colours ([GeneratedListLook.app]). Null only for a mood this build has no
+         * colours for.
          */
         fun folder(face: FolderFace, name: String): FramedList? = when (face) {
-            FolderFace.Plain -> null
-            FolderFace.Moods -> GeneratedListLook.app
+            FolderFace.Plain, FolderFace.Moods -> GeneratedListLook.app
             FolderFace.Decades -> GeneratedListLook.of("Decade", null, 1980)
             is FolderFace.Mood -> GeneratedListLook.of(face.kind, null, 0)
         }?.let { FramedList(name, it) }

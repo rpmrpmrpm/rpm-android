@@ -345,7 +345,8 @@ private fun androidx.compose.foundation.layout.ColumnScope.Rows(
 
 /**
  * The picture a row shows. A list uses its own picture, or else the cover of the record it opens on. One of the app's
- * own folders shows its photograph, behind its frame ([folderFrame]); a folder somebody made has no picture.
+ * own folders shows its photograph, behind its frame ([folderFrame]); a folder somebody made has no picture, and
+ * shows a room behind its frame instead.
  */
 private fun com.rpm.player.core.library.Collection.coverModel(row: PlaylistRow): Any? = when (row) {
     is PlaylistRow.Folder -> PlaylistPhotos.folder(row.face)
@@ -526,9 +527,10 @@ private fun Footer(browse: PlaylistBrowse, empty: Boolean, own: Boolean) {
  * it moves only on the list's own page, because each moving square is a room drawn 30 times a second.
  * @param markPicture a drawable shown in place of [glyph] on a square with no picture, at the glyph's size. It is as
  * faint as the desktop draws it on its tiles (40%), and it is a grey picture, so it reads as faint as the glyphs.
- * @param folderFrame the name and inks of one of the app's own folders ([FramedList.folder]) for the folder frame
- * ([FolderFrameOverlay]), drawn over its photograph ([picture]). The two come in together, once the photograph is
- * ready, so the frame never shows over an empty window.
+ * @param folderFrame the name and inks of a folder ([FramedList.folder]) for the folder frame ([FolderFrameOverlay]).
+ * One of the app's own folders has its photograph ([picture]) behind it, and the two come in together, once the
+ * photograph is ready, so the frame never shows over an empty window. A folder somebody made has no photograph and
+ * shows a still room in its colours ([ListRoom]) behind the frame.
  */
 @Composable
 fun PlaylistSleeve(
@@ -551,6 +553,11 @@ fun PlaylistSleeve(
             framed != null && framed.look.roomed && drifts -> LiveRoom(framed.look.room, framed.name, running = true, Modifier.fillMaxSize())
             framed != null && framed.look.roomed -> ListRoom(framed.look, framed.name, Modifier.fillMaxSize())
             framed == null && folderFrame != null && picture != null -> FolderCover(picture, folderFrame, edge, images)
+            framed == null && folderFrame != null -> {
+                // A folder somebody made has no photograph: a still room in its colours shows through the window.
+                ListRoom(folderFrame.look, folderFrame.name, Modifier.fillMaxSize())
+                FolderFrameOverlay(folderFrame, Modifier.fillMaxSize())
+            }
             picture != null -> {
                 if (framed == null) BasicText(glyph, style = icon(mark).copy(color = Ink.white(0x3A)))
                 AsyncImage(

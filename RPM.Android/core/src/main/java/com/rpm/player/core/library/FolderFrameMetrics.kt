@@ -1,25 +1,26 @@
 package com.rpm.player.core.library
 
 /**
- * Where a folder's name goes on the folder frame (`folder_frame.png`): centred in the black bar under the window, on
- * one line. The iPhone's `FolderFrameMetrics` (RPMDesign/FolderFrameMetrics.swift) has the same numbers; change both
- * together.
+ * Where a folder's name goes on the folder frame (`folder_frame.png`): centred under the folder, on one line. The
+ * iPhone's `FolderFrameMetrics` (RPMDesign/FolderFrameMetrics.swift) has the same numbers; change both together.
  *
- * The drawing is 800 pixels square. Its window is the shape of a folder: 35 to 768 across, 104 to 646 down, with a tab
- * at the top right from 582 to 768 across that reaches up to 36. The bar below the window runs from 647 to the bottom
- * edge. Every number here is a share of the square, so the same rule sets the
- * name at any size. y counts down, as in the drawing.
+ * The drawing is 1000 pixels square: a folder-shaped window with round corners and a soft glow round its edge, on
+ * black. The window runs from 77 to 920 across and from 82 to 714 down. Its tab is at the top left, from 77 to about
+ * 420 across, and slopes down to the folder's top edge at 186. The name's capitals stand on the line at 911, with the
+ * middle of the gauge's ink at 880. Every number here is a share of the square, so the same rule sets the name at any
+ * size. y counts down, as in the drawing.
  */
 object FolderFrameMetrics {
-    /** The middle of the bar, down the square: halfway between 647 and 800. */
-    const val BAR_CENTRE = (647f + 800f) / 2f / 800f
+    /** The line the middle of the gauge's ink sits on, down the square. */
+    const val BAR_CENTRE = 0.88f
 
     /** How tall the gauge's ink is, as a share of the square. This sets the type size, as on a list's frame
      * ([ListFrameMetrics.GAUGE]), so every folder's name is set at one size. */
-    const val NAME_CROSS = 0.095f
+    const val NAME_CROSS = 0.126f
 
-    /** The widest a name may run, as a share of the square. A longer name is set smaller rather than cut. */
-    const val NAME_RUN = 0.86f
+    /** The widest a name may run, as a share of the square: as wide as the folder. A longer name is set smaller
+     * rather than cut. */
+    const val NAME_RUN = 0.84f
 
     /** How the name is set: its size, and where the pen and the baseline go, in the square's units. */
     data class Lettering(val size: Float, val x: Float, val baseline: Float)
@@ -28,7 +29,7 @@ object FolderFrameMetrics {
      * The size and place of [name] on a square of [edge], from a font that measures a string at a size.
      *
      * The name is centred across the square by its own ink. The baseline puts the middle of the gauge's ink on the
-     * bar's middle line, so every folder's name sits on the same line whatever letters it has. Null where the font
+     * [BAR_CENTRE], so every folder's name sits on the same line whatever letters it has. Null where the font
      * measures nothing; the frame is then drawn without a name.
      */
     fun lettering(name: String, edge: Float, measuring: (String, Float) -> ListFrameMetrics.Ink): Lettering? {

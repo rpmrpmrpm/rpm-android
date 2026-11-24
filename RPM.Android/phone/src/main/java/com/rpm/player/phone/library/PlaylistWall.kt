@@ -205,8 +205,8 @@ internal val PlaylistRow.mark: String
 internal val PlaylistRow.markPicture: Int?
     get() = if (this is PlaylistRow.Folder && face == FolderFace.Moods) PhoneR.drawable.moods_folder else null
 
-/** The frame of one of the app's own folders, lettered with its name, or null for every other row
- * ([FramedList.folder], `PlaylistRow.folderFrame` on iPhone). Its photograph is the row's picture. */
+/** The frame of a folder, lettered with its name, or null for a list ([FramedList.folder], `PlaylistRow.folderFrame`
+ * on iPhone). One of the app's own folders has its photograph as the row's picture. */
 internal val PlaylistRow.folderFrame: FramedList?
     get() = (this as? PlaylistRow.Folder)?.let { FramedList.folder(it.face, it.folder.name) }
 
