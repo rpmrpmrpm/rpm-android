@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -78,6 +79,9 @@ import com.rpm.player.phone.library.SleeveSquare
 import com.rpm.player.phone.settings.AppLanguages
 import com.rpm.player.phone.settings.BackdropVeilSliders
 import com.rpm.player.phone.settings.CoverCornerSlider
+import com.rpm.player.phone.supporter.SupporterBilling
+import com.rpm.player.phone.supporter.SupporterPerk
+import com.rpm.player.phone.supporter.SupporterSheet
 import com.rpm.player.phone.ui.Ground
 import com.rpm.player.phone.ui.GroundTile
 import com.rpm.player.phone.ui.LiveRoom
@@ -97,11 +101,18 @@ import java.util.Locale
  * - **Look**: the backdrops, how much they are dimmed and blurred, and how round the covers are. Each change shows
  *   behind the step at once.
  * - **Layout**: how the records open in the collection: the grid of covers, or the list with the songs.
+ * - **Support**: for an account that does not support rpm, the desktop's supporter ask (its last setup step): why to
+ *   support rpm, what supporters get, and the key that opens the subscription sheet ([SupporterSheet]).
  * - **Spin**: a song from the collection ([sample]), and the key that plays it and opens the player.
  *
- * The steps carry the desktop's "Step 1 of 3" and its row of dots.
+ * The steps carry the desktop's "Step 1 of 3" and its row of dots. Which steps there are is worked out on every draw
+ * ([WelcomeSteps]): the account's standing can arrive after the welcome has opened, and a purchase on the support step
+ * ends the ask while that step is on screen.
  *
- * @param sample the song the last step plays; null leaves that step out, and the layout step ends the welcome.
+ * @param sample the song the last step plays; null leaves that step out, and the step before it ends the welcome.
+ * @param support the supporter ask; null leaves the support step out: for an account that already supports rpm, and
+ *   while the account's standing is not known, because asking a supporter to support rpm tells them something that is
+ *   not true.
  * @param onPlay plays [sample] and opens the player. The welcome is over then.
  * @param onDone ends the welcome without playing.
  */
@@ -111,13 +122,26 @@ fun Welcome(
     images: ImageLoader,
     settings: PhoneSettings,
     sample: CloudTrack?,
+    support: WelcomeSupport?,
     onPlay: (CloudTrack) -> Unit,
     onDone: () -> Unit,
 ) {
     // Saved state, so a new language on Android 9 to 12, which makes the activity again, opens on the same step.
-    var page by rememberSaveable { mutableIntStateOf(0) }
-    val steps = if (sample != null) 4 else 3
-    BackHandler(enabled = page > 0) { page-- }
+    var page by rememberSaveable { mutableStateOf(WelcomePage.HELLO) }
+    val steps = WelcomeSteps(asks = support != null, hasSong = sample != null)
+    // The page on screen; null when no step is left after the one asked for, for the moment before the welcome ends.
+    val shown = steps.shown(page)
+    var subscribing by remember { mutableStateOf(false) }
+    val forward: (WelcomePage) -> Unit = { from -> steps.after(from)?.let { page = it } ?: onDone() }
+    // The ask has ended while its step is on screen: a purchase was confirmed, so the account supports rpm now. The
+    // welcome goes on to the next step, or ends when there is none.
+    LaunchedEffect(support != null) {
+        if (support == null && page == WelcomePage.SUPPORT) forward(WelcomePage.SUPPORT)
+    }
+    // Opens on one page, for looking at it without taps. See debugWelcomePage.
+    val context = LocalContext.current
+    LaunchedEffect(Unit) { debugWelcomePage(context)?.let { page = it } }
+    BackHandler(enabled = page != WelcomePage.HELLO) { page = steps.before(shown ?: page) }
     Box(
         Modifier
             .fillMaxSize()
@@ -126,20 +150,21 @@ fun Welcome(
             .clickable(remember { MutableInteractionSource() }, indication = null) {},
     ) {
         // The ground: the drifting room for the greeting, the chosen backdrop for the steps after it.
-        Crossfade(page == 0, animationSpec = tween(700), label = "welcome ground") { hello ->
+        Crossfade(shown == WelcomePage.HELLO, animationSpec = tween(700), label = "welcome ground") { hello ->
             if (hello) HelloRoom() else VinylGround()
         }
         AnimatedContent(
-            page,
+            shown,
             transitionSpec = { fadeIn(tween(280, delayMillis = 170)) togetherWith fadeOut(tween(170)) },
             label = "welcome step",
-        ) { shown ->
-            when (shown) {
-                0 -> Hello(onContinue = { page = 1 })
-                1 -> Step(1, steps, stringResource(R.string.Wizard_Phone_LanguageTitle), stringResource(R.string.Wizard_Phone_LanguageHint), next = { page = 2 }) {
+        ) { on ->
+            val count = steps.steps.size
+            when (on) {
+                WelcomePage.HELLO -> Hello(onContinue = { page = WelcomePage.LANGUAGE })
+                WelcomePage.LANGUAGE -> Step(steps.number(on), count, stringResource(R.string.Wizard_Phone_LanguageTitle), stringResource(R.string.Wizard_Phone_LanguageHint), next = { forward(on) }) {
                     Languages()
                 }
-                2 -> Step(2, steps, stringResource(R.string.Wizard_LookTitle), stringResource(R.string.Wizard_Phone_LookAllHint), next = { page = 3 }) {
+                WelcomePage.LOOK -> Step(steps.number(on), count, stringResource(R.string.Wizard_LookTitle), stringResource(R.string.Wizard_Phone_LookAllHint), next = { forward(on) }) {
                     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
                         Backdrops(settings)
                         BackdropVeilSliders()
@@ -151,20 +176,33 @@ fun Welcome(
                         }
                     }
                 }
-                3 -> Step(
-                    3,
-                    steps,
+                WelcomePage.LAYOUT -> Step(
+                    steps.number(on),
+                    count,
                     stringResource(R.string.Wizard_LayoutTitle),
                     stringResource(R.string.Wizard_Phone_LayoutBody),
-                    next = { if (sample != null) page = 4 else onDone() },
-                    nextLabel = if (sample != null) null else stringResource(R.string.Wizard_Finish),
+                    next = { forward(on) },
+                    nextLabel = if (steps.after(on) != null) null else stringResource(R.string.Wizard_Finish),
                 ) {
                     Layouts(settings)
                 }
-                else -> sample?.let { song ->
+                WelcomePage.SUPPORT -> Step(
+                    steps.number(on),
+                    count,
+                    stringResource(R.string.Wizard_SupportTitle),
+                    stringResource(R.string.Wizard_SupportPitch),
+                    next = { subscribing = true },
+                    nextLabel = stringResource(R.string.Cloud_BecomeSupporter),
+                    nextGlyph = Glyph.heart,
+                    skip = { forward(on) },
+                    skipLabel = stringResource(R.string.Supporter_Later),
+                ) {
+                    Perks()
+                }
+                WelcomePage.SPIN -> sample?.let { song ->
                     Step(
-                        4,
-                        steps,
+                        steps.number(on),
+                        count,
                         stringResource(R.string.Wizard_Phone_PlayerTitle),
                         stringResource(R.string.Wizard_Phone_PlayerBody),
                         next = { onPlay(song) },
@@ -174,8 +212,57 @@ fun Welcome(
                         Sample(song, collection, images)
                     }
                 }
+                null -> Box(Modifier.fillMaxSize())
             }
         }
+        if (subscribing && support != null) {
+            SupporterSheet(support.billing, support.accountId, onClose = { subscribing = false })
+        }
+    }
+}
+
+/**
+ * What the support step needs: the Google Play subscription and the account a purchase is for (its Cognito `sub`).
+ * After a confirmed purchase the app reads the account again ([SupporterBilling]), the quota then says the account
+ * supports rpm, and the ask ends.
+ */
+class WelcomeSupport(val billing: SupporterBilling, val accountId: String)
+
+/**
+ * The page the welcome opens on, for looking at it without taps, as the iPhone's `RPM_WELCOME_PAGE`: the name in the
+ * file `welcome-page` in the app's files folder ("support", "spin"). The shell shows the welcome again while the file is
+ * there. Only a debuggable build reads it, so a listener's build never does. Turned on with
+ * `adb shell "run-as com.rpm.player sh -c 'echo support > files/welcome-page'"`, off by removing the file. Null when
+ * unset.
+ */
+fun debugWelcomePage(context: Context): WelcomePage? {
+    if (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE == 0) return null
+    val name = runCatching { java.io.File(context.filesDir, "welcome-page").readText().trim() }.getOrNull() ?: return null
+    return WelcomePage.entries.firstOrNull { it.name.equals(name, ignoreCase = true) }
+}
+
+/** What supporters get, on the support step: the desktop's card on its last setup step, one column for the phone's
+ * width. Each perk's glyph carries its colour ([SupporterPerk]). */
+@Composable
+private fun Perks() {
+    val shape = RoundedCornerShape(12.dp)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(Color(0x13FFFFFF))
+            .border(1.dp, Color(0x2BFFFFFF), shape)
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        BasicText(stringResource(R.string.Supporter_OfferTitle).uppercase(), style = kicker())
+        for (perk in SupporterPerk.ALL) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                BasicText(perk.glyph, Modifier.width(30.dp), style = icon(15f).copy(color = if (perk.gold) Ink.gold else ACCENT))
+                BasicText(stringResource(perk.words), style = display(15f).copy(color = Ink.white(0xCC)))
+            }
+        }
+        BasicText(stringResource(R.string.Supporter_PerkMore), style = display(13f).copy(color = Ink.white(0x6B)))
     }
 }
 
@@ -266,7 +353,9 @@ private fun Step(
     body: String,
     next: () -> Unit,
     nextLabel: String? = null,
+    nextGlyph: String? = null,
     skip: (() -> Unit)? = null,
+    skipLabel: String? = null,
     content: @Composable () -> Unit,
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
@@ -280,22 +369,46 @@ private fun Step(
             Spacer(Modifier.height(14.dp))
             content()
         }
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            // The desktop's dots: lit up to the step showing.
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+        // The desktop's dots: lit up to the step showing.
+        val dots = @Composable { modifier: Modifier ->
+            Row(modifier, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 for (dot in 1..of) Box(Modifier.size(9.dp).clip(CircleShape).background(if (dot <= at) ACCENT else Color(0x38FFFFFF)))
             }
-            skip?.let {
-                Box(
-                    Modifier.clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = it).padding(10.dp),
-                ) { BasicText(stringResource(R.string.Wizard_SkipForNow), style = system(14f).copy(color = Ink.white(0xB3))) }
+        }
+        val nextKey = @Composable { stretches: Boolean ->
+            GlassButton(onClick = next, weight = Weight.Primary, stretches = stretches, inset = 22.dp) { style ->
+                nextGlyph?.let {
+                    BasicText(it, style = icon(12f).copy(color = style.color))
+                    Spacer(Modifier.width(8.dp))
+                }
+                BasicText(nextLabel ?: stringResource(R.string.Wizard_Next), maxLines = 1, style = style)
             }
-            GlassButton(onClick = next, weight = Weight.Primary, stretches = false, inset = 22.dp) { style ->
-                BasicText(nextLabel ?: stringResource(R.string.Wizard_Next), style = style)
+        }
+        if (skip != null) {
+            // A step with a skip key has two keys with long words ("Play and show me around"). A phone is too narrow
+            // for both beside the dots, and the words would wrap onto three lines. So the dots stand on their own row,
+            // the key that goes on takes the width, and the skip key is under it.
+            Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 18.dp, bottom = 8.dp)) {
+                dots(Modifier)
+                Spacer(Modifier.height(14.dp))
+                nextKey(true)
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp)
+                        .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClick = skip)
+                        .padding(10.dp),
+                    contentAlignment = Alignment.Center,
+                ) { BasicText(skipLabel ?: stringResource(R.string.Wizard_SkipForNow), style = system(14f).copy(color = Ink.white(0xB3))) }
+            }
+        } else {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                dots(Modifier.weight(1f))
+                nextKey(false)
             }
         }
     }

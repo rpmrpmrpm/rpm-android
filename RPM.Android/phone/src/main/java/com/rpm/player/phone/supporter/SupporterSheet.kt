@@ -127,10 +127,10 @@ private fun Header(outcome: PurchaseOutcome?) {
         BasicText(stringResource(R.string.Cloud_BecomeSupporter), style = display(24f).copy(color = Color.White))
         BasicText(stringResource(R.string.Supporter_StoreBody), style = display(14f).copy(color = Ink.white(0xCC)))
         Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            for (perk in PERKS) {
+            for (perk in SupporterPerk.ALL) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     BasicText(Glyph.check, Modifier.width(22.dp), style = icon(12f).copy(color = Ink.gold))
-                    BasicText(stringResource(perk), style = display(14f).copy(color = Color.White))
+                    BasicText(stringResource(perk.words), style = display(14f).copy(color = Color.White))
                 }
             }
         }
@@ -170,18 +170,6 @@ private fun planLabel(basePlanId: String): Int = when (basePlanId) {
     "year" -> R.string.Supporter_PlanYear
     else -> R.string.Supporter_PlanMonth
 }
-
-/** The same list of what supporters get as the Android TV set-up, the iPhone and the desktop. */
-private val PERKS = listOf(
-    R.string.Supporter_PerkStorage,
-    R.string.Supporter_PerkBitrate,
-    R.string.Supporter_PerkRecognition,
-    R.string.Supporter_PerkDj,
-    R.string.Supporter_PerkKaraoke,
-    R.string.Supporter_PerkBackdrop,
-    R.string.Supporter_PerkBadge,
-    R.string.Supporter_PerkCommunity,
-)
 
 private val SHAPE = RoundedCornerShape(14.dp)
 

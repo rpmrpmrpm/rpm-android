@@ -7,6 +7,8 @@ import com.rpm.player.phone.coach.CoachMark
 import com.rpm.player.phone.coach.CoachHint
 import com.rpm.player.phone.coach.CoachFinale
 import com.rpm.player.phone.coach.Welcome
+import com.rpm.player.phone.coach.WelcomeSupport
+import com.rpm.player.phone.coach.debugWelcomePage
 import com.rpm.player.phone.coach.rememberSample
 import com.rpm.player.phone.design.HoldMenus
 import com.rpm.player.phone.design.HoldMenuLayer
@@ -297,6 +299,9 @@ private fun nothingRead(shelf: Shelf) = LibraryState.Ready(
 private fun Shell(services: Services, settings: PhoneSettings, ready: LibraryState.Ready, controller: Player?, sittingFrom: Int, wall: WallStanding, onShown: () -> Unit) {
     val backdrop = rememberBackdrop()
     val session by services.auth.session.collectAsStateWithLifecycle()
+    // The welcome again, on the page the debug switch names (debugWelcomePage). Debuggable builds only.
+    val shellContext = LocalContext.current
+    LaunchedEffect(Unit) { if (debugWelcomePage(shellContext) != null) settings.replayWelcome() }
     val density = LocalDensity.current
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var opened by rememberSaveable(stateSaver = Step.stack) { mutableStateOf(listOf<Step>()) }
@@ -1083,6 +1088,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                 images,
                 settings,
                 welcomeSong,
+                welcomeSupport(services),
                 onPlay = { song ->
                     settings.finishWelcome()
                     val album = collection.albumOf[song.rpmId]
@@ -1103,6 +1109,20 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
         Reports(services, feedbackShot, onFeedbackClosed = { feedbackShot = null })
     }
     }
+}
+
+/**
+ * The welcome's supporter ask: for an account the quota says does not pay (a closed beta tester included, as on the
+ * settings page). Null while the quota is not known, so a supporter is never asked because the quota has not arrived.
+ */
+@Composable
+private fun welcomeSupport(services: Services): WelcomeSupport? {
+    val quota by services.ownFace.quota.collectAsStateWithLifecycle()
+    val session by services.auth.session.collectAsStateWithLifecycle()
+    val app = LocalContext.current.applicationContext as com.rpm.player.phone.PhoneApplication
+    val accountId = session?.userId
+    return remember(app, accountId) { accountId?.let { WelcomeSupport(app.supporters, it) } }
+        ?.takeIf { quota?.supporterOffer == com.rpm.player.core.cloud.SupporterOffer.BECOME }
 }
 
 /**

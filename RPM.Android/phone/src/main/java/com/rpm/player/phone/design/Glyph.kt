@@ -103,6 +103,13 @@ object Glyph {
 
     const val cloud = "\uF0C2"
 
+    // The glyphs of what supporters get that are not used elsewhere. See SupporterPerk.
+    const val waveform = "\uF8F1"
+    const val fingerprint = "\uF577"
+    const val sliders = "\uF1DE"
+    const val microphone = "\uF130"
+    const val people = "\uF0C0"
+
     // A picture, for the card that chooses the background art.
     const val picture = "\uF03E"
 
