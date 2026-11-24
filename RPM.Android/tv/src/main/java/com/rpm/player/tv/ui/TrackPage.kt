@@ -43,6 +43,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -82,6 +83,7 @@ import com.rpm.player.core.library.CloudAlbum
 import com.rpm.player.core.library.Collection
 import com.rpm.player.core.library.SongLevel
 import com.rpm.player.core.library.TrackList
+import com.rpm.player.core.library.listAbout
 import com.rpm.player.core.room.VinylHue
 
 /** What a track page shows: an album, or a list. */
@@ -120,7 +122,9 @@ class TrackActions(
  * Under an album's keys, what the encyclopedias say about it ([AboutRecord]).
  *
  * An album's year leads the count and length, and its format and quality ("FLAC  24/96") are on the line under,
- * then its stars. Play starts at the first track; the menu key beside it opens the page's menu:
+ * then its stars. A list has its mood's sentence and who is on it there instead ([listAbout]). The keys are the
+ * phone's: Shuffle, then Play in a round key in the middle, which starts at the first track, then the menu key where
+ * the phone has its download key. The menu is the page's menu:
  * Shuffle, Add to queue and Play next, and on the person's own collection Favourite album and Rate
  * album, which asks for the stars in a small card. OK on a track plays from it; a held OK or the Menu key opens
  * its menu (Play, Play next, Add to Now playing). Left from any track returns to the Play key. An album's
@@ -240,12 +244,8 @@ fun TrackPage(page: PageOf, collection: Collection, images: ImageLoader, dossier
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 22.s),
                 )
-                val line = when (page) {
-                    is PageOf.OfAlbum -> albumArtist(page.album)
-                    is PageOf.OfList -> page.list.folder.joinToString(" / ").ifBlank { null }
-                }
-                if (line != null) {
-                    Text(line, style = ui(PAGE_TEXT), color = Color(0xD9FFFFFF), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.s))
+                if (page is PageOf.OfAlbum) {
+                    Text(albumArtist(page.album), style = ui(PAGE_TEXT), color = Color(0xD9FFFFFF), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.s))
                 }
                 // The year, the count and the length as separate texts, so no language is forced into one word order.
                 Row(Modifier.padding(top = 12.s), horizontalArrangement = Arrangement.spacedBy(6.s)) {
@@ -274,22 +274,45 @@ fun TrackPage(page: PageOf, collection: Collection, images: ImageLoader, dossier
                         }
                     }
                 }
+                // What a list is and who is on it, as the phone's list page says it: a mood's sentence, then
+                // "Featuring" and the artists ([listAbout]).
+                if (page is PageOf.OfList) {
+                    val about = listAbout(remember(queue) { queue.map { it.track } }, page.list.blurb)
+                    if (about != null) {
+                        Text(
+                            about,
+                            style = ui(PAGE_TEXT),
+                            color = Color(0xD9FFFFFF),
+                            maxLines = 4,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 14.s),
+                        )
+                    }
+                }
+                // The phone's keys: Shuffle, then Play in the middle in a round key, then the page's menu where the
+                // phone has its download key. Shuffle and the menu are their marks alone, so Play is the key the eye
+                // finds first.
                 Row(
-                    Modifier.padding(top = 20.s).fillMaxWidth().height(54.s),
-                    horizontalArrangement = Arrangement.spacedBy(10.s),
+                    Modifier.padding(top = 20.s).height(PLAY_EDGE),
+                    horizontalArrangement = Arrangement.spacedBy(14.s),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    PageKey(
-                        onClick = { actions.play(queue, 0) },
-                        modifier = Modifier.focusRequester(playKey).weight(1f).fillMaxSize(),
+                    DeskButton(
+                        onClick = { actions.play(queue.shuffled(), 0) },
+                        corner = SIDE_KEY / 2,
+                        modifier = Modifier.size(SIDE_KEY),
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.s)) {
-                            Glyph(Fa.PLAY, 17.ts, Ink.Words)
-                            Text(
-                                stringResource(if (page is PageOf.OfAlbum) R.string.AlbumGrid_PlayAll else R.string.Playlists_Play),
-                                style = ui(PAGE_TEXT, FontWeight.SemiBold),
-                                color = Ink.Words,
-                            )
-                        }
+                        Glyph(Fa.SHUFFLE, 19.ts, Ink.Words)
+                    }
+                    DeskButton(
+                        onClick = { actions.play(queue, 0) },
+                        corner = PLAY_EDGE / 2,
+                        modifier = Modifier.focusRequester(playKey).size(PLAY_EDGE).background(KEY_FILL, CircleShape),
+                    ) {
+                        // The triangle's weight is left of its middle, so it is moved right a little to look centred
+                        // in the circle.
+                        Glyph(Fa.PLAY, 20.ts, Ink.Words, modifier = Modifier.offset(x = 2.s))
                     }
                     // Right from the last key enters the tracks on the one last focused there, track 1 the first
                     // time, as on the desktop. Named here rather than left to the remote's search, which takes the
@@ -304,21 +327,18 @@ fun TrackPage(page: PageOf, collection: Collection, images: ImageLoader, dossier
                         is PageOf.OfAlbum -> albumTitle(page.album)
                         is PageOf.OfList -> listName(page.list.name)
                     }
-                    // No glow: the key is small enough for [deskFocus]'s icon-key orb, which stood out hard beside the
-                    // play key. It shows the focus as the play key does, by its grow and its full brightness.
-                    androidx.compose.runtime.CompositionLocalProvider(LocalGlowStrength provides 0f) {
-                        PageKey(
-                            onClick = {
-                                menu.open(
-                                    title = pageMenuTitle,
-                                    choices = pageChoices(page, queue, collection, marks.isFavouriteOf(album), stars, actions),
-                                    returnTo = menuKey,
-                                )
-                            },
-                            modifier = Modifier.then(intoTracks).focusRequester(menuKey).width(64.s).fillMaxSize(),
-                        ) {
-                            Glyph(Fa.BARS, 17.ts, Ink.Words)
-                        }
+                    DeskButton(
+                        onClick = {
+                            menu.open(
+                                title = pageMenuTitle,
+                                choices = pageChoices(page, queue, collection, marks.isFavouriteOf(album), stars, actions),
+                                returnTo = menuKey,
+                            )
+                        },
+                        corner = SIDE_KEY / 2,
+                        modifier = Modifier.then(intoTracks).focusRequester(menuKey).size(SIDE_KEY),
+                    ) {
+                        Glyph(Fa.BARS, 19.ts, Ink.Words)
                     }
                 }
                 if (page is PageOf.OfAlbum) {
@@ -492,6 +512,12 @@ private val TOP = 108.px
 private val BOTTOM = 44.px
 private val COUNT = Color(0xB0FFFFFF)
 private val KEY_FILL = Color(0x2BFFFFFF)
+
+/** The round Play key on the record page. */
+private val PLAY_EDGE get() = 64.s
+
+/** Shuffle and the menu beside Play: their marks alone, in a square that takes the focus. */
+private val SIDE_KEY get() = 56.s
 /** One turn of the label on the record page. */
 private const val RECORD_TURN_SECONDS = 4f
 

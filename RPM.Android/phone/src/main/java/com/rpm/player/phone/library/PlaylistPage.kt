@@ -79,7 +79,7 @@ import com.rpm.player.core.library.PlaylistFeatures
 import com.rpm.player.core.library.TrackList
 import com.rpm.player.core.library.isExplicit
 import com.rpm.player.phone.design.ExplicitMark
-import com.rpm.player.core.library.moodSentence
+import com.rpm.player.core.library.listAbout
 import com.rpm.player.phone.design.BackKey
 import com.rpm.player.phone.design.HoldsPageColour
 import com.rpm.player.phone.design.PageColour
@@ -228,7 +228,7 @@ fun PlaylistPage(
         val header: @Composable (Dp) -> Unit = { edge ->
                     val empty = order.isEmpty()
                     val sleeve = picture ?: order.firstOrNull()?.let(coverOf)
-                    ListHead(name, sleeve, holding(order.size, seconds(order), missing), about(order, blurb), if (blurb == null) 2 else 3, images, edge, top, framed, drifts = true, keysFirst = square) {
+                    ListHead(name, sleeve, holding(order.size, seconds(order), missing), listAbout(order, blurb), if (blurb == null) 2 else 3, images, edge, top, framed, drifts = true, keysFirst = square) {
                         // Shuffle, then Play in the middle in a glass circle, then the download key, as on the album page.
                         // A list with no download key keeps its place empty, so Play stays in the middle of the page.
                         // Adding and rearranging are in the menu.
@@ -449,24 +449,6 @@ internal fun ListHead(
 /** On a square screen, the height a list's column needs besides its picture: the space above it, a one-line name, the
  *  chip, the keys and a margin under them. Measured on the Titan. A longer name pushes the keys down. */
 private val SQUARE_UNDER_LIST_PICTURE = 196.dp
-
-/**
- * A mood's sentence, then the artists that most of the songs are by, for example "Featuring Blur, Pulp and
- * 4 more". Null if there is neither.
- */
-@Composable
-private fun about(tracks: List<CloudTrack>, mood: MoodLine?): String? {
-    val blurb = mood?.let { moodSentence(it) }
-    val featured = remember(tracks) { PlaylistFeatures.of(tracks.map { it.artist }, PlaylistFeatures.NAMED) }
-    if (featured.named.isEmpty()) return blurb
-    val names = featured.named.joinToString(", ")
-    val featuring = if (featured.more > 0) {
-        stringResource(R.string.Playlists_FeaturingMore, names, featured.more)
-    } else {
-        stringResource(R.string.Playlists_Featuring, names)
-    }
-    return if (blurb == null) featuring else "$blurb $featuring"
-}
 
 /**
  * One song: the playing mark in the margin, the cover of its record, the title (with an E after it for

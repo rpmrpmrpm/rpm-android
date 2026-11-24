@@ -3,8 +3,10 @@ package com.rpm.player.core.library
 import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import com.rpm.player.core.R
+import com.rpm.player.core.cloud.CloudTrack
 
 /** What a list is called on screen: the app's word for a mood, a decade by its number, or the name the
  * list was given. */
@@ -40,6 +42,25 @@ fun moodSentence(line: MoodLine): String {
         Mood.NewYearsEve -> stringResource(R.string.Playlists_BlurbNewYearsEve)
         Mood.Christmas -> stringResource(R.string.Playlists_BlurbChristmas)
     }
+}
+
+/**
+ * What a list is and who is on it, under its name on its page: a mood's sentence, then the artists that most of the
+ * songs are by, for example "Featuring Blur, Pulp and 4 more". Null if there is neither. The phone's and the TV's
+ * list pages both show it (`PlaylistFeatures.line` on the iPhone and the Apple TV).
+ */
+@Composable
+fun listAbout(tracks: List<CloudTrack>, mood: MoodLine?): String? {
+    val blurb = mood?.let { moodSentence(it) }
+    val featured = remember(tracks) { PlaylistFeatures.of(tracks.map { it.artist }, PlaylistFeatures.NAMED) }
+    if (featured.named.isEmpty()) return blurb
+    val names = featured.named.joinToString(", ")
+    val featuring = if (featured.more > 0) {
+        stringResource(R.string.Playlists_FeaturingMore, names, featured.more)
+    } else {
+        stringResource(R.string.Playlists_Featuring, names)
+    }
+    return if (blurb == null) featuring else "$blurb $featuring"
 }
 
 /** "rock", "rock and pop", "rock, pop and jazz". The last join is a localised template because only some
