@@ -1,6 +1,7 @@
 package com.rpm.player.phone.design
 
 import androidx.compose.ui.graphics.Color
+import com.rpm.player.phone.ui.Ground
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -19,6 +20,20 @@ class AppColourTest {
             assertNull(stored, AppColour.value(stored))
             assertNull(stored, AppColour.colour(stored))
         }
+    }
+
+    /** The glass is white frost unless the person picks a colour, on every background. */
+    @Test fun nothingStoredIsNoColour() {
+        for (ground in Ground.entries) assertNull(ground.name, AppColour.glass("", ground))
+        assertNull(AppColour.glass("none", Ground.Standard))
+    }
+
+    /** The background's colour follows the background, and a colour stays the same on every background. */
+    @Test fun theBackgroundsColourFollowsTheBackground() {
+        assertEquals(0x2563EBL, AppColour.glass(AppColour.MATCHES_BACKGROUND, Ground.Standard))
+        assertEquals(0xD12A4EL, AppColour.glass(AppColour.MATCHES_BACKGROUND, Ground.Pegasus))
+        assertEquals(0x8E939BL, AppColour.glass(AppColour.MATCHES_BACKGROUND, Ground.Graphite))
+        for (ground in Ground.entries) assertEquals(ground.name, 0x0E9F95L, AppColour.glass("#0E9F95", ground))
     }
 
     @Test fun aColourIsWrittenAsTheBadgeWritesIt() {
