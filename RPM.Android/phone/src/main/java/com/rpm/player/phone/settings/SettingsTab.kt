@@ -82,6 +82,7 @@ fun SettingsTab(
         onDownloads = onDownloads,
         ground = Ground.standing(settings.backdrop, settings.isGold),
         isGold = settings.isGold,
+        isSupporter = settings.isSupporter,
         onGround = { settings.changeBackdrop(it.id) },
         nightMode = settings.nightMode,
         onNightMode = settings::changeNightMode,

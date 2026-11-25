@@ -504,9 +504,20 @@ class PhoneSettings(context: Context) {
     var isGold by mutableStateOf(prefs.getBoolean(KEY_GOLD, false))
         private set
 
-    /** What the cloud just said about the account, kept for the next launch. */
+    /**
+     * Whether the account has the supporter features, as the cloud last said (the iPhone's `SupporterPlan`). The colour
+     * of the app's glass follows it ([com.rpm.player.phone.design.AppColour]). It starts from the note the last launch
+     * kept, so a supporter's colour is there on the first frame, and then takes every answer at once, unlike [isGold]:
+     * a colour is a light wash over the glass, and a person who has just become a supporter should see the colour they
+     * pick without opening the app again. A plan read that failed is no answer and changes nothing.
+     */
+    var isSupporter by mutableStateOf(prefs.getBoolean(KEY_GOLD, false))
+        private set
+
+    /** What the cloud just said about the account: kept for the next launch, and used now by [isSupporter]. */
     fun rememberSupporter(isSupporter: Boolean) {
         prefs.edit().putBoolean(KEY_GOLD, isSupporter).apply()
+        this.isSupporter = isSupporter
     }
 
     /** The plan of the account, read at a sign-in: used now, and kept for the next launch. */

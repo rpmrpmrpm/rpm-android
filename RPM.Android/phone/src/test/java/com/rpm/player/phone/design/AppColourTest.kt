@@ -24,16 +24,24 @@ class AppColourTest {
 
     /** The glass is white frost unless the person picks a colour, on every background. */
     @Test fun nothingStoredIsNoColour() {
-        for (ground in Ground.entries) assertNull(ground.name, AppColour.glass("", ground))
-        assertNull(AppColour.glass("none", Ground.Standard))
+        for (ground in Ground.entries) assertNull(ground.name, AppColour.glass("", ground, supporter = true))
+        assertNull(AppColour.glass("none", Ground.Standard, supporter = true))
     }
 
     /** The background's colour follows the background, and a colour stays the same on every background. */
     @Test fun theBackgroundsColourFollowsTheBackground() {
-        assertEquals(0x2563EBL, AppColour.glass(AppColour.MATCHES_BACKGROUND, Ground.Standard))
-        assertEquals(0xD12A4EL, AppColour.glass(AppColour.MATCHES_BACKGROUND, Ground.Pegasus))
-        assertEquals(0x8E939BL, AppColour.glass(AppColour.MATCHES_BACKGROUND, Ground.Graphite))
-        for (ground in Ground.entries) assertEquals(ground.name, 0x0E9F95L, AppColour.glass("#0E9F95", ground))
+        assertEquals(0x2563EBL, AppColour.glass(AppColour.MATCHES_BACKGROUND, Ground.Standard, supporter = true))
+        assertEquals(0xD12A4EL, AppColour.glass(AppColour.MATCHES_BACKGROUND, Ground.Pegasus, supporter = true))
+        assertEquals(0x8E939BL, AppColour.glass(AppColour.MATCHES_BACKGROUND, Ground.Graphite, supporter = true))
+        for (ground in Ground.entries) assertEquals(ground.name, 0x0E9F95L, AppColour.glass("#0E9F95", ground, supporter = true))
+    }
+
+    /** A colour is a supporter feature: for anyone else every choice is no colour, on every background. */
+    @Test fun anAccountThatIsNotASupportersShowsNoColour() {
+        for (ground in Ground.entries) {
+            assertNull(ground.name, AppColour.glass("#0E9F95", ground, supporter = false))
+            assertNull(ground.name, AppColour.glass(AppColour.MATCHES_BACKGROUND, ground, supporter = false))
+        }
     }
 
     @Test fun aColourIsWrittenAsTheBadgeWritesIt() {

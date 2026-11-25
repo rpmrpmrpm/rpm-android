@@ -169,7 +169,7 @@ fun Welcome(
                         Backdrops(settings)
                         BackdropVeilSliders()
                         // The colour of the app's glass, between the sliders and the cover corners, as on iPhone.
-                        AppColourChoice()
+                        AppColourChoice(settings.isSupporter)
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             BasicText(stringResource(R.string.Settings_CoverCorners), style = kicker())
                             CoverCornerSlider()

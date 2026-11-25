@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
@@ -74,6 +75,10 @@ import kotlinx.coroutines.withContext
  * iPhone's values (its `GlassColour`): empty for no colour, [MATCHES_BACKGROUND] for the background's colour, or
  * `#RRGGBB` (the badge's own form). Anything else is no colour, so a value this version does not know shows the frost.
  *
+ * **The person's colour is a supporter feature.** For anyone else the glass has no colour whatever is stored, and the
+ * bubbles are greyed out with the reason under them. The plan is [com.rpm.player.phone.PhoneSettings.isSupporter],
+ * which changes at once when the account becomes a supporter.
+ *
  * **An album, a playlist or the player on screen colours the glass with its cover** while it is shown ([PageColour]).
  * That colour comes before the person's. What the glass is drawn in now is [GlassTint], which fades between the two.
  */
@@ -110,11 +115,21 @@ object AppColour {
 
     private var loaded = false
 
-    /** The colour the choice gives on [ground], or null for no colour. */
-    fun chosen(ground: Ground): Color? = glass(stored, ground)?.let { Color(0xFF000000 or it) }
+    /** The colour the choice gives on [ground], or null for no colour. Null for an account that is not a supporter's. */
+    fun chosen(ground: Ground, supporter: Boolean): Color? = glass(stored, ground, supporter)?.let { Color(0xFF000000 or it) }
 
-    /** The colour [stored] gives the glass on [ground], as 0xRRGGBB, or null for no colour. */
-    fun glass(stored: String, ground: Ground): Long? = if (stored == MATCHES_BACKGROUND) theme(ground) else value(stored)
+    /**
+     * The colour [stored] gives the glass on [ground], as 0xRRGGBB, or null for no colour.
+     *
+     * @param supporter whether the account has the supporter features
+     *   ([com.rpm.player.phone.PhoneSettings.isSupporter]). A colour is a supporter feature, so for anyone else every
+     *   choice is no colour. The choice stays stored, and it comes back if the account becomes a supporter.
+     */
+    fun glass(stored: String, ground: Ground, supporter: Boolean): Long? = when {
+        !supporter -> null
+        stored == MATCHES_BACKGROUND -> theme(ground)
+        else -> value(stored)
+    }
 
     /** Reads the stored choice once. The settings file is the one [com.rpm.player.phone.PhoneSettings] keeps. */
     fun load(context: Context) {
@@ -227,11 +242,15 @@ object GlassTint {
     private val EASE_OUT = CubicBezierEasing(0f, 0f, 0.58f, 1f)
 }
 
-/** Follows the colour the glass should be in ([GlassTint]). The root draws it once, for the whole app. */
+/**
+ * Follows the colour the glass should be in ([GlassTint]). The root draws it once, for the whole app.
+ *
+ * @param supporter [com.rpm.player.phone.PhoneSettings.isSupporter]: the person's colour is a supporter feature.
+ */
 @Composable
-fun GlassColourFade() {
+fun GlassColourFade(supporter: Boolean) {
     AppColour.load(LocalContext.current)
-    val chosen = AppColour.chosen(LocalGround.current)
+    val chosen = AppColour.chosen(LocalGround.current, supporter)
     GlassTint.start(chosen)
     val target = PageColour.current ?: chosen
     LaunchedEffect(target) { GlassTint.fadeTo(target) }
@@ -305,39 +324,54 @@ private val GLASS = LruCache<Any, Tinted>(64)
 /**
  * The round colour bubbles, as the profile page draws them for the badge: no colour first, then the background's own
  * colour, then each colour offered. The one chosen has a thick white ring (the iPhone's `AppColourBubbles`).
+ *
+ * For an account that is not a supporter's, the bubbles are greyed out and cannot be tapped, and the reason is under
+ * them. No colour shows as chosen then, whatever is stored, because that is what the glass shows. The row still
+ * scrolls, so all the colours can be seen.
+ *
+ * @param supporter [com.rpm.player.phone.PhoneSettings.isSupporter], the same value the glass reads ([GlassColourFade]),
+ *   so a bubble is never open for a colour the glass would not show.
  */
 @Composable
-fun AppColourBubbles() {
+fun AppColourBubbles(supporter: Boolean) {
     val context = LocalContext.current
     val haptics = rememberHaptics()
     AppColour.load(context)
-    val stored = AppColour.stored
+    // The choice in use: the stored one for a supporter, else no colour.
+    val stored = if (supporter) AppColour.stored else ""
     val matchesBackground = stored == AppColour.MATCHES_BACKGROUND
     val chosen = AppColour.value(stored)
-    Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Bubble(null, picked = !matchesBackground && chosen == null) {
-            haptics.pick()
-            AppColour.choose(context, "")
-        }
-        ThemeBubble(Color(0xFF000000 or AppColour.theme(LocalGround.current)), picked = matchesBackground) {
-            haptics.pick()
-            AppColour.choose(context, AppColour.MATCHES_BACKGROUND)
-        }
-        for (value in AppColour.offered) {
-            Bubble(value, picked = chosen == value) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(vertical = 2.dp)
+                .alpha(if (supporter) 1f else 0.35f),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Bubble(null, picked = !matchesBackground && chosen == null, enabled = supporter) {
                 haptics.pick()
-                AppColour.choose(context, AppColour.wire(value))
+                AppColour.choose(context, "")
+            }
+            ThemeBubble(Color(0xFF000000 or AppColour.theme(LocalGround.current)), picked = matchesBackground, enabled = supporter) {
+                haptics.pick()
+                AppColour.choose(context, AppColour.MATCHES_BACKGROUND)
+            }
+            for (value in AppColour.offered) {
+                Bubble(value, picked = chosen == value, enabled = supporter) {
+                    haptics.pick()
+                    AppColour.choose(context, AppColour.wire(value))
+                }
             }
         }
+        if (!supporter) BasicText(stringResource(R.string.Supporters_Colour), style = display(11f).copy(color = Ink.white(0x88)))
     }
 }
 
 /** The background's own colour, with the palette mark on it: the glass follows the background. */
 @Composable
-private fun ThemeBubble(colour: Color, picked: Boolean, onClick: () -> Unit) {
+private fun ThemeBubble(colour: Color, picked: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val label = stringResource(R.string.Settings_ColourTheme)
     Box(
         Modifier
@@ -345,7 +379,7 @@ private fun ThemeBubble(colour: Color, picked: Boolean, onClick: () -> Unit) {
             .clip(CircleShape)
             .background(colour)
             .border(if (picked) 3.dp else 1.dp, Ink.white(if (picked) 0xF2 else 0x44), CircleShape)
-            .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.RadioButton, onClick = onClick)
+            .clickable(remember { MutableInteractionSource() }, indication = null, enabled = enabled, role = Role.RadioButton, onClick = onClick)
             .semantics {
                 contentDescription = label
                 selected = picked
@@ -358,7 +392,7 @@ private fun ThemeBubble(colour: Color, picked: Boolean, onClick: () -> Unit) {
 
 /** One bubble. Null is no colour: the app's own frost, with a line across it. */
 @Composable
-private fun Bubble(value: Long?, picked: Boolean, onClick: () -> Unit) {
+private fun Bubble(value: Long?, picked: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val label = if (value == null) stringResource(R.string.Settings_ColourNone) else AppColour.wire(value)
     Box(
         Modifier
@@ -366,7 +400,7 @@ private fun Bubble(value: Long?, picked: Boolean, onClick: () -> Unit) {
             .clip(CircleShape)
             .background(if (value == null) Ink.white(0x24) else Color(0xFF000000 or value))
             .border(if (picked) 3.dp else 1.dp, Ink.white(if (picked) 0xF2 else 0x44), CircleShape)
-            .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.RadioButton, onClick = onClick)
+            .clickable(remember { MutableInteractionSource() }, indication = null, enabled = enabled, role = Role.RadioButton, onClick = onClick)
             .semantics {
                 contentDescription = label
                 selected = picked
@@ -377,11 +411,11 @@ private fun Bubble(value: Long?, picked: Boolean, onClick: () -> Unit) {
     }
 }
 
-/** The colour's kicker and its bubbles, for the welcome's look step, under the backdrops. */
+/** The colour's kicker and its bubbles, for the welcome's look step, under the backdrops. See [AppColourBubbles]. */
 @Composable
-fun AppColourChoice() {
+fun AppColourChoice(supporter: Boolean) {
     Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         BasicText(stringResource(R.string.Settings_Colour), style = kicker())
-        AppColourBubbles()
+        AppColourBubbles(supporter)
     }
 }

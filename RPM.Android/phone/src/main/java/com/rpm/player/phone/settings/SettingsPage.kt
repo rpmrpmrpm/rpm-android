@@ -180,6 +180,7 @@ enum class SettingsSection(val stored: String, @StringRes val label: Int, val gl
  * @param onDeleteAccount deletes the account and signs out. Returns null when done, and a sentence when it failed.
  * @param karaoke the Karaoke lyrics switch as stored. It shows off, and cannot be changed, for an account that is not a
  * supporter's.
+ * @param isSupporter [com.rpm.player.phone.PhoneSettings.isSupporter]: the colour bubbles are greyed out without it.
  * @param bottomRoom how much of the bottom of the screen the chrome covers.
  */
 @Composable
@@ -204,6 +205,7 @@ fun SettingsPage(
     onDownloads: (() -> Unit)?,
     ground: Ground,
     isGold: Boolean,
+    isSupporter: Boolean,
     onGround: (Ground) -> Unit,
     nightMode: Boolean,
     onNightMode: (Boolean) -> Unit,
@@ -273,7 +275,7 @@ fun SettingsPage(
                         }
                         SettingsSection.Appearance -> {
                             cards.Backdrops(ground, isGold, onGround, nightMode, onNightMode, discStandIn, onDiscStandIn)
-                            cards.Colour()
+                            cards.Colour(isSupporter)
                             CoverCornerCard()
                             cards.Player(playerBars, onPlayerBars)
                             cards.Landscape(landscapePlayer, onLandscapePlayer)
@@ -549,10 +551,13 @@ private class Cards(
         }
     }
 
-    /** The colour of the app's glass: the profile badge's colours as bubbles, no colour first ([AppColour]). */
+    /**
+     * The colour of the app's glass: the profile badge's colours as bubbles, no colour first ([AppColour]). Greyed out,
+     * with the reason, for an account that is not a supporter's ([AppColourBubbles]).
+     */
     @Composable
-    fun Colour() {
-        Card(Glyph.palette, stringResource(R.string.Settings_Colour)) { AppColourBubbles() }
+    fun Colour(supporter: Boolean) {
+        Card(Glyph.palette, stringResource(R.string.Settings_Colour)) { AppColourBubbles(supporter) }
     }
 
     /** The player's look: whether the bars beside the cover move with the music. */
