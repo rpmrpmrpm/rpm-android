@@ -6,18 +6,19 @@ import java.util.Locale
 
 /**
  * How the admin changed the way one station is shown (`StationEdit` on the desktop, in RPM.Core): its
- * title, its tags and the line on its banner card. Each value is null where the station's own is used.
- * [tags] replace the directory's for genres only; the ads rule reads the directory's own.
+ * title, its tags, the line on its banner card, and whether it carries advertising. Each value is null where the
+ * station's own is used. [tags] replace the directory's for genres only; the ads rule reads the directory's own,
+ * and [ads] overrides that rule ([RadioStation.carriesAds]).
  */
-data class StationEdit(val name: String?, val tags: List<String>?, val description: String?) {
+data class StationEdit(val name: String?, val tags: List<String>?, val description: String?, val ads: Boolean? = null) {
     companion object {
         /** The edit with blank values as null and tags read as the directory's are, or null when
          * nothing is left of it. */
-        fun of(name: String?, tags: List<String>?, description: String?): StationEdit? {
+        fun of(name: String?, tags: List<String>?, description: String?, ads: Boolean? = null): StationEdit? {
             val title = name?.trim()?.takeIf { it.isNotEmpty() }
             val tagged = tags?.map { it.trim().lowercase() }?.filter { it.isNotEmpty() }?.distinct()?.takeIf { it.isNotEmpty() }
             val line = description?.trim()?.takeIf { it.isNotEmpty() }
-            return if (title == null && tagged == null && line == null) null else StationEdit(title, tagged, line)
+            return if (title == null && tagged == null && line == null && ads == null) null else StationEdit(title, tagged, line, ads)
         }
     }
 }
@@ -62,6 +63,10 @@ data class RadioStation(
     /** The tags the station is filed under for genres: the admin's where they set some, else the
      * directory's. */
     val shownTags: List<String> get() = edit?.tags ?: tags
+
+    /** Whether the station carries advertising: what the admin said where they said it, else the ads rule on the
+     * directory's own tags, name and website ([RadioAds]). Every AD mark and the ads filter read this. */
+    val carriesAds: Boolean get() = edit?.ads ?: RadioAds.carriesAds(tags, name, homepage)
 
     /** "MP3 128k", "AAC", or null when the directory names neither. */
     val quality: String?

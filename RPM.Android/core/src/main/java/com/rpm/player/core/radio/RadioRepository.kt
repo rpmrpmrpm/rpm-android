@@ -223,7 +223,7 @@ class RadioRepository(
                     hidden = wire.hidden.map { it.lowercase() }.toSet(),
                     logoStamp = wire.logos,
                     edits = wire.edits.mapNotNull { (uuid, e) ->
-                        StationEdit.of(e.name, e.tags, e.description)?.let { uuid.trim().lowercase() to it }
+                        StationEdit.of(e.name, e.tags, e.description, e.ads)?.let { uuid.trim().lowercase() to it }
                     }.toMap(),
                     cards = StationCards(wire.cards.map { it.trim().lowercase() }.toSet(), wire.cardStamp),
                 )
@@ -261,9 +261,15 @@ class RadioRepository(
         val cardStamp: String = "",
     )
 
-    /** One station's edit as the API sends it; null values are the directory's own. */
+    /** One station's edit as the API sends it; null values are the directory's own. [ads] is true for a station
+     * that carries advertising and false for one that does not; the API leaves it out when the admin did not set it. */
     @Serializable
-    private data class EditWire(val name: String? = null, val tags: List<String>? = null, val description: String? = null)
+    private data class EditWire(
+        val name: String? = null,
+        val tags: List<String>? = null,
+        val description: String? = null,
+        val ads: Boolean? = null,
+    )
 
     companion object {
         /** The desktop's `RadioEssentialCount`: twelve cards, asked for four times over so folding and

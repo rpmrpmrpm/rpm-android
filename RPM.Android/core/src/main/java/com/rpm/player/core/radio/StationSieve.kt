@@ -17,11 +17,12 @@ data class StationSieve(val format: String?, val genre: String?, val ads: AdsWan
 
     fun keeps(station: RadioStation): Boolean {
         if (format != null && !isFormat(station.codec, format)) return false
-        // The admin's tags where they set some. The ads rule below keeps the directory's own.
+        // The admin's tags where they set some. The ads read the admin's mark, else the rule on the directory's own
+        // tags (RadioStation.carriesAds).
         if (genre != null && !RadioGenres.isGenre(RadioNames.genres(station.shownTags), genre)) return false
         return when (ads) {
-            AdsWanted.With -> RadioAds.carriesAds(station.tags, station.name, station.homepage)
-            AdsWanted.Without -> !RadioAds.carriesAds(station.tags, station.name, station.homepage)
+            AdsWanted.With -> station.carriesAds
+            AdsWanted.Without -> !station.carriesAds
             AdsWanted.Either -> true
         }
     }

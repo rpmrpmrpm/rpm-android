@@ -42,6 +42,26 @@ class StationEditsTest {
     }
 
     @Test
+    fun `the admin's ads mark wins over the rule`() {
+        // Tagged commercial, so the rule marks it; the admin says it carries none.
+        val marked = station("a", "Radio X", tags = listOf("commercial"))
+        assertTrue(marked.carriesAds)
+        assertTrue(!marked.copy(edit = StationEdit(null, null, null, ads = false)).carriesAds)
+
+        // Says nothing, so the rule does not mark it; the admin says it carries ads.
+        val quiet = station("b", "Radio Y")
+        assertTrue(!quiet.carriesAds)
+        val told = quiet.copy(edit = StationEdit(null, null, null, ads = true))
+        assertTrue(told.carriesAds)
+        assertTrue(StationSieve(null, null, AdsWanted.With).keeps(told))
+    }
+
+    @Test
+    fun `an edit of only the ads is kept`() {
+        assertEquals(true, StationEdit.of(null, null, null, ads = true)?.ads)
+    }
+
+    @Test
     fun `a station with no edit is handed back as it was`() {
         val plain = station("a", "X")
         assertSame(plain, StationRules.NONE.edited(plain))

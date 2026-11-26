@@ -80,7 +80,6 @@ import coil3.ImageLoader
 import com.rpm.player.core.R
 import com.rpm.player.core.radio.AdsWanted
 import com.rpm.player.core.radio.Icy
-import com.rpm.player.core.radio.RadioAds
 import com.rpm.player.core.radio.RadioGenres
 import com.rpm.player.core.radio.RadioRepository
 import com.rpm.player.core.radio.RadioStation
@@ -649,7 +648,7 @@ private fun TunerRow(
                         Lamp(station.reachable, r)
                         Spacer(Modifier.width((5f * r).s))
                         Text(station.display, style = ui((13f * r).ts), color = Color(0xEEFFFFFF), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                        if (RadioAds.carriesAds(station.tags, station.name, station.homepage)) {
+                        if (station.carriesAds) {
                             Spacer(Modifier.width((5f * r).s))
                             AdsBadge(r)
                         }
