@@ -78,7 +78,7 @@ fun SupporterNudgeWatch(services: Services, settings: PhoneSettings, idle: Boole
         // Null while the plan is not read, and after a read that failed. Null is "not known", never "free".
         val quota = withTimeoutOrNull(NUDGE_WAITS_FOR_PLAN_MS) { services.ownFace.quota.first { it != null } }
         nudgeSettled = true
-        if (SupporterNudge.due(launch, quota?.wearsMark)) onDue()
+        if (SupporterNudge.due(launch, quota?.let { SupporterNudge.Plan.of(it.supporter, it.tester) })) onDue()
     }
 }
 

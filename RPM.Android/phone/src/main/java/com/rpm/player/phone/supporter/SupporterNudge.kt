@@ -1,22 +1,52 @@
 package com.rpm.player.phone.supporter
 
 /**
- * When the supporter pop-up ([SupporterNudgeCard]) asks a listener to become a supporter: on every [EVERY]th launch that
- * reaches the signed-in app, and only for an account that does not pay. The iPhone's `SupporterNudge` has the same rule.
+ * When the supporter pop-up ([SupporterNudgeCard]) asks a listener to become a supporter, counted in launches that
+ * reach the signed-in app: every [EVERY]th launch for an account that does not pay, every [EVERY_FOR_TESTERS]th for a
+ * closed beta tester, and never for a paying supporter. The iPhone's `SupporterNudge` has the same rule.
  */
 object SupporterNudge {
-    /** The pop-up is due on launch 50, 100, 150 and so on. */
+    /** What the account has, as far as the pop-up is concerned. */
+    enum class Plan {
+        /** A paying supporter. Never asked. */
+        Pays,
+
+        /** A closed beta tester: the supporter features without paying. Asked less often. */
+        Tester,
+
+        /** Neither. */
+        Free;
+
+        companion object {
+            /** The plan from the account's quota (`CloudQuota.supporter` and `tester`). A tester is a tester whatever
+             * the supporter flag says. */
+            fun of(supporter: Boolean, tester: Boolean): Plan = when {
+                tester -> Tester
+                supporter -> Pays
+                else -> Free
+            }
+        }
+    }
+
+    /** The pop-up is due on launch 50, 100, 150 and so on for an account that does not pay. */
     const val EVERY = 50
 
-    /** Whether launch number [launch] (the first launch is 1) is one that may show the pop-up. */
+    /** The pop-up is due on launch 100, 200, 300 and so on for a closed beta tester. */
+    const val EVERY_FOR_TESTERS = 100
+
+    /** Whether launch number [launch] (the first launch is 1) is one that may show the pop-up to anybody. Every
+     * [EVERY_FOR_TESTERS]th launch is also an [EVERY]th one. */
     fun onLaunch(launch: Int): Boolean = launch > 0 && launch % EVERY == 0
 
     /**
      * Whether the pop-up shows on launch number [launch].
      *
-     * @param supporter whether the account pays for its support (`CloudQuota.wearsMark`), or null while that is not
-     * known. A closed beta tester does not pay, so is asked, as the settings page and the welcome offer it the
-     * subscription. Not known is never a yes: a supporter must never be asked.
+     * @param plan the account's plan, or null while it is not known. Not known is never a yes: a supporter must never
+     * be asked.
      */
-    fun due(launch: Int, supporter: Boolean?): Boolean = supporter == false && onLaunch(launch)
+    fun due(launch: Int, plan: Plan?): Boolean = launch > 0 && when (plan) {
+        Plan.Free -> launch % EVERY == 0
+        Plan.Tester -> launch % EVERY_FOR_TESTERS == 0
+        Plan.Pays, null -> false
+    }
 }
