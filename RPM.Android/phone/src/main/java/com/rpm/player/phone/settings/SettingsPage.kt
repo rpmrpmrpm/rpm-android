@@ -727,7 +727,7 @@ private class Cards(
      */
     @Composable
     fun Playback(onWifi: Int, onCellular: Int, rates: Rates, savesData: Boolean, quota: CloudQuota?, karaoke: Boolean, onKaraoke: (Boolean) -> Unit) {
-        Card(Glyph.speaker, stringResource(R.string.Rpm_Profile_Playback)) {
+        Card(Glyph.speaker, stringResource(R.string.Rpm_Profile_PlaybackQuality)) {
             Rate(stringResource(R.string.Rpm_Profile_QualityWifi), onWifi, rates.onWifi)
             Rate(stringResource(R.string.Rpm_Profile_QualityCellular), onCellular, rates.onCellular)
             // Next to the settings, and only while it applies: Data Saver overrides both menus.
