@@ -52,32 +52,51 @@ import com.rpm.player.phone.design.Ink
 import com.rpm.player.phone.design.Weight
 import com.rpm.player.phone.design.display
 import com.rpm.player.phone.design.displayBold
+import com.rpm.player.phone.design.kicker
 import com.rpm.player.phone.ui.RecordSpinner
 import kotlinx.coroutines.launch
 
+/** What the name card is for. The title, the key that saves and the line under the box say which. */
+sealed interface NameErrand {
+    /** Another name for a playlist that exists. The box starts with [name], the playlist's name now. */
+    data class Rename(val name: String) : NameErrand
+
+    /** A new playlist, made in [folder] (outermost first; empty is the top of the tree). The box starts empty. */
+    data class Make(val folder: List<String>) : NameErrand
+}
+
 /**
- * The card over a playlist page where the playlist's name is changed: Edit playlist in the page's menu. It matches the
- * iPhone's `PlaylistNameSheet` (RPMUI/PlaylistNameSheet.swift), and is drawn over the page as the review sheet
- * ([WriteReviewSheet]) is, with the app's own look: a dimmed screen, a glass card 330 dp wide, the name in a well,
- * Cancel and Save under it.
+ * The card where a playlist's name is typed. It matches the iPhone's `PlaylistNameSheet`
+ * (RPMUI/PlaylistNameSheet.swift), and is drawn as the review sheet ([WriteReviewSheet]) is, with the app's own look:
+ * a dimmed screen, a glass card 330 dp wide, the name in a well, Cancel and the key that saves (Save or Create) under it.
  *
- * The box starts with the playlist's name, the cursor after it, and the keyboard up. Save is offered only while the
- * box holds more than spaces. While the store answers, Save turns, and nothing else can be pressed; a failure stays on
- * the card in a line over the keys, and a name that was written closes it.
+ * It serves two screens: Edit playlist in a playlist page's menu ([NameErrand.Rename]), and New playlist in the
+ * playlist picker ([NameErrand.Make]), which makes the playlist with the song being filed in it.
  *
- * @param name the name the box starts with: the playlist's name now.
+ * The cursor is after the name and the keyboard is up. The key that saves is offered only while the box holds more
+ * than spaces. While the store answers, the key turns, and nothing else can be pressed; a failure stays on the card in
+ * a line over the keys.
+ *
  * @param backdrop what the card's glass blurs: the page under it.
  * @param bottomRoom how much of the foot of the screen the chrome covers. The card is centred above it.
- * @param onSave writes the new name. It answers why it failed, or null when it is done.
+ * @param onSave writes the name. It answers why it failed, or null when it is done.
+ * @param onSaved called after [onSave] answered null. The picker closes itself here, and not in [onCancel], which
+ * takes the person back to the list of playlists.
+ * @param onCancel called when the card is put away without saving: Cancel, Back, or a tap outside the card.
  */
 @Composable
 fun PlaylistNameSheet(
-    name: String,
+    errand: NameErrand,
     backdrop: Backdrop,
     bottomRoom: Dp,
     onSave: suspend (String) -> String?,
-    onClose: () -> Unit,
+    onSaved: () -> Unit,
+    onCancel: () -> Unit,
 ) {
+    val name = when (errand) {
+        is NameErrand.Rename -> errand.name
+        is NameErrand.Make -> ""
+    }
     var typed by remember { mutableStateOf(TextFieldValue(name, TextRange(name.length))) }
     var busy by remember { mutableStateOf(false) }
     var said by remember { mutableStateOf<String?>(null) }
@@ -85,7 +104,7 @@ fun PlaylistNameSheet(
     val focus = LocalFocusManager.current
     val typing = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
-    BackHandler { if (!busy) onClose() }
+    BackHandler { if (!busy) onCancel() }
     LaunchedEffect(Unit) { typing.requestFocus() }
 
     fun save() {
@@ -96,7 +115,7 @@ fun PlaylistNameSheet(
         scope.launch {
             val trouble = onSave(typed.text)
             busy = false
-            if (trouble == null) onClose() else said = trouble
+            if (trouble == null) onSaved() else said = trouble
         }
     }
 
@@ -104,7 +123,7 @@ fun PlaylistNameSheet(
         Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0xB3 / 255f))
-            .clickable(remember { MutableInteractionSource() }, indication = null) { if (!busy) onClose() }
+            .clickable(remember { MutableInteractionSource() }, indication = null) { if (!busy) onCancel() }
             .statusBarsPadding()
             .padding(bottom = bottomRoom)
             .imePadding(),
@@ -119,7 +138,11 @@ fun PlaylistNameSheet(
             radius = 18.dp,
         ) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                BasicText(stringResource(R.string.Rpm_PlaylistMenu_Edit), style = displayBold(19f).copy(color = Color.White))
+                val title = when (errand) {
+                    is NameErrand.Rename -> R.string.Rpm_PlaylistMenu_Edit
+                    is NameErrand.Make -> R.string.Playlists_NewPlaylist
+                }
+                BasicText(stringResource(title), style = displayBold(19f).copy(color = Color.White))
                 val well = RoundedCornerShape(10.dp)
                 BasicTextField(
                     typed,
@@ -143,9 +166,13 @@ fun PlaylistNameSheet(
                         }
                     },
                 )
+                // Where a new playlist goes. At the top of the tree there is nothing to say.
+                if (errand is NameErrand.Make && errand.folder.isNotEmpty()) {
+                    BasicText(stringResource(R.string.Rpm_NewPlaylist_In, errand.folder.joinToString(" / ")), style = kicker())
+                }
                 said?.let { BasicText(it, style = display(12f).copy(color = Color(0xFFFFB4A0))) }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    GlassButton(onClick = onClose, modifier = Modifier.weight(1f), enabled = !busy, height = 42.dp, radius = 10.dp, size = 14f) { style ->
+                    GlassButton(onClick = onCancel, modifier = Modifier.weight(1f), enabled = !busy, height = 42.dp, radius = 10.dp, size = 14f) { style ->
                         BasicText(stringResource(R.string.Common_Cancel), style = style)
                     }
                     GlassButton(
@@ -157,7 +184,11 @@ fun PlaylistNameSheet(
                         radius = 10.dp,
                         size = 14f,
                     ) { style ->
-                        if (busy) RecordSpinner(18.dp) else BasicText(stringResource(R.string.ArtPlace_Save), style = style)
+                        val key = when (errand) {
+                            is NameErrand.Rename -> R.string.ArtPlace_Save
+                            is NameErrand.Make -> R.string.Rpm_NewPlaylist_Create
+                        }
+                        if (busy) RecordSpinner(18.dp) else BasicText(stringResource(key), style = style)
                     }
                 }
             }

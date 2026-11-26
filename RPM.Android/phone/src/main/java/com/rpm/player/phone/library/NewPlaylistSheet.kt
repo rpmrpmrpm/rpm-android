@@ -106,9 +106,6 @@ private val TROUBLE = Color(0xFFFFB4A0)
  * library's own search is. They are kept **in the order they were picked**, which is the playlist's order. Once a
  * song has been picked, a switch shows the picked songs instead of the results, to look them over and take some out.
  *
- * Another screen that offers "New playlist" (the song menu's pick sheet) opens this panel with [SheetErrand.Make]
- * and its own [commit].
- *
  * @param backdrop what the panel's glass blurs: the page under it.
  * @param bottomRoom how much of the foot of the screen the chrome covers. The panel stops above it, as the iPhone's
  * stops at the page's foot room, or above the keyboard while it is up, whichever is higher.

@@ -153,6 +153,26 @@ class PlaylistWriterTest {
 
     // ── starter tracks ──
 
+    // ── making ──
+
+    /**
+     * New playlist in the playlist picker makes one in the folder that is open, with the song being filed in it. The
+     * phone shows it at once, from the copy it wrote, under the store's own stamp.
+     */
+    @Test fun aNewPlaylistIsWrittenInItsFolderWithItsSongs() = runTest {
+        val store = Store()
+
+        assertNull(writer(store).make("  Road  ", listOf("Trips", "Summer"), listOf("a")))
+
+        val write = store.writes.single().second
+        assertEquals("Road", write.name)
+        assertEquals(listOf("Trips", "Summer"), write.folder)
+        assertEquals(listOf("a"), write.trackIds)
+        assertEquals("nothing may be stored under a new id", 0L, write.ifUnchangedSince)
+        val shown = edits.playlists.values.single()
+        assertEquals(CloudPlaylist(store.writes.single().first, "Road", listOf("a"), listOf("Trips", "Summer"), 12_345), shown)
+    }
+
     /** A starter track is not in the cloud, so a playlist never names one. */
     @Test fun aNewPlaylistLeavesTheStarterTracksOut() = runTest {
         val store = Store()

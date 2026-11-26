@@ -155,7 +155,7 @@ internal fun BoxScope.PlaylistCorner(
     OverChrome {
         AnimatedVisibility(naming && own != null, enter = fadeIn(tween(180)), exit = fadeOut(tween(180))) {
             val rename = own?.onRename ?: return@AnimatedVisibility
-            PlaylistNameSheet(name, page, bottomRoom, onSave = rename, onClose = { naming = false })
+            PlaylistNameSheet(NameErrand.Rename(name), page, bottomRoom, onSave = rename, onSaved = { naming = false }, onCancel = { naming = false })
         }
     }
     if (askingDelete && own != null) OverChrome {

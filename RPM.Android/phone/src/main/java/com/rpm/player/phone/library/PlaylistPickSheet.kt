@@ -88,10 +88,15 @@ import kotlinx.coroutines.launch
  * in a second copy. The write reads the store again, so a list that gained the song on another device a moment ago
  * answers "already in" rather than taking a second copy unasked.
  *
- * The iPhone's sheet has no entry for a new playlist, so neither has this one.
+ * **New playlist, the first row in every folder, makes a playlist with the song in it**, in the folder that is open.
+ * The name card ([PlaylistNameSheet]) asks for the name and takes the panel's place while it is up; Cancel on it comes
+ * back to the panel, as it was. The row is offered on this account's own shelf only: on another account's shelf a new
+ * playlist would belong to this account but name a record it does not have.
  *
  * @param onAdd adds the song to the list, a second copy only when `again` says so, and answers with what went wrong,
  * or null when it went in.
+ * @param onMake makes a playlist with its name, its folder and its songs, and answers with what went wrong, or null
+ * when it is made.
  */
 @Composable
 fun PlaylistPickSheet(
@@ -99,6 +104,7 @@ fun PlaylistPickSheet(
     collection: Collection,
     backdrop: Backdrop,
     onAdd: suspend (TrackList, CloudTrack, again: Boolean) -> String?,
+    onMake: suspend (name: String, folder: List<String>, tracks: List<CloudTrack>) -> String?,
     onClose: () -> Unit,
 ) {
     val own = collection.shelf == Shelf.Own
@@ -115,6 +121,9 @@ fun PlaylistPickSheet(
     // The list Add was pressed for, while the question about it is on screen. The list itself, not a flag: the person
     // confirms a second copy in *this* list, the one the question names, whatever is chosen when the key is pressed.
     var asking by remember { mutableStateOf<TrackList?>(null) }
+    // The folder a new playlist goes in, while the name card is up. The folder and not a flag: it is the folder that
+    // was open when New playlist was tapped, and the name card says it.
+    var naming by remember { mutableStateOf<List<String>?>(null) }
 
     val browse = remember(at, playlists) {
         PlaylistBrowse.of(at, playlists, { listName(it.name, resources) })
@@ -139,7 +148,22 @@ fun PlaylistPickSheet(
         if (list.tracks.any { it.rpmId == track.rpmId }) asking = list else file(list, again = false)
     }
 
-    BackHandler(enabled = asking == null) { onClose() }
+    BackHandler(enabled = asking == null && naming == null) { onClose() }
+
+    naming?.let { folder ->
+        PlaylistNameSheet(
+            NameErrand.Make(folder),
+            backdrop,
+            // Drawn over everything, the tab bar and the mini player too, so there is no chrome to stay above.
+            bottomRoom = 0.dp,
+            onSave = { name -> onMake(name, folder, listOf(track)) },
+            // Made, with the song in it: the picker's work is done. It closes from here and not from onCancel, so the
+            // panel does not come back while it fades out.
+            onSaved = onClose,
+            onCancel = { naming = null },
+        )
+        return
+    }
 
     Box(
         Modifier
@@ -160,6 +184,15 @@ fun PlaylistPickSheet(
             Column {
                 Header(browse, track, onBack = { at = it; picked = null }, onClose = onClose)
                 Line()
+                if (own) {
+                    NewPlaylist(Modifier.padding(top = 6.dp)) {
+                        if (!busy) {
+                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            said = null
+                            naming = browse.at
+                        }
+                    }
+                }
                 val rows = browse.rows
                 if (rows.isEmpty()) {
                     BasicText(
@@ -175,7 +208,9 @@ fun PlaylistPickSheet(
                     )
                 } else {
                     // As tall as its rows, up to 300 dp, then it scrolls: the iPhone's `ShortScroll`.
-                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 300.dp + 12.dp), contentPadding = PaddingValues(vertical = 6.dp)) {
+                    // The New playlist row above already keeps the space at the top.
+                    val top = if (own) 0.dp else 6.dp
+                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 300.dp + top + 6.dp), contentPadding = PaddingValues(top = top, bottom = 6.dp)) {
                         items(rows, key = { it.id }, contentType = { if (it is PlaylistRow.Folder) 0 else 1 }) { row ->
                             Place(row, picked = row.id == picked) {
                                 said = null
@@ -301,6 +336,37 @@ private fun Place(row: PlaylistRow, picked: Boolean, onClick: () -> Unit) {
         } else if (picked) {
             BasicText(Glyph.check, style = icon(14f).copy(color = Color.White))
         }
+    }
+}
+
+/**
+ * The row that makes a new playlist, drawn as a [Place] is, with a plus where a place has its folder or record. It
+ * stays above the places and does not scroll with them, so it can be reached in a long folder.
+ */
+@Composable
+private fun NewPlaylist(modifier: Modifier, onClick: () -> Unit) {
+    val presses = remember { MutableInteractionSource() }
+    val pressed by presses.collectIsPressedAsState()
+    Row(
+        modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 48.dp)
+            .background(if (pressed) Ink.white(0x24) else Color.Transparent)
+            .clickable(presses, indication = null, role = Role.Button, onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 9.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.width(20.dp), contentAlignment = Alignment.Center) {
+            BasicText(Glyph.plus, style = icon(15f).copy(color = Ink.white(0xB3)))
+        }
+        BasicText(
+            stringResource(R.string.Playlists_NewPlaylist),
+            Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = display(15f).copy(color = Color.White),
+        )
     }
 }
 

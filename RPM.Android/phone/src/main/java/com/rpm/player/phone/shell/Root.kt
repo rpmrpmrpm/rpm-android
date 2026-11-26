@@ -1053,6 +1053,7 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
             backdrop,
             songMenus,
             filing,
+            onMake = playlistWrites::make,
             onFiled = { filing = null },
             queueQuestion,
             onAnswered = { start ->
@@ -1130,6 +1131,7 @@ private fun welcomeSupport(services: Services): WelcomeSupport? {
  * filed (the iPhone's `filing` overlay), and the question asked before a changed queue is replaced (its
  * `confirmationDialog`). Kept apart from [Shell], which only holds their state.
  *
+ * @param onMake makes a playlist from the picker's New playlist, with the song being filed in it.
  * @param onAnswered the start the answer to the queue question chose, or null for Cancel.
  */
 @Composable
@@ -1139,6 +1141,7 @@ private fun SongOverlays(
     backdrop: Backdrop,
     songMenus: SongMenuShown,
     filing: CloudTrack?,
+    onMake: suspend (name: String, folder: List<String>, tracks: List<CloudTrack>) -> String?,
     onFiled: () -> Unit,
     queueQuestion: QueueQuestion?,
     onAnswered: (QueueStart?) -> Unit,
@@ -1163,6 +1166,7 @@ private fun SongOverlays(
                         Filed.Failed -> context.getString(R.string.Rpm_PlaylistPick_Failed)
                     }
                 },
+                onMake = onMake,
                 onClose = onFiled,
             )
         }
