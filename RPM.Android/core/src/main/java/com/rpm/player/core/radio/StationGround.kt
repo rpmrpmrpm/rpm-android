@@ -240,27 +240,26 @@ object StationGround {
 }
 
 /**
- * A station's logo dressed as the desktop dresses it (RadioStationItem.DressAsync and FoundLogo), as one
- * square of [edge] pixels that every surface draws filling its well:
+ * A station's logo dressed as one square of [edge] pixels that every surface draws filling its well: the logo stands
+ * on its made ground ([StationGround.ground]), fitted whole and held [inset] of the edge away from each side. Every
+ * logo gets the ground, a mark with nothing behind it and a full square picture alike, so every station's square is
+ * the same kind of thing (`StationDress` on iPhone).
  *
- * - a mark with nothing behind it ([StationGround.standsAlone]) stands on its made ground, fitted whole
- *   and held [inset] of the edge away from each side;
- * - a picture with its own background that is nearly square (at most 1.1 to 1) fills the square and
- *   is cropped by it, so the well's corners round it;
- * - any other picture, such as a wide lockup, is fitted whole and held [inset] away from each side, on
- *   nothing, so the well's own dark shows round it.
+ * Only where no ground can be made is the logo drawn on its own: a nearly square picture (at most 1.1 to 1) fills the
+ * square and is cropped by it, and any other picture is fitted whole and held [inset] away from each side, on the
+ * well's own dark.
  *
  * [identity] is the station's uuid, which the ground's arrangement is drawn from.
  */
 class StationBadge(private val identity: String, private val inset: Float, private val edge: Int) : Transformation() {
-    override val cacheKey: String = "badge:$identity:$inset:$edge"
+    override val cacheKey: String = "badge-grounded:$identity:$inset:$edge"
 
     override suspend fun transform(input: Bitmap, size: Size): Bitmap {
         val out = Bitmap.createBitmap(edge, edge, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(out)
         val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
         val whole = RectF(0f, 0f, edge.toFloat(), edge.toFloat())
-        val ground = if (StationGround.standsAlone(input)) StationGround.ground(input, identity) else null
+        val ground = StationGround.ground(input, identity)
         if (ground != null) {
             canvas.drawBitmap(ground, middle(ground), whole, paint)
             ground.recycle()

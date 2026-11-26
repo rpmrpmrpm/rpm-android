@@ -39,11 +39,15 @@ class StationLogoFetcher(
     private val options: Options,
     private val http: OkHttpClient,
     private val held: LruCache<StationLogo, Pair<ByteArray, String?>>,
+    private val lastShown: LruCache<String, Pair<ByteArray, String?>>,
 ) : Fetcher {
     override suspend fun fetch(): FetchResult {
         // One download per logo per run, whichever surface asks first. A station's box, its colours and its
         // badge are three requests for one logo, and each one is a different picture in the image loader's memory.
-        val bytes = held.get(logo) ?: download().also { held.put(logo, it) }
+        val bytes = held.get(logo) ?: download().also {
+            held.put(logo, it)
+            lastShown.put(logo.uuid.lowercase(), it)
+        }
         return SourceFetchResult(
             source = ImageSource(Buffer().write(bytes.first), options.fileSystem, SharpScaled),
             mimeType = bytes.second,
@@ -51,16 +55,36 @@ class StationLogoFetcher(
         )
     }
 
+    /**
+     * rpm's own logo, else the directory's. Only an answer of "no logo" from rpm (a 404, or an answer that is not a
+     * picture) moves on to the directory's addresses. When rpm cannot be asked just now (no network for a moment, a
+     * slow or failing server), the station's last logo this run is used, as the iPhone keeps a face's last dressing.
+     * Otherwise a square that shows rpm's logo would change to the directory's older one on the next ask that fails.
+     */
     private suspend fun download(): Pair<ByteArray, String?> {
         val api = Hosts.API + "radio/logo/" + logo.uuid.lowercase() + (if (logo.stamp.isNotEmpty()) "?v=" + logo.stamp else "")
-        // A 404 means the API has no logo. Any other failure is not remembered as that, and the
-        // directory's logos are still worth trying.
-        return get(api, withKey = true) ?: logo.logos.firstNotNullOfOrNull { get(it, withKey = false) }
+        when (val own = get(api, withKey = true)) {
+            is Got.Picture -> return own.body
+            Got.Failed -> lastShown.get(logo.uuid.lowercase())?.let { return it }
+            Got.Nothing -> Unit
+        }
+        return logo.logos.firstNotNullOfOrNull { (get(it, withKey = false) as? Got.Picture)?.body }
             ?: throw IOException("no logo for station ${logo.uuid}")
     }
 
-    /** The body and its media type, or null when the answer is not a picture. */
-    private suspend fun get(url: String, withKey: Boolean): Pair<ByteArray, String?>? {
+    /** What one address answered. */
+    private sealed interface Got {
+        /** A picture: its body and media type. */
+        class Picture(val body: Pair<ByteArray, String?>) : Got
+
+        /** An answer that there is no picture here: a 404, or a body that is not a picture. */
+        data object Nothing : Got
+
+        /** No answer about the picture: no connection, a timeout, or a server that failed. */
+        data object Failed : Got
+    }
+
+    private suspend fun get(url: String, withKey: Boolean): Got {
         return try {
             val request = Request.Builder()
                 .url(url)
@@ -68,15 +92,16 @@ class StationLogoFetcher(
                 .apply { if (withKey) header(AppKey.HEADER, AppKey.VALUE) }
                 .build()
             http.newCall(request).await().use { response ->
-                if (!response.isSuccessful) return null
+                if (response.code == 404 || response.code == 410) return Got.Nothing
+                if (!response.isSuccessful) return Got.Failed
                 val type = response.header("Content-Type")?.substringBefore(';')?.trim()
-                if (type != null && !type.startsWith("image/")) return null
-                response.body.bytes() to type
+                if (type != null && !type.startsWith("image/")) return Got.Nothing
+                Got.Picture(response.body.bytes() to type)
             }
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
-            null
+            Got.Failed
         }
     }
 
@@ -87,8 +112,14 @@ class StationLogoFetcher(
             override fun sizeOf(key: StationLogo, value: Pair<ByteArray, String?>): Int = value.first.size
         }
 
+        /** The logo each station last showed this run, by lower-case uuid, whatever its stamp: what is shown when rpm
+         * cannot be asked (see [StationLogoFetcher.download]). */
+        private val lastShown = object : LruCache<String, Pair<ByteArray, String?>>(HELD_BYTES) {
+            override fun sizeOf(key: String, value: Pair<ByteArray, String?>): Int = value.first.size
+        }
+
         override fun create(data: StationLogo, options: Options, imageLoader: ImageLoader): Fetcher =
-            StationLogoFetcher(data, options, http, held)
+            StationLogoFetcher(data, options, http, held, lastShown)
     }
 
     private companion object {
