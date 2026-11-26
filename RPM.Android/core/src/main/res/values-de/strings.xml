@@ -548,11 +548,50 @@
     <string name="Login_ContinueWith">Weiter mit</string>
     <string name="Login_Email">E-Mail</string>
 
-    <!-- Sign-in dialog: link under the password field. Opens rpmrpmrpm.com/forgot-password in the browser. -->
+    <!-- Sign-in screens: the link to reset a forgotten password. The desktop opens rpmrpmrpm.com/forgot-password in the browser, the phones open a reset card on the sign-in screen, and the TVs show a QR code to the same page. -->
     <string name="Login_Forgot">Passwort vergessen?</string>
 
     <!-- Sign-in dialog error: 'Forgot password?' was clicked and the system would not open a browser. -->
     <string name="Login_ForgotNoBrowser">Dein Browser konnte nicht geöffnet werden. Um dein Passwort zurückzusetzen, gehe zu rpmrpmrpm.com/forgot-password.</string>
+
+    <!-- Phone sign-in screen, the password reset card: its heading. Opened by "Forgot password?" (Login_Forgot). -->
+    <string name="Reset_Title">Passwort zurücksetzen</string>
+
+    <!-- Phone password reset card, first step: under the heading, above the email field. -->
+    <string name="Reset_Subtitle">Kein Problem! Gib deine E-Mail-Adresse ein, und wir schicken dir einen Code, mit dem du ein neues Passwort wählst.</string>
+
+    <!-- Phone password reset card, first step: the button that emails the reset code. -->
+    <string name="Reset_Send">Code senden</string>
+
+    <!-- Phone password reset card, second step: above the code and new password fields. {0} is the email address. -->
+    <string name="Reset_CodeSent">Wir haben einen sechsstelligen Code an %1$s geschickt. Gib ihn zusammen mit deinem neuen Passwort ein.</string>
+
+    <!-- Phone password reset card, second step: placeholder of the new password field. -->
+    <string name="Reset_NewPassword">Neues Passwort</string>
+
+    <!-- Phone password reset card, second step: the button that changes the password. -->
+    <string name="Reset_Save">Passwort festlegen</string>
+
+    <!-- Phone sign-in screen: shown on the sign-in card after the password was changed, when signing in with it did not happen by itself. -->
+    <string name="Reset_Done">Fertig! Dein neues Passwort gilt ab sofort. Melde dich damit an.</string>
+
+    <!-- Phone password reset card, first step: Send code was pressed with no email typed in. -->
+    <string name="Reset_NeedEmail">Gib die E-Mail-Adresse deines rpm-Kontos ein.</string>
+
+    <!-- Phone password reset card, second step: Set new password was pressed with a field empty. -->
+    <string name="Reset_NeedFields">Gib den Code und dein neues Passwort ein.</string>
+
+    <!-- Phone password reset card, second step: the code was too old. "Below" is the Send a new code button (SignUp_Resend). -->
+    <string name="Reset_CodeExpired">Dieser Code ist abgelaufen. Fordere unten einen neuen an.</string>
+
+    <!-- Phone password reset card: the reset email could not be sent. -->
+    <string name="Reset_SendFailed">Die E-Mail konnte nicht gesendet werden. Versuch es in einer Minute noch einmal.</string>
+
+    <!-- Phone password reset card, second step: the password could not be changed for another reason. -->
+    <string name="Reset_Failed">Dein Passwort konnte nicht geändert werden. Bitte versuch es noch einmal.</string>
+
+    <!-- Under the QR code in the TV sign-in pop-up for "Forgot password?". The code opens rpmrpmrpm.com/forgot-password. -->
+    <string name="Tv_SignIn_ForgotScan">Scanne den Code mit der Kamera deines Telefons und wähle auf dem Telefon ein neues Passwort.</string>
     <string name="Login_Google">Google</string>
     <string name="Login_NeedFields">Gib E-Mail und Passwort ein.</string>
     <string name="Login_OpeningBrowser">Browser wird geöffnet…</string>

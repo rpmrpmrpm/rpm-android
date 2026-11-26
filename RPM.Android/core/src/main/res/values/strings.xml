@@ -548,11 +548,50 @@
     <string name="Login_ContinueWith">Continue with</string>
     <string name="Login_Email">Email</string>
 
-    <!-- Sign-in dialog: link under the password field. Opens rpmrpmrpm.com/forgot-password in the browser. -->
+    <!-- Sign-in screens: the link to reset a forgotten password. The desktop opens rpmrpmrpm.com/forgot-password in the browser, the phones open a reset card on the sign-in screen, and the TVs show a QR code to the same page. -->
     <string name="Login_Forgot">Forgot password?</string>
 
     <!-- Sign-in dialog error: 'Forgot password?' was clicked and the system would not open a browser. -->
     <string name="Login_ForgotNoBrowser">Your browser could not be opened. To reset your password, go to rpmrpmrpm.com/forgot-password.</string>
+
+    <!-- Phone sign-in screen, the password reset card: its heading. Opened by "Forgot password?" (Login_Forgot). -->
+    <string name="Reset_Title">Reset your password</string>
+
+    <!-- Phone password reset card, first step: under the heading, above the email field. -->
+    <string name="Reset_Subtitle">No worries! Type in your email and we\'ll send you a code to choose a new password.</string>
+
+    <!-- Phone password reset card, first step: the button that emails the reset code. -->
+    <string name="Reset_Send">Send code</string>
+
+    <!-- Phone password reset card, second step: above the code and new password fields. {0} is the email address. -->
+    <string name="Reset_CodeSent">We\'ve sent a six-digit code to %1$s. Type it in with your new password.</string>
+
+    <!-- Phone password reset card, second step: placeholder of the new password field. -->
+    <string name="Reset_NewPassword">New password</string>
+
+    <!-- Phone password reset card, second step: the button that changes the password. -->
+    <string name="Reset_Save">Set new password</string>
+
+    <!-- Phone sign-in screen: shown on the sign-in card after the password was changed, when signing in with it did not happen by itself. -->
+    <string name="Reset_Done">All set! Your new password works now. Sign in with it.</string>
+
+    <!-- Phone password reset card, first step: Send code was pressed with no email typed in. -->
+    <string name="Reset_NeedEmail">Type in the email of your rpm account.</string>
+
+    <!-- Phone password reset card, second step: Set new password was pressed with a field empty. -->
+    <string name="Reset_NeedFields">Type in the code and your new password.</string>
+
+    <!-- Phone password reset card, second step: the code was too old. "Below" is the Send a new code button (SignUp_Resend). -->
+    <string name="Reset_CodeExpired">That code has expired. Ask for a new one below.</string>
+
+    <!-- Phone password reset card: the reset email could not be sent. -->
+    <string name="Reset_SendFailed">Couldn\'t send the email. Please try again in a minute.</string>
+
+    <!-- Phone password reset card, second step: the password could not be changed for another reason. -->
+    <string name="Reset_Failed">Couldn\'t change your password. Please try again.</string>
+
+    <!-- Under the QR code in the TV sign-in pop-up for "Forgot password?". The code opens rpmrpmrpm.com/forgot-password. -->
+    <string name="Tv_SignIn_ForgotScan">Scan the code with your phone\'s camera and choose a new password on your phone.</string>
     <string name="Login_Google">Google</string>
     <string name="Login_NeedFields">Enter your email and password.</string>
     <string name="Login_OpeningBrowser">Opening your browser…</string>
