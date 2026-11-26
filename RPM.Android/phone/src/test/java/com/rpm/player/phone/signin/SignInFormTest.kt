@@ -43,6 +43,8 @@ class SignInFormTest {
         override suspend fun register(name: String, email: String, password: String): SignUpAnswer = throw IOException("not asked")
         override suspend fun confirm(email: String, code: String): SignUpAnswer = throw IOException("not asked")
         override suspend fun resendCode(email: String): SignUpAnswer = throw IOException("not asked")
+        override suspend fun forgotPassword(email: String): SignUpAnswer = throw IOException("not asked")
+        override suspend fun resetPassword(email: String, code: String, password: String): SignUpAnswer = throw IOException("not asked")
     }
 
     private class Store : SessionStore {

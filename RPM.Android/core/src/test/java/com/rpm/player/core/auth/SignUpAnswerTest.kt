@@ -3,7 +3,8 @@ package com.rpm.player.core.auth
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** How an answer of `auth/register`, `auth/confirm` or `auth/resend-code` is read, as the iPhone's `SignUpAnswer`. */
+/** How an answer of `auth/register`, `auth/confirm`, `auth/resend-code`, `auth/forgot-password` or
+ * `auth/reset-password` is read, as the iPhone's `SignUpAnswer`. */
 class SignUpAnswerTest {
     @Test fun aSuccessIsDone() {
         assertEquals(SignUpAnswer.Done, SignUpAnswer.read(200, """{"status":"confirm_required","email":"a@b.c"}"""))
@@ -22,6 +23,17 @@ class SignUpAnswerTest {
         assertEquals(SignUpAnswer.Refused("refused"), SignUpAnswer.read(400, """{"error":"email is required."}"""))
         assertEquals(SignUpAnswer.Refused("refused"), SignUpAnswer.read(429, "<html>Too Many Requests</html>"))
         assertEquals(SignUpAnswer.Refused("refused"), SignUpAnswer.read(400, """["code"]"""))
+    }
+
+    /** `auth/forgot-password` answers 204 with no body, and `auth/reset-password` answers 200 with whether every other
+     * device was signed out. Both are done. */
+    @Test fun aPasswordResetAnswerIsDone() {
+        assertEquals(SignUpAnswer.Done, SignUpAnswer.read(204, ""))
+        assertEquals(SignUpAnswer.Done, SignUpAnswer.read(200, """{"signedOutEverywhere":true}"""))
+        assertEquals(
+            SignUpAnswer.Refused("code_expired"),
+            SignUpAnswer.read(400, """{"error":"The code has expired.","code":"code_expired"}"""),
+        )
     }
 
     @Test fun aServerErrorIsFailedWithItsStatus() {

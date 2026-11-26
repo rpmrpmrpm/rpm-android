@@ -38,6 +38,8 @@ class AuthClientTest {
         override suspend fun register(name: String, email: String, password: String) = error("not used")
         override suspend fun confirm(email: String, code: String) = error("not used")
         override suspend fun resendCode(email: String) = error("not used")
+        override suspend fun forgotPassword(email: String) = error("not used")
+        override suspend fun resetPassword(email: String, code: String, password: String) = error("not used")
     }
 
     private val now = 10_000_000L

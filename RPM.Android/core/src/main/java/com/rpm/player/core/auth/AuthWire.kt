@@ -37,13 +37,15 @@ sealed interface LoginAnswer {
 }
 
 /** How a step of signing up ended (`auth/register`, `auth/confirm`, `auth/resend-code`), as the iPhone's
- * `SignUpAnswer`. No case carries the service's English sentence: the screen says its own. */
+ * `SignUpAnswer`. A step of resetting a password (`auth/forgot-password`, `auth/reset-password`) ends the same way.
+ * No case carries the service's English sentence: the screen says its own. */
 sealed interface SignUpAnswer {
     data object Done : SignUpAnswer
 
     /** The service said no, with its own code: "already_registered", "social_account", "weak_password",
      * "invalid_email", "invalid_name", "invalid_code", "code_expired", "code_resent", "too_many", or "refused"
-     * when the answer had no code. */
+     * when the answer had no code. A password reset can answer "invalid_email", "invalid_code", "code_expired",
+     * "weak_password" and "too_many". */
     data class Refused(val code: String) : SignUpAnswer
 
     /** Any other status: a 5xx, or a page that is not from the accounts service. */
@@ -91,6 +93,15 @@ interface AuthWire {
 
     /** `auth/resend-code`: mails a new code, which replaces the one sent before. */
     suspend fun resendCode(email: String): SignUpAnswer
+
+    /** `auth/forgot-password`: mails a six-digit code for choosing a new password. The service gives the same answer
+     * whether or not the address has an account, so the answer does not show which addresses have one. Throws
+     * [IOException] if the service cannot be reached. */
+    suspend fun forgotPassword(email: String): SignUpAnswer
+
+    /** `auth/reset-password`: sets [password] as the account's password when [code] is the mailed code. It does not
+     * sign in: [login] with the new password does. */
+    suspend fun resetPassword(email: String, code: String, password: String): SignUpAnswer
 }
 
 /** [AuthWire] over HTTP. None of these calls sends the app key, which the accounts service does not read. Only
@@ -182,6 +193,13 @@ class HttpAuthWire(private val http: OkHttpClient) : AuthWire {
 
     override suspend fun resendCode(email: String): SignUpAnswer =
         post("auth/resend-code", mapOf("email" to email.trim())).let { SignUpAnswer.read(it.code, it.body) }
+
+    override suspend fun forgotPassword(email: String): SignUpAnswer =
+        post("auth/forgot-password", mapOf("email" to email.trim())).let { SignUpAnswer.read(it.code, it.body) }
+
+    override suspend fun resetPassword(email: String, code: String, password: String): SignUpAnswer =
+        post("auth/reset-password", mapOf("email" to email.trim(), "code" to code.trim(), "password" to password))
+            .let { SignUpAnswer.read(it.code, it.body) }
 
     private class Answer(val code: Int, val body: String)
 

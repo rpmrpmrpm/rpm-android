@@ -50,6 +50,13 @@ class AuthClient(
 
     suspend fun resendCode(email: String): SignUpAnswer = wire.resendCode(email)
 
+    /** Resetting a forgotten password: see [AuthWire.forgotPassword] and [AuthWire.resetPassword]. Neither signs in.
+     * After the reset, [login] with the new password does. */
+    suspend fun forgotPassword(email: String): SignUpAnswer = wire.forgotPassword(email)
+
+    suspend fun resetPassword(email: String, code: String, password: String): SignUpAnswer =
+        wire.resetPassword(email, code, password)
+
     /** Takes a finished sign-in as the session. */
     suspend fun adopt(said: LoginResponse) {
         lock.withLock { replace(merge(previous = null, said)) }

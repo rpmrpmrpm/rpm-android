@@ -58,6 +58,8 @@ class SignUpFormTest {
         override suspend fun refresh(refreshToken: String): RefreshAnswer = RefreshAnswer.Unavailable
         override suspend fun revoke(refreshToken: String) = Unit
         override suspend fun deleteAccount(accessToken: String, confirmEmail: String): Int = throw IOException("not asked")
+        override suspend fun forgotPassword(email: String): SignUpAnswer = throw IOException("not asked")
+        override suspend fun resetPassword(email: String, code: String, password: String): SignUpAnswer = throw IOException("not asked")
     }
 
     private class Store : SessionStore {
