@@ -8,6 +8,9 @@ import java.nio.ByteOrder
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sin
 
@@ -73,25 +76,12 @@ class Equalizer(private val sampleRate: Int, private val channels: Int) {
      * stream can carry, and the cookbook's formula would give a filter that is unstable or that never decays.
      */
     private fun setPeaking(band: Int, centreHz: Double, gainDb: Double) {
-        if (centreHz >= sampleRate * HIGHEST_CENTRE || gainDb == 0.0) {
-            b0[band] = 1.0
-            b1[band] = 0.0
-            b2[band] = 0.0
-            a1[band] = 0.0
-            a2[band] = 0.0
-            return
-        }
-        val a = 10.0.pow(gainDb / 40)
-        val w0 = 2 * PI * centreHz / sampleRate
-        val cosW = cos(w0)
-        val alpha = sin(w0) / (2 * Q)
-
-        val a0 = 1 + alpha / a
-        b0[band] = (1 + alpha * a) / a0
-        b1[band] = (-2 * cosW) / a0
-        b2[band] = (1 - alpha * a) / a0
-        a1[band] = (-2 * cosW) / a0
-        a2[band] = (1 - alpha / a) / a0
+        val c = peaking(centreHz, gainDb, sampleRate.toDouble())
+        b0[band] = c?.b0 ?: 1.0
+        b1[band] = c?.b1 ?: 0.0
+        b2[band] = c?.b2 ?: 0.0
+        a1[band] = c?.a1 ?: 0.0
+        a2[band] = c?.a2 ?: 0.0
     }
 
     /** Clears the filter memory, so the end of the last audio does not carry into the next (a seek, a new track). */
@@ -141,6 +131,75 @@ class Equalizer(private val sampleRate: Int, private val channels: Int) {
 
         /** The label under a band's fader: "60", "1K", "16K". The same as the desktop's; numbers, not words. */
         fun bandLabel(hz: Int): String = if (hz >= 1000) "${hz / 1000}K" else hz.toString()
+
+        /** The coefficients of one peaking filter, already divided by a0. */
+        internal class Coefficients(val b0: Double, val b1: Double, val b2: Double, val a1: Double, val a2: Double)
+
+        /**
+         * The cookbook's coefficients for a band at [centreHz] with [gainDb], or null where the band is left flat: no
+         * gain, or a centre too close to half the sample rate (see [setPeaking]).
+         */
+        internal fun peaking(centreHz: Double, gainDb: Double, sampleRate: Double): Coefficients? {
+            if (centreHz >= sampleRate * HIGHEST_CENTRE || gainDb == 0.0) return null
+            val a = 10.0.pow(gainDb / 40)
+            val w0 = 2 * PI * centreHz / sampleRate
+            val cosW = cos(w0)
+            val alpha = sin(w0) / (2 * Q)
+
+            val a0 = 1 + alpha / a
+            return Coefficients(
+                b0 = (1 + alpha * a) / a0,
+                b1 = (-2 * cosW) / a0,
+                b2 = (1 - alpha * a) / a0,
+                a1 = (-2 * cosW) / a0,
+                a2 = (1 - alpha / a) / a0,
+            )
+        }
+
+        /**
+         * The highest gain of the ten bands together, in dB, without the pre-amp. It is read from the real response of
+         * the filters: at 256 frequencies from 20 Hz to 20 kHz, evenly spaced on a log scale, and at each band's centre.
+         * Neighbouring bands overlap, so two raised neighbours add up: all ten bands at +6 dB give about +15 dB, near
+         * 14 kHz where three bands are close together.
+         *
+         * A flat curve gives 0 dB, and a curve with only cuts gives 0 dB or less. The sink runs at the rate of the
+         * music. [sampleRate] is 44.1 kHz unless given, the rate of most music and the iPhone's, so both apps give the
+         * same answer. At 48 kHz the top bands rise about 1 dB higher.
+         */
+        fun peakGain(bandGainsDb: List<Double>, sampleRate: Double = 44100.0): Double {
+            val filters = BANDS.indices.mapNotNull { i ->
+                val gainDb = bandGainsDb.getOrNull(i)?.coerceIn(-MAX_GAIN_DB, MAX_GAIN_DB) ?: 0.0
+                peaking(BANDS[i].toDouble(), gainDb, sampleRate)
+            }
+            if (filters.isEmpty()) return 0.0
+
+            val points = 256
+            val lowest = 20.0
+            val highest = 20000.0
+            val frequencies = BANDS.map { it.toDouble() } +
+                List(points) { lowest * (highest / lowest).pow(it.toDouble() / (points - 1)) }
+
+            var peak = Double.NEGATIVE_INFINITY
+            for (hz in frequencies) {
+                if (hz >= sampleRate / 2) continue
+                val w = 2 * PI * hz / sampleRate
+                val cos1 = cos(w)
+                val sin1 = sin(w)
+                val cos2 = cos(2 * w)
+                val sin2 = sin(2 * w)
+                // The squared size of each filter's response at this frequency, multiplied together.
+                var power = 1.0
+                for (f in filters) {
+                    val numReal = f.b0 + f.b1 * cos1 + f.b2 * cos2
+                    val numImag = f.b1 * sin1 + f.b2 * sin2
+                    val denReal = 1 + f.a1 * cos1 + f.a2 * cos2
+                    val denImag = f.a1 * sin1 + f.a2 * sin2
+                    power *= (numReal * numReal + numImag * numImag) / (denReal * denReal + denImag * denImag)
+                }
+                peak = max(peak, 10 * log10(power))
+            }
+            return if (peak.isFinite()) peak else 0.0
+        }
     }
 }
 
@@ -186,6 +245,35 @@ data class EqCurve(val on: Boolean, val preamp: Double, val gains: List<Double>)
     /** Flat, the pre-amp too. The switch stays where it was. */
     fun flattened(): EqCurve = copy(preamp = 0.0, gains = List(gains.size) { 0.0 })
 
+    // ── room for the bands ──
+
+    /** How far the bands together raise the loudest frequency, in dB, before the pre-amp ([Equalizer.peakGain]). */
+    val peak: Double get() = Equalizer.peakGain(gains)
+
+    /**
+     * True while the curve is on and the pre-amp leaves too little room for the bands: the loudest sounds are pushed
+     * past full scale and clipped, which distorts. The equaliser card warns then.
+     */
+    val clips: Boolean get() = on && preamp + peak > CLIP_ALLOWANCE
+
+    /**
+     * The same curve with the pre-amp lowered until the bands no longer clip. The pre-amp moves in whole dB, as the
+     * faders do, and only down. It stops at -12 dB, so a curve that needs more room than that still clips. A curve
+     * that is off, flat or has only cuts is returned as it is.
+     */
+    fun withRoom(): EqCurve {
+        val most = CLIP_ALLOWANCE - peak
+        if (!on || preamp <= most) return this
+        return withPreamp(floor(most))
+    }
+
+    /**
+     * The curve to keep when the listener changes [before] into this one. When the switch is turned on, or the bands
+     * change while it is on (a fader, a preset, Flat), the pre-amp makes room ([withRoom]). A change of the pre-amp
+     * alone is kept as it is, so a listener who raises it again is not overruled. The card shows the warning instead.
+     */
+    fun guarded(before: EqCurve): EqCurve = if (on && (!before.on || before.gains != gains)) withRoom() else this
+
     /** The preset whose bands this curve has, or null. The pre-amp is not compared, as on the desktop. */
     fun preset(): EqPreset? = EqPreset.ALL.firstOrNull { p -> gains.indices.all { abs(gains[it] - p.gains[it]) < 0.001 } }
 
@@ -205,6 +293,12 @@ data class EqCurve(val on: Boolean, val preamp: Double, val gains: List<Double>)
             if (gains.size != Equalizer.BANDS.size) return OFF
             return EqCurve(parts[0] == "1", clamp(preamp), gains.map(::clamp))
         }
+
+        /**
+         * How far, in dB, the pre-amp and the peak together may go over 0 dB before the curve counts as clipping. It
+         * covers rounding in the response, so a band at +6 dB and the pre-amp at -6 dB do not count.
+         */
+        private const val CLIP_ALLOWANCE = 0.05
 
         private fun clamp(db: Double): Double = db.coerceIn(-Equalizer.MAX_GAIN_DB, Equalizer.MAX_GAIN_DB)
     }

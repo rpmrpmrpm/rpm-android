@@ -222,6 +222,103 @@ class EqualizerTest {
         assertEquals(-12.0, curve.preamp, 0.0)
     }
 
+    // ── room for the bands ──
+
+    @Test
+    fun A_flat_curve_has_no_peak() {
+        assertEquals(0.0, Equalizer.peakGain(emptyList()), 0.0)
+        assertEquals(0.0, Equalizer.peakGain(EqPreset.ALL[0].gains), 0.001)
+    }
+
+    @Test
+    fun One_raised_band_peaks_at_its_own_gain() {
+        assertEquals(6.0, Equalizer.peakGain(gains(4, 6.0)), 0.05)
+        assertEquals(6.0, Equalizer.peakGain(gains(0, 6.0)), 0.05)
+    }
+
+    @Test
+    fun Raised_neighbours_add_up() {
+        // The bands overlap, so ten bands at +6 dB peak higher than one: about +15 dB near 14 kHz.
+        val peak = Equalizer.peakGain(List(10) { 6.0 })
+        assertTrue(peak >= 6.0)
+        assertEquals(15.15, peak, 0.1)
+    }
+
+    @Test
+    fun Cuts_alone_never_peak_above_zero() {
+        assertTrue(Equalizer.peakGain(listOf(-3.0, -6.0, 0.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0, -12.0)) <= 0.0)
+        assertTrue(Equalizer.peakGain(List(10) { -12.0 }) <= 0.0)
+    }
+
+    @Test
+    fun Turning_the_equaliser_on_lowers_the_preamp_to_make_room() {
+        val before = EqCurve.OFF.withPreset(EqPreset.ALL[5])
+        val after = before.copy(on = true).guarded(before)
+        // Bass boost peaks at about +9.4 dB.
+        assertEquals(-10.0, after.preamp, 0.0)
+        assertFalse(after.clips)
+    }
+
+    @Test
+    fun A_band_raised_while_on_lowers_the_preamp() {
+        val before = EqCurve.OFF.copy(on = true)
+        val after = before.withBand(4, 6.0).guarded(before)
+        assertEquals(-6.0, after.preamp, 0.0)
+        assertFalse(after.clips)
+    }
+
+    @Test
+    fun A_preset_chosen_while_on_lowers_the_preamp() {
+        val before = EqCurve.OFF.copy(on = true)
+        val after = before.withPreset(EqPreset.ALL[2]).guarded(before)
+        assertTrue(after.preamp < 0.0)
+        assertFalse(after.clips)
+    }
+
+    @Test
+    fun The_preamp_is_never_raised() {
+        val before = EqCurve.OFF.copy(on = true).withPreamp(-12.0)
+        assertEquals(-12.0, before.withBand(4, 3.0).guarded(before).preamp, 0.0)
+        assertEquals(-12.0, before.withRoom().preamp, 0.0)
+    }
+
+    @Test
+    fun A_preamp_raised_by_the_listener_is_kept_and_clips() {
+        val safe = EqCurve.OFF.copy(on = true).withBand(4, 6.0).withPreamp(-6.0)
+        assertFalse(safe.clips)
+        val loud = safe.withPreamp(0.0).guarded(safe)
+        assertEquals(0.0, loud.preamp, 0.0)
+        assertTrue(loud.clips)
+    }
+
+    @Test
+    fun Flat_and_cuts_need_no_room() {
+        val before = EqCurve.OFF.copy(on = true)
+        val cut = before.withBand(1, -6.0).guarded(before)
+        assertEquals(0.0, cut.preamp, 0.0)
+        assertFalse(cut.clips)
+        val flat = before.withPreset(EqPreset.ALL[1]).withPreamp(-12.0).flattened()
+        assertEquals(0.0, flat.guarded(before).preamp, 0.0)
+        assertFalse(flat.clips)
+    }
+
+    @Test
+    fun A_curve_that_is_off_is_left_alone_and_does_not_warn() {
+        val before = EqCurve.OFF
+        val after = before.withBand(4, 6.0).guarded(before)
+        assertEquals(0.0, after.preamp, 0.0)
+        assertFalse(after.clips)
+        assertEquals(after, after.withRoom())
+    }
+
+    @Test
+    fun A_curve_that_needs_more_than_twelve_decibels_still_clips() {
+        // Treble peaks at about +16.5 dB, past what the pre-amp can take away.
+        val curve = EqCurve.OFF.withPreset(EqPreset.ALL[6]).copy(on = true).withRoom()
+        assertEquals(-12.0, curve.preamp, 0.0)
+        assertTrue(curve.clips)
+    }
+
     // ── stored ──
 
     @Test
