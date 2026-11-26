@@ -54,6 +54,27 @@ class SignIn(
     /** Making an account, on the same screen. A sign-in of an account that was never confirmed opens its code step. */
     val signUp = SignUp(auth, scope, online)
 
+    /**
+     * The text in the sign-in card's email field. It is held here and not by the card, so it is kept while the reset
+     * card is up, and a reset can fill it in.
+     */
+    var email by mutableStateOf("")
+
+    /**
+     * Choosing a new password, on the same screen. A reset whose sign-in does not succeed comes back to the sign-in
+     * card with the address filled in and a note that the new password works.
+     */
+    val reset = ResetPassword(auth, scope, online) { address ->
+        email = address
+        trouble = null
+        notice = Said(R.string.Reset_Done)
+    }
+
+    /** Opens the reset card, its email field filled with what was typed on the sign-in card. */
+    fun forgotPassword() {
+        if (!busy) reset.open(email)
+    }
+
     /** A sign-in is under way; the form is disabled. */
     var busy by mutableStateOf(false)
         private set

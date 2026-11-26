@@ -8,6 +8,8 @@ import android.widget.ProgressBar
 import androidx.activity.compose.BackHandler
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -41,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.focus.FocusRequester
@@ -87,9 +90,11 @@ fun SignInScreen(signIn: SignIn) {
     val context = LocalContext.current
     val signUp = signIn.signUp
     val step = signUp.step
+    val reset = signIn.reset
+    val resetStep = reset.step
 
-    // Back from sign-up returns to the sign-in card, as its Cancel does.
-    BackHandler(enabled = step != null) { signUp.close() }
+    // Back from sign-up or from the reset returns to the sign-in card, as their Cancel does.
+    BackHandler(enabled = step != null || resetStep != null) { if (resetStep != null) reset.close() else signUp.close() }
 
     // The address arrives after a request. Whichever activity is on screen then opens it.
     val address = signIn.toOpen
@@ -140,7 +145,9 @@ fun SignInScreen(signIn: SignIn) {
                         Modifier.widthIn(max = 320.dp),
                         style = system(15f).copy(color = Ink.white(0xCC), textAlign = TextAlign.Center),
                     )
-                    if (step != null) {
+                    if (resetStep != null) {
+                        ResetCard(reset, resetStep, backdrop)
+                    } else if (step != null) {
                         SignUpCard(signUp, step, backdrop)
                     } else {
                         Card(signIn, backdrop)
@@ -161,7 +168,7 @@ fun SignInScreen(signIn: SignIn) {
 
 @Composable
 private fun Card(signIn: SignIn, backdrop: Backdrop) {
-    var email by rememberSaveable { mutableStateOf("") }
+    val email = signIn.email
     var password by rememberSaveable { mutableStateOf("") }
     val passwordField = remember { FocusRequester() }
     val enabled = !signIn.busy
@@ -178,7 +185,7 @@ private fun Card(signIn: SignIn, backdrop: Backdrop) {
             Divider()
             GlassField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = { signIn.email = it },
                 placeholder = stringResource(R.string.Login_Email),
                 // A password manager fills the pair, as iOS's `textContentType(.username)` and `.password` offer.
                 modifier = Modifier.semantics { contentType = ContentType.Username + ContentType.EmailAddress },
@@ -201,6 +208,7 @@ private fun Card(signIn: SignIn, backdrop: Backdrop) {
                 keyboardActions = KeyboardActions(onGo = { signIn.withPassword(email, password) }),
                 visualTransformation = PasswordVisualTransformation(),
             )
+            Forgot(enabled) { signIn.forgotPassword() }
             Line(signIn)
             GlassButton(onClick = { signIn.withPassword(email, password) }, weight = Weight.Primary, enabled = enabled) { style ->
                 BasicText(stringResource(R.string.Cloud_SignIn), style = style)
@@ -307,6 +315,122 @@ private fun SignUpCard(signUp: SignUp, step: SignUp.Step, backdrop: Backdrop) {
             if (signUp.busy) Busy()
         }
     }
+}
+
+/** The `Login_Forgot` key: small text at the right edge, under the password field. It opens the reset card. */
+@Composable
+private fun Forgot(enabled: Boolean, onClick: () -> Unit) {
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+        BasicText(
+            stringResource(R.string.Login_Forgot),
+            Modifier
+                .clickable(remember { MutableInteractionSource() }, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+                .padding(horizontal = 4.dp, vertical = 6.dp),
+            style = system(13f).copy(color = Ink.white(if (enabled) 0xB3 else 0x66)),
+        )
+    }
+}
+
+/**
+ * Choosing a new password, in place of the sign-in card, in the sign-up card's look. First the address, then the
+ * mailed code with the new password. Once the password is changed the account signs in, and the app replaces this
+ * screen.
+ */
+@Composable
+private fun ResetCard(reset: ResetPassword, step: ResetPassword.Step, backdrop: Backdrop) {
+    var email by rememberSaveable { mutableStateOf((step as? ResetPassword.Step.Email)?.email.orEmpty()) }
+    var code by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    val passwordField = remember { FocusRequester() }
+    val enabled = !reset.busy
+
+    GlassCard(backdrop, Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            BasicText(stringResource(R.string.Reset_Title), style = kicker())
+            when (step) {
+                is ResetPassword.Step.Email -> {
+                    BasicText(
+                        stringResource(R.string.Reset_Subtitle),
+                        Modifier.fillMaxWidth(),
+                        style = system(13f).copy(color = Ink.white(0xCC), textAlign = TextAlign.Center),
+                    )
+                    GlassField(
+                        value = email,
+                        onValueChange = { email = it },
+                        placeholder = stringResource(R.string.Login_Email),
+                        modifier = Modifier.semantics { contentType = ContentType.Username + ContentType.EmailAddress },
+                        enabled = enabled,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.None,
+                            autoCorrectEnabled = false,
+                            keyboardType = KeyboardType.Email,
+                            imeAction = ImeAction.Go,
+                        ),
+                        keyboardActions = KeyboardActions(onGo = { reset.send(email) }),
+                    )
+                }
+                is ResetPassword.Step.Code -> {
+                    BasicText(
+                        stringResource(R.string.Reset_CodeSent, step.email),
+                        Modifier.fillMaxWidth(),
+                        style = system(13f).copy(color = Ink.white(0xCC), textAlign = TextAlign.Center),
+                    )
+                    GlassField(
+                        value = code,
+                        onValueChange = { typed -> code = typed.filter { it.isDigit() }.take(6) },
+                        placeholder = stringResource(R.string.SignUp_Code),
+                        modifier = Modifier.semantics { contentType = ContentType.SmsOtpCode },
+                        enabled = enabled,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { passwordField.requestFocus() }),
+                    )
+                    GlassField(
+                        value = password,
+                        onValueChange = { password = it },
+                        placeholder = stringResource(R.string.Reset_NewPassword),
+                        modifier = Modifier.focusRequester(passwordField).semantics { contentType = ContentType.NewPassword },
+                        enabled = enabled,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Go),
+                        keyboardActions = KeyboardActions(onGo = { reset.save(code, password) }),
+                        visualTransformation = PasswordVisualTransformation(),
+                    )
+                    BasicText(
+                        stringResource(R.string.SignUp_PasswordRule),
+                        Modifier.fillMaxWidth(),
+                        style = system(12f).copy(color = Ink.white(0x77)),
+                    )
+                }
+            }
+            ResetLine(reset)
+            GlassButton(
+                onClick = { if (step is ResetPassword.Step.Code) reset.save(code, password) else reset.send(email) },
+                weight = Weight.Primary,
+                enabled = enabled,
+            ) { style ->
+                BasicText(stringResource(if (step is ResetPassword.Step.Code) R.string.Reset_Save else R.string.Reset_Send), style = style)
+            }
+            if (step is ResetPassword.Step.Code) {
+                GlassButton(onClick = { reset.resend() }, enabled = enabled) { style ->
+                    BasicText(stringResource(R.string.SignUp_Resend), style = system(13f).copy(color = style.color))
+                }
+            }
+            GlassButton(onClick = { reset.close() }, enabled = enabled) { style ->
+                BasicText(stringResource(R.string.Common_Cancel), style = style)
+            }
+            if (reset.busy) Busy()
+        }
+    }
+}
+
+/** What went wrong on the reset card; else news, such as a new code sent. */
+@Composable
+private fun ResetLine(reset: ResetPassword) {
+    val (said, color) = reset.trouble?.let { it to Ink.red } ?: reset.notice?.let { it to Ink.white(0xCC) } ?: return
+    BasicText(stringResource(said.id, *said.args.toTypedArray()), Modifier.fillMaxWidth(), style = system(13f).copy(color = color))
 }
 
 /** What went wrong on the sign-up card; else news, such as a new code sent. */
