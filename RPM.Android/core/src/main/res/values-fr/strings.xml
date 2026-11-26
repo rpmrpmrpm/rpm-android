@@ -2584,6 +2584,9 @@
     <string name="Rpm_Profile_PlanTesterThanks">Merci de tester rpm ! Vos rapports nous aident à corriger les problèmes avant la bêta publique.</string>
     <string name="Rpm_Profile_Playback">Lecture</string>
 
+    <!-- iPhone and Android phone settings, Playback tab: heading of the card with the streaming quality pickers (Rpm_Profile_QualityWifi, Rpm_Profile_QualityCellular). The tab itself is Rpm_Profile_Playback. -->
+    <string name="Rpm_Profile_PlaybackQuality">Qualité de lecture</string>
+
     <!-- Settings, Profile page: what the quality choices do. -->
     <string name="Rpm_Profile_QualityDetail">L\'original est exactement tel qu\'il a été téléversé. Un débit plus faible consomme moins de données et moins d\'espace sur votre téléphone.</string>
 
@@ -2603,8 +2606,8 @@
     <string name="Rpm_Profile_QualityWifi">En Wi-Fi</string>
     <string name="Rpm_Profile_QualityCellular">En données mobiles</string>
 
-    <!-- iPhone settings, Playback card: label of the third quality picker, the bitrate albums are downloaded at. Sits under Rpm_Profile_QualityCellular. -->
-    <string name="Rpm_Profile_QualityDownload">Pour les téléchargements</string>
+    <!-- iPhone and Android phone settings: label of the quality picker for the bitrate albums are downloaded at. -->
+    <string name="Rpm_Profile_QualityDownload">Qualité des téléchargements</string>
 
     <!-- iPhone settings, Playback card: under the download quality picker. -->
     <string name="Rpm_Profile_QualityDownloadDetail">S\'applique aux nouveaux téléchargements. Les albums déjà sur votre téléphone gardent leur débit. Un débit qui n\'est pas encore prêt est d\'abord préparé, puis téléchargé.</string>
@@ -3053,6 +3056,9 @@
 
     <!-- Settings, Sound: the equalizer's on/off switch. -->
     <string name="Settings_EqOn">Égaliseur activé</string>
+
+    <!-- Settings, equalizer: red warning under the sliders while the preamp and the bands together push the sound past full scale, so it clips. -->
+    <string name="Settings_EqClipWarning">Garder l\'égaliseur sur ce réglage peut abîmer votre audition ou vos haut-parleurs.</string>
 
     <!-- Settings, Sound: label of the preset picker. -->
     <string name="Settings_EqPreset">Préréglage</string>
@@ -3932,6 +3938,12 @@
 
     <!-- Storage-full window: closes it without doing anything. Also the phone welcome's support step: goes on without becoming a supporter. -->
     <string name="Supporter_Later">Pas maintenant</string>
+
+    <!-- Phones: title of the small pop-up that asks a listener who is not a supporter to consider becoming one. Shown once every 50 launches. Its buttons are Cloud_BecomeSupporter and Supporter_Later. -->
+    <string name="Supporter_NudgeTitle">Vous aimez rpm ?</string>
+
+    <!-- Phones: the line in the pop-up under Supporter_NudgeTitle. -->
+    <string name="Supporter_NudgeBody">Ce sont les soutiens qui font vivre et grandir rpm. S\'il fait partie de votre quotidien, pensez à en devenir un !</string>
 
     <!-- Title of the window shown when a supporter-only feature is used by an account that is not one. -->
     <string name="Supporters_Title">Réservé aux soutiens</string>
