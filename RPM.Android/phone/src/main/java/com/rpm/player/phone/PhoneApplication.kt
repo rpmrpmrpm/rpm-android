@@ -399,22 +399,32 @@ class PhoneSettings(context: Context) {
     var eqCurve by mutableStateOf(EqCurve.OFF)
         private set
 
-    /** The music goes to [output] now: its own curve is shown and heard. */
+    /**
+     * The music goes to [output] now: its own curve is shown and heard. A curve that is on and clips gets room from its
+     * pre-amp first ([EqCurve.withRoom]), and that is stored, as a change on the faders would be.
+     */
     fun useEqOutput(output: EqOutput) {
         val before = eqOutput
         eqOutput = output
         if (before?.key == output.key) return
-        eqCurve = EqCurve.parse(prefs.getString(KEY_EQ + output.key, null))
+        val stored = EqCurve.parse(prefs.getString(KEY_EQ + output.key, null))
+        eqCurve = stored.withRoom()
         equalizing.curve = eqCurve
+        if (eqCurve != stored) prefs.edit().putString(KEY_EQ + output.key, eqCurve.stored()).apply()
     }
 
-    /** The curve is changed only here, so what is stored, what is shown and what is heard cannot disagree. */
+    /**
+     * The curve is changed only here, so what is stored, what is shown and what is heard cannot disagree. Turning the
+     * equaliser on and moving the bands lower the pre-amp where the bands would clip ([EqCurve.guarded]), so the
+     * faders show the pre-amp that is heard.
+     */
     fun changeEq(curve: EqCurve) {
         val output = eqOutput ?: return
-        if (curve == eqCurve) return
-        eqCurve = curve
-        equalizing.curve = curve
-        prefs.edit().putString(KEY_EQ + output.key, curve.stored()).apply()
+        val kept = curve.guarded(eqCurve)
+        if (kept == eqCurve) return
+        eqCurve = kept
+        equalizing.curve = kept
+        prefs.edit().putString(KEY_EQ + output.key, kept.stored()).apply()
     }
 
     /** The rate asked for on a network that costs nothing. [AudioLadder.ORIGINAL] is the untranscoded file. */

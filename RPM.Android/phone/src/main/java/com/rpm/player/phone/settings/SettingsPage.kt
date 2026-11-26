@@ -835,8 +835,9 @@ private class Cards(
     // ── the equaliser ──
 
     /**
-     * The equaliser, laid out as the desktop's Sound settings lay it out (the iPhone app has none): whose curve it is,
-     * the switch, the presets and Flat, then the pre-amp and the ten bands as faders from -12 to +12 dB in steps of 1.
+     * The equaliser, laid out as the desktop's Sound settings lay it out, as the iPhone app does: whose curve it is, the
+     * switch, the presets and Flat, then the pre-amp and the ten bands as faders from -12 to +12 dB in steps of 1. Under
+     * the faders, a warning in red shows while the curve clips ([EqCurve.clips]).
      */
     @Composable
     fun Eq(eq: EqControls) {
@@ -864,6 +865,12 @@ private class Cards(
                 Key(stringResource(R.string.Settings_EqReset), stretches = false) { eq.onCurve(curve.flattened()) }
             }
             Faders(curve, eq.onCurve)
+            // The bands push the loudest sounds past full scale. A new curve lowers the pre-amp by itself
+            // (PhoneApplication.changeEq), so this shows when the listener raises the pre-amp again, or when a curve
+            // needs more room than -12 dB gives.
+            if (curve.clips) {
+                BasicText(stringResource(R.string.Settings_EqClipWarning), style = display(11f).copy(color = Ink.red))
+            }
         }
     }
 
