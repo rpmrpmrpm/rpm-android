@@ -835,7 +835,12 @@ private fun BannerCardView(
             BannerSleeve(cover, station, list != null, framed, logoStamp, images)
             val shadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(0f, 1f), blurRadius = 6f)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                BasicText(kicker, style = display(12f).copy(color = Ink.white(0xCC), letterSpacing = pt(1.5f), shadow = shadow))
+                // A station's card has the AD mark beside the kicker, where it does not cut the title short. Home and
+                // the radio home both draw this card.
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BasicText(kicker, style = display(12f).copy(color = Ink.white(0xCC), letterSpacing = pt(1.5f), shadow = shadow))
+                    if (station?.carriesAds == true) AdsBadge()
+                }
                 BasicText(title, maxLines = 2, overflow = TextOverflow.Ellipsis, style = displayBold(22f).copy(color = Color.White, shadow = shadow))
                 if (!subtitle.isNullOrEmpty()) {
                     BasicText(subtitle, maxLines = words?.lines ?: 1, overflow = TextOverflow.Ellipsis, style = system(13f).copy(color = Ink.white(0xD1), shadow = shadow))
