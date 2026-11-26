@@ -71,7 +71,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.ImageLoader
 import com.rpm.player.core.R
 import com.rpm.player.core.radio.Icy
-import com.rpm.player.core.radio.RadioAds
 import com.rpm.player.core.radio.RadioGenres
 import com.rpm.player.core.radio.RadioNames
 import com.rpm.player.core.radio.RadioRepository
@@ -553,6 +552,7 @@ private fun StationTile(
             StationFace(station, logoStamp, images, art, inset = art * TILE_INSET, modifier = Modifier.fillMaxSize()) {
                 BasicText(Glyph.radio, style = icon(mark).copy(color = Ink.white(0x3A)))
             }
+            AdsCorner(station.carriesAds)
         }
         Spacer(Modifier.height(AlbumCaption.ART_GAP.dp))
         val nameRoom = (caption.albumLine + AlbumCaption.LINE_GAP + caption.artistLine).dp
@@ -608,7 +608,7 @@ private fun StationRow(
             // The AD mark is right after the name. A long name gives way to it; the mark is not cut.
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 BasicText(station.display, Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(14f).copy(color = Color.White))
-                if (RadioAds.carriesAds(station.tags, station.name, station.homepage)) AdsBadge()
+                if (station.carriesAds) AdsBadge()
             }
             BasicText(said(station), maxLines = 1, overflow = TextOverflow.Ellipsis, style = display(11f).copy(color = Ink.white(0x88)))
         }
@@ -668,14 +668,4 @@ private fun Logo(station: RadioStation, images: ImageLoader, logoStamp: String) 
 /** The side of a row's logo (`StationLogo.edge`). */
 private val LOGO_EDGE = 40.dp
 
-/** The "AD" mark, cut out of a small pale tile. It is shown after the name of a station that carries advertising. */
-@Composable
-private fun AdsBadge() {
-    val said = stringResource(R.string.Radio_CarriesAds)
-    Box(
-        Modifier.size(19.dp, 13.dp).clip(RoundedCornerShape(2.5.dp)).background(Ink.white(0x8C)).semantics { contentDescription = said },
-        contentAlignment = Alignment.Center,
-    ) {
-        BasicText("AD", style = system(9f, FontWeight.Bold).copy(color = Ink.ground))
-    }
-}
+

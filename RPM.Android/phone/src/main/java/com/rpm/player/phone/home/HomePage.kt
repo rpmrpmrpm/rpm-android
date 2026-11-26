@@ -126,6 +126,7 @@ import com.rpm.player.phone.library.FOOT
 import com.rpm.player.phone.ui.ArtGround
 import com.rpm.player.phone.ui.RunOff
 import com.rpm.player.phone.ui.rememberAccent
+import com.rpm.player.phone.radio.AdsBadge
 import com.rpm.player.phone.radio.StationFace
 import com.rpm.player.phone.radio.stationCardWords
 import com.rpm.player.phone.design.TopPull
@@ -1127,7 +1128,21 @@ private fun QuickLine(pick: QuickPick, collection: Collection, images: ImageLoad
                 is QuickPick.OfAlbum -> pick.album.isExplicit
                 else -> false
             }
-            MarkedTitle(title, explicit, system(14f, FontWeight.Medium).copy(color = Color.White))
+            if (pick is QuickPick.OfStation && pick.station.carriesAds) {
+                // The AD mark right after the name, as on the radio page's rows.
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BasicText(
+                        title,
+                        Modifier.weight(1f, fill = false),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = system(14f, FontWeight.Medium).copy(color = Color.White),
+                    )
+                    AdsBadge()
+                }
+            } else {
+                MarkedTitle(title, explicit, system(14f, FontWeight.Medium).copy(color = Color.White))
+            }
             if (!subtitle.isNullOrEmpty()) {
                 BasicText(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = system(12f).copy(color = Ink.secondary))
             }

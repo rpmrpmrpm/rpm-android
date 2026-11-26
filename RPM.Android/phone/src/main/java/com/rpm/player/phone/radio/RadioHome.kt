@@ -325,7 +325,17 @@ private fun QuickStation(pick: StationPick, images: ImageLoader, logoStamp: Stri
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            BasicText(station.display, maxLines = 1, overflow = TextOverflow.Ellipsis, style = system(14f, FontWeight.Medium).copy(color = Color.White))
+            // The AD mark right after the name, as on the radio page's rows.
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                BasicText(
+                    station.display,
+                    Modifier.weight(1f, fill = false),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = system(14f, FontWeight.Medium).copy(color = Color.White),
+                )
+                if (station.carriesAds) AdsBadge()
+            }
             BasicText(line, maxLines = 1, overflow = TextOverflow.Ellipsis, style = system(12f).copy(color = Ink.secondary))
         }
     }
@@ -349,6 +359,7 @@ private fun StationShelf(heading: String, stations: List<RadioStation>, images: 
                         StationFace(station, logoStamp, images, art, inset = 16.dp, Modifier.fillMaxSize()) {
                             BasicText(Glyph.radio, style = icon(30f).copy(color = Ink.white(0x3A)))
                         }
+                        AdsCorner(station.carriesAds)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                         BasicText(station.display, maxLines = 1, overflow = TextOverflow.Ellipsis, style = system(12f, FontWeight.Medium).copy(color = Color.White))
