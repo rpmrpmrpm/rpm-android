@@ -134,6 +134,10 @@ import com.rpm.player.phone.radio.RadioHome
 import com.rpm.player.phone.radio.RadioPage
 import com.rpm.player.phone.radio.StationHolds
 import com.rpm.player.phone.settings.SettingsTab
+import com.rpm.player.phone.supporter.SupporterNudge
+import com.rpm.player.phone.supporter.SupporterNudgeCard
+import com.rpm.player.phone.supporter.SupporterNudgeWatch
+import com.rpm.player.phone.supporter.SupporterSheet
 import com.rpm.player.phone.profile.ListeningShare
 import com.rpm.player.phone.design.LocalSongCovers
 import com.rpm.player.phone.profile.Notices
@@ -355,6 +359,9 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
     val downloads = rememberDownloadsHere()
     FollowDownloadedLists(downloads, collection)
     var showingDownloads by rememberSaveable { mutableStateOf(false) }
+    // The supporter pop-up ([SupporterNudgeCard]), and the subscription sheet opened from it.
+    var nudging by rememberSaveable { mutableStateOf(false) }
+    var supportingFromNudge by rememberSaveable { mutableStateOf(false) }
 
     // ── profiles ──
 
@@ -1104,6 +1111,28 @@ private fun Shell(services: Services, settings: PhoneSettings, ready: LibrarySta
                 },
                 onDone = settings::finishWelcome,
             )
+        }
+        // The supporter pop-up, on every 50th launch for an account that does not pay ([SupporterNudge]). It waits until
+        // the app is up with nothing over it: not over the welcome, the wait cover, the player, the stage, a picker, a
+        // menu or a sheet.
+        val nudgeIdle = settings.welcomed && !covering && !picking && !playerUp && !sideways && filing == null &&
+            queueQuestion == null && songMenus.open == null && holdMenus.open == null && overChrome.shown.isEmpty() &&
+            !showingMe && people.isEmpty() && !showingDownloads && feedbackShot == null && !supportingFromNudge
+        SupporterNudgeWatch(services, settings, nudgeIdle, onDue = { nudging = true })
+        if (nudging) {
+            SupporterNudgeCard(
+                backdrop,
+                onSupport = {
+                    nudging = false
+                    supportingFromNudge = true
+                },
+                onClose = { nudging = false },
+            )
+        }
+        val nudgedAccount = session?.userId
+        if (supportingFromNudge && nudgedAccount != null) {
+            val app = LocalContext.current.applicationContext as com.rpm.player.phone.PhoneApplication
+            SupporterSheet(app.supporters, nudgedAccount, onClose = { supportingFromNudge = false })
         }
         // Over everything, the player included: the stage is the whole screen while the phone is turned.
         Stage(onStage, now, controller, services, wiring.speakers)

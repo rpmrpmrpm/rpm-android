@@ -684,6 +684,23 @@ class PhoneSettings(context: Context) {
         prefs.edit().putBoolean(KEY_WELCOMED, signedIn).putString(KEY_COACH, coachSeen.joinToString("\n")).apply()
     }
 
+    /** This process's launch number, once [countLaunch] has counted it; 0 before that. */
+    private var launch = 0
+
+    /**
+     * Counts this launch, for the supporter pop-up ([com.rpm.player.phone.supporter.SupporterNudge]), and gives its number:
+     * 1 for the first launch that reached the signed-in app. The count is kept in `supporter.nudge.launches`. It goes up
+     * once per process: every later call gives the same number, so a shell made again (another collection, a sign-in
+     * after a sign-out, a new activity) is not a new launch.
+     */
+    fun countLaunch(): Int {
+        if (launch == 0) {
+            launch = prefs.getInt(KEY_LAUNCHES, 0) + 1
+            prefs.edit().putInt(KEY_LAUNCHES, launch).apply()
+        }
+        return launch
+    }
+
     private fun readRefs(key: String): List<String> =
         prefs.getString(key, null)?.split('\n')?.filter { it.isNotBlank() }.orEmpty()
 
@@ -715,6 +732,7 @@ class PhoneSettings(context: Context) {
         const val KEY_NIGHT = "look.night"
         const val KEY_KARAOKE = "lyrics.karaoke"
         const val KEY_GOLD = "supporter.gold"
+        const val KEY_LAUNCHES = "supporter.nudge.launches"
         const val KEY_ORDER = "library.order"
         const val KEY_LIBRARY_MODE = "library.mode"
         const val KEY_SETTINGS_SECTION = "settings.section"
