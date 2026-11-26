@@ -1253,7 +1253,7 @@
     <!-- The pinned playlist the player always plays. -->
     <string name="Playlists_NowPlaying">正在播放</string>
 
-    <!-- Toolbar/menu action to create a playlist. -->
+    <!-- Toolbar/menu action to create a playlist. On the phones also the first row of the playlist picker, and the title of the card that names the new playlist. -->
     <string name="Playlists_NewPlaylist">新建播放列表</string>
 
     <!-- Toolbar/menu action to create a playlist folder. -->
@@ -4935,8 +4935,8 @@
     <!-- Title of the confirmation when a song chosen is already in the playlist picked (iPhone playlist picker, and every add to playlist on the desktop), and the line shown when a write found it there. {0} is the playlist name. -->
     <string name="Rpm_PlaylistPick_AlreadyIn">已在 %1$s 中</string>
 
-    <!-- Empty state of the iPhone playlist picker at the top of the tree. -->
-    <string name="Rpm_PlaylistPick_Empty">还没有播放列表。在“播放列表”标签页新建一个，或在电脑的 rpm 中选一个同步到云端。</string>
+    <!-- Empty state of the phones' playlist picker at the top of the tree, under its New playlist row. -->
+    <string name="Rpm_PlaylistPick_Empty">还没有播放列表。</string>
 
     <!-- Empty state of the iPhone playlist picker inside a folder. -->
     <string name="Rpm_PlaylistPick_EmptyFolder">此文件夹为空。</string>
@@ -4947,7 +4947,7 @@
     <!-- Placeholder in the name field of the iPhone new-playlist sheet. -->
     <string name="Rpm_NewPlaylist_Name">播放列表名称</string>
 
-    <!-- Line under the name field of the iPhone new-playlist sheet, saying which folder the playlist is being made in. {0} = the folder. Hidden when it is not in one. -->
+    <!-- Line under the name field of the phones' new-playlist sheet and of the card that names a playlist made from the playlist picker, saying which folder the playlist is being made in. {0} = the folder. Hidden when it is not in one. -->
     <string name="Rpm_NewPlaylist_In">位于 %1$s</string>
 
     <!-- Placeholder in the song search field of the iPhone new-playlist sheet. -->
@@ -4965,7 +4965,7 @@
     <!-- Empty state in the iPhone new-playlist sheet when the added-songs list is opened and nothing has been picked. -->
     <string name="Rpm_NewPlaylist_NoneAdded">尚未添加歌曲。</string>
 
-    <!-- Confirms the iPhone new-playlist sheet. -->
+    <!-- Confirms the phones' new-playlist sheet, and the card that names a playlist made from the playlist picker. -->
     <string name="Rpm_NewPlaylist_Create">创建</string>
 
     <!-- Phone: title of the picker that switches between your library and shared ones. -->
